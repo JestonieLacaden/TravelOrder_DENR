@@ -1,0 +1,293 @@
+@extends('layouts.app')
+
+@section('content')
+
+
+<!-- Content Wrapper. Contains page content -->
+<div class="content-wrapper">
+    <!-- Content Header (Page header) -->
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1>Financial Management </h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="#">Home</a></li>
+                        <li class="breadcrumb-item active">Financial Management</li>
+                        <li class="breadcrumb-item active">Planning Section</li>
+                    </ol>
+                </div>
+            </div>
+
+            <div class="col-12">
+                @if ($errors->any())
+                <div class="alert alert-danger alert-dismissible">
+                    <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                    <h5><i class="icon fas fa-ban"></i> Failed to save!</h5>
+                    <ul>
+                        @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+                @endif
+                @if(session()->has('message'))
+                <div class="alert alert-success alert-dismissible">
+                    <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                    <h5><i class="icon fas fa-check"></i> {{ session()->get('message') }}</h5>
+                </div>
+                @endif
+
+                @if(session()->has('failed'))
+                <div class="alert alert-danger alert-dismissible">
+                  <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                  <h5><i class="icon fas fa-ban"></i> Failed to save!</h5>
+                    <div>
+                      <ul>
+                        <li>
+                          {{ session()->get('failed') }}
+                        </li>
+                      </ul>
+                    </div>   
+               
+                </div>
+                @endif
+
+            </div>
+
+ <section class="content">
+                <div class="row">
+                    <div class="col-md-3">
+
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Folders</h3>
+
+                                <div class="card-tools">
+                                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                        <i class="fas fa-minus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <ul class="nav nav-pills flex-column">
+                                    <li class="nav-item active">
+                                        <a href="{{ route('fmplanning.incoming') }}" class="nav-link">
+                                            <i class="fas fa-download"></i> Incoming Voucher(s)
+                                            @if($Count['0'] != 0)
+                                            <span class="badge bg-info float-right">{{ $Count['0'] }}</span>
+                                            @endif
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+
+                                        <a href="{{ route('fmplanning.processing') }}" class="nav-link">
+                                            <i class="fas fa-sync"></i> Processing Voucher(s)
+                                            @if($Count['1'] != 0)
+                                            <span class="badge bg-warning float-right">{{ $Count['1'] }}</span>
+                                            @endif
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="{{ route('fmplanning.outgoing') }}" class="nav-link">
+                                            <i class="fas fa-upload"></i> Outgoing Voucher(s)
+                                            @if($Count['3']!= 0)
+                                            <span class="badge bg-success float-right">{{ $Count['3'] }}</span>
+                                            @endif
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+
+                                        <a href="{{ route('fmplanning.rejected') }}" class="nav-link">
+                                            <i class="fas fa-trash"></i> Rejected Voucher(s)
+                                            @if($Count['2'] != 0)
+                                            <span class="badge bg-danger float-right">{{ $Count['2'] }}</span>
+                                            @endif
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                            <!-- /.card-body -->
+                        </div>
+                        <!-- /.card -->
+
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Charging Details</h3>
+
+                                <div class="card-tools">
+                                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                        <i class="fas fa-minus"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            @can('create', \App\Models\FMPlanningPAP::class)
+                            <div class="card-body p-0">
+                                <ul class="nav nav-pills flex-column">
+                                    <li class="nav-item active">
+                                        <a href="{{ route('fmplanning.pap') }}" class="nav-link">
+                                            PAP
+                                            @if($Count['5'] != 0)
+                                            <span class="badge bg-info float-right">{{ $Count['5'] }}</span>
+                                            @endif
+                                        </a>
+                                    </li>
+                           
+                                    <li class="nav-item">
+
+                                        <a href="{{ route('fmplanning.activity') }}" class="nav-link">
+                                            Activity
+                                            @if($Count['7'] != 0)
+                                            <span class="badge bg-warning float-right">{{ $Count['7'] }}</span>
+                                            @endif
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="{{ route('fmplanning.uacs') }}" class="nav-link">
+                                            UACS
+                                            @if($Count['6']!= 0)
+                                            <span class="badge bg-success float-right">{{ $Count['6'] }}</span>
+                                            @endif
+                                        </a>
+                                    </li>
+
+                                </ul>
+                            </div>
+                            @endcan
+                            <!-- /.card-body -->
+                        </div>
+                        <!-- /.card -->
+
+
+
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Allocation (GAA)</h3>
+
+                                <div class="card-tools">
+                                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                        <i class="fas fa-minus"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            @can('create', \App\Models\FMPlanningPAP::class)
+                            <div class="card-body p-0">
+                                <ul class="nav nav-pills flex-column">
+                                
+
+                                    <li class="nav-item">
+                                        <a href="{{ route('fmplanning.allocationPAP') }}" class="nav-link">
+                                            Allocation Per PAP
+                                            @if($Count['11']!= 0)
+                                            <span class="badge bg-danger float-right">{{ $Count['11'] }}</span>
+                                            @endif
+                                        </a>
+                                    </li>
+
+                                    <li class="nav-item">
+                                        <a href="{{ route('fmplanning.allocation') }}" class="nav-link">
+                                            Allocation Per Activity
+                                            @if($Count['9']!= 0)
+                                            <span class="badge bg-primary float-right">{{ $Count['9'] }}</span>
+                                            @endif
+                                        </a>
+                                    </li>
+
+                                    <li class="nav-item">
+                                        <a href="{{ route('fmplanning.allocationUACS') }}" class="nav-link">
+                                            Allocation Per UACS
+                                            @if($Count['10']!= 0)
+                                            <span class="badge bg-secondary float-right">{{ $Count['10'] }}</span>
+                                            @endif
+                                        </a>
+                                    </li>
+
+                                </ul>
+                            </div>
+                            @endcan
+                            <!-- /.card-body -->
+                        </div>
+                        <!-- /.card -->
+
+
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Allocation (SAA)</h3>
+
+                                <div class="card-tools">
+                                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                        <i class="fas fa-minus"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            @can('create', \App\Models\FMPlanningPAP::class)
+                            <div class="card-body p-0">
+                                <ul class="nav nav-pills flex-column">
+
+                                    <li class="nav-item">
+                                        <a href="{{ route('fmplanning.allocationPAPsaa') }}" class="nav-link">
+                                            Allocation Per PAP
+                                            @if($Count['12']!= 0)
+                                            <span class="badge bg-danger float-right">{{ $Count['12'] }}</span>
+                                            @endif
+                                        </a>
+                                    </li>
+
+                                    <li class="nav-item">
+                                        <a href="{{ route('fmplanning.allocationsaa') }}" class="nav-link">
+                                            Allocation Per Activity
+                                            @if($Count['13']!= 0)
+                                            <span class="badge bg-primary float-right">{{ $Count['13'] }}</span>
+                                            @endif
+                                        </a>
+                                    </li>
+
+                                    <li class="nav-item">
+                                        <a href="{{ route('fmplanning.allocationUACSSAA') }}" class="nav-link">
+                                            Allocation Per UACS
+                                            @if($Count['14']!= 0)
+                                            <span class="badge bg-secondary float-right">{{ $Count['14'] }}</span>
+                                            @endif
+                                        </a>
+                                    </li>
+
+                                </ul>
+                            </div>
+                            @endcan
+                            <!-- /.card-body -->
+                        </div>
+                        <!-- /.card -->
+
+
+                        
+
+                    </div>
+                    <!-- /.col -->
+                    @yield('fm-content')
+                    <!-- /.col -->
+                </div>
+                <!-- /.row -->
+            </section>
+            <!-- /.content -->
+        </div>
+    </section>
+</div>
+@endsection
+
+
+@section('specific-scipt')
+
+@yield('mails-script')
+
+@endsection
+
+
+@section('specific-layout')
+<!-- DataTables -->
+@yield('mails-layout')
+@endsection
