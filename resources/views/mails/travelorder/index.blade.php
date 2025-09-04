@@ -58,25 +58,26 @@
 
               <button class="btn btn-info" data-toggle="modal" data-target="#edit-travelorder-modal-lg"
                 data-id="{{ $TravelOrder->id }}" data-daterange="{{ $TravelOrder->daterange }}"
-                data-employee="{{ $TravelOrder->Employee->lastname.', '.$TravelOrder->Employee->firstname.' '.$TravelOrder->Employee->middlename }}"
-                data-destination="{{ $TravelOrder->destinationoffice }}" data-purpose="{{ $TravelOrder->purpose }}">
-                {{-- <i class="bi bi-pencil-square"></i> --}}
+                data-employee="{{ $TravelOrder->employee->lastname.', '.$TravelOrder->employee->firstname.' '.$TravelOrder->employee->middlename }}"
+                data-destination="{{ $TravelOrder->destinationoffice }}" data-purpose="{{ $TravelOrder->purpose }}"
+                data-can-approve2="0">
                 <i class="fa-solid fa-pen-to-square"></i>
-                {{-- <i class="bi bi-pencil-square"></i> --}}
               </button>
 
-              {{-- <button type="button" title="Edit Travel Order" class="btn btn-info" data-toggle="modal"
-                data-target="#edit-travelorder-modal-lg" data-keyboard="false" data-backdrop="static">
+              {{-- <button class="btn btn-info" data-toggle="modal" data-target="#edit-travelorder-modal-lg"
+                data-id="{{ $TravelOrder->id }}" data-daterange="{{ $TravelOrder->daterange }}"
+                data-employee="{{ $TravelOrder->Employee->lastname.', '.$TravelOrder->Employee->firstname.' '.$TravelOrder->Employee->middlename }}"
+                data-destination="{{ $TravelOrder->destinationoffice }}" data-purpose="{{ $TravelOrder->purpose }}">
                 <i class="fa-solid fa-pen-to-square"></i>
               </button> --}}
-
-
             </td>
 
           </tr>
           @endif
           @endif
 
+
+          {{-- Approver 2 --}}
           @if($TravelOrder->is_approve1 == true && $TravelOrder->is_rejected1 != true && $TravelOrder->is_rejected2 !=
           true && $TravelOrder->is_approve2 != true )
 
@@ -105,6 +106,13 @@
                 <i class="fas fa-times"></i>
               </button>
               @endcan
+              <button class="btn btn-info" data-toggle="modal" data-target="#edit-travelorder-modal-lg"
+                data-id="{{ $TravelOrder->id }}" data-daterange="{{ $TravelOrder->daterange }}"
+                data-employee="{{ $TravelOrder->employee->lastname.', '.$TravelOrder->employee->firstname.' '.$TravelOrder->employee->middlename }}"
+                data-destination="{{ $TravelOrder->destinationoffice }}" data-purpose="{{ $TravelOrder->purpose }}"
+                data-can-approve2="1">
+                <i class="fa-solid fa-pen-to-square"></i>
+              </button>
             </td>
           </tr>
           @endif
@@ -140,11 +148,11 @@
 
 @endsection --}}
 
-<script>
-  $(function () {
+{{-- <script>
+  (function () {
     $('#daterangeEdit').daterangepicker()   
   });
-</script>
+</script> --}}
 
 @section('mails-script')
 <!-- DataTables  & Plugins -->

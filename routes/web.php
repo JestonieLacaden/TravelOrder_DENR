@@ -405,3 +405,18 @@ Route::get('logout', [AuthController::class, 'logout'])->name('logout')->middlew
 
     });
 // });
+
+// Approver 2 date-range update
+// Route::put(
+//   'msd-management/encoder/travel-order/{travel_order}/update-approve2',
+//   [TravelOrderController::class, 'updateApprove2']
+// )->name('travel-order.update.approve2');
+
+// Route::put('msd-management/encoder/travel-order/{travel_order}/update-approve2',
+//   [TravelOrderController::class, 'updateApprove2']
+// )->name('msd-management.encoder.travel-order.update-approve2');
+
+Route::put(
+  'msd-management/encoder/travel-order/{travel_order}/update-approve2',
+  [TravelOrderController::class, 'updateApprove2']
+)->name('travel-order.update-approve2');

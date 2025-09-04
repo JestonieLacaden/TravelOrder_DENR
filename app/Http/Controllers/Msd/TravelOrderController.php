@@ -125,6 +125,57 @@ class TravelOrderController extends Controller
 }
 
 
+public function updateApprove2(Request $request, TravelOrder $travel_order)
+{
+    $this->authorize('updateFinal', $travel_order);
+
+    $request->validate(['daterange' => 'required|string']);
+
+    // Skip if unchanged
+    if (trim($request->daterange) === trim($travel_order->daterange)) {
+        return back()->with('message', 'No changes to save.');
+    }
+
+    if (!str_contains($request->daterange, ' - ')) {
+        return back()->with('EventError', 'Invalid date range format.')->withInput();
+    }
+
+    [$sRaw, $eRaw] = explode(' - ', $request->daterange, 2);
+
+    $start = \Illuminate\Support\Carbon::hasFormat($sRaw, 'm/d/Y')
+        ? \Illuminate\Support\Carbon::createFromFormat('m/d/Y', $sRaw)
+        : (\Illuminate\Support\Carbon::hasFormat($sRaw, 'Y-m-d')
+            ? \Illuminate\Support\Carbon::createFromFormat('Y-m-d', $sRaw)
+            : null);
+
+    $end = \Illuminate\Support\Carbon::hasFormat($eRaw, 'm/d/Y')
+        ? \Illuminate\Support\Carbon::createFromFormat('m/d/Y', $eRaw)
+        : (\Illuminate\Support\Carbon::hasFormat($eRaw, 'Y-m-d')
+            ? \Illuminate\Support\Carbon::createFromFormat('Y-m-d', $eRaw)
+            : null);
+
+    if (!$start || !$end) {
+        return back()->with('EventError', 'Invalid date range format.')->withInput();
+    }
+
+    // Same-year rule
+    if ($start->year !== $end->year) {
+        return back()->with('DateError1', true)->withInput();
+    }
+
+    $normalized = $start->format('m/d/Y') . ' - ' . $end->format('m/d/Y');
+
+    if (trim($normalized) === trim($travel_order->daterange)) {
+        return back()->with('message', 'No changes to save.');
+    }
+
+    $travel_order->update(['daterange' => $normalized]);
+
+    return back()->with('message', 'Travel Order date updated by Approver 2.');
+}
+
+
+
 
     public function destroy(Request $request,$TravelOrder) {
    
@@ -268,8 +319,13 @@ class TravelOrderController extends Controller
             $TravelOrdernumber = TravelOrderApproved::where('employeeid','=',$TravelOrder->id)->get()->first();
             $data = $TravelOrder->daterange;
             list($startDate, $endDate) = explode(" - ", $data);
-            $date1 = Carbon::createFromDate($startDate)->format('M d, Y');
-            $date2 = Carbon::createFromDate($endDate)->format('M d, Y');
+            // Detect how the daterange is stored, e.g. "07/08/2025 - 07/11/2025" or "2025-07-08 - 2025-07-11"
+            $inputFmt = str_contains($startDate, '/') ? 'm/d/Y' : 'Y-m-d';
+
+            // Full month name (F). Use 'j' for day without leading zero.
+            $date1 = \Carbon\Carbon::createFromFormat($inputFmt, trim($startDate))->format('F j, Y'); // January 1, 2025
+            $date2 = \Carbon\Carbon::createFromFormat($inputFmt, trim($endDate))->format('F j, Y');   // January 5, 2025
+
             $SetTravelOrderSignatory = TravelOrderSignatory::where('id', '=', $GetTravelOrderSignatory->travelordersignatoryid)->with('Employee1','Employee2')->get()->first();
 
             return view('msd-panel.travel-order.print',compact('TravelOrder','Employee','SetTravelOrderSignatory','TravelOrdernumber','date1','date2'));
