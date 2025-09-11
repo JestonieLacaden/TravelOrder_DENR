@@ -61,6 +61,19 @@ class TravelOrderPolicy
      * @param  \App\Models\User  $user
      * @return \Illuminate\Auth\Access\Response|bool
      */
+
+    public function acceptemployee(User $user)
+{
+    $emp = \App\Models\Employee::where('email', $user->email)->first();
+    if (!$emp) return false;
+
+    // user is an approver in any travel-order signatory
+    return \App\Models\TravelOrderSignatory::where('approver1', $emp->id)
+        ->orWhere('approver2', $emp->id)
+        ->exists();
+}
+
+    
     public function create(User $user)
     {
         $Roles = UserRole::where('userid','=',$user->id)->get();

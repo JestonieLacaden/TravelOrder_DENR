@@ -7,31 +7,29 @@ use Illuminate\Database\Eloquent\Model;
 
 class Office extends Model
 {
-    protected $table='Office';
-
     use HasFactory;
 
-    protected $guarded = []; 
+    protected $table = 'office';
+    protected $guarded = [];
 
-    public function Section() {
-        return $this->hasOne(Section::class,'id');
+    public function sections()
+    {
+        return $this->hasMany(Section::class, 'officeid', 'id');
     }
-    public function Unit() {
-        return $this->hasOne(Unit::class,'id');
+    public function Section()
+    {
+        return $this->sections();
+    } // legacy alias
+    public function employees()
+    {
+        return $this->hasMany(Employee::class, 'officeid', 'id');
     }
-
-    public function Employee() {
-        return $this->belongsTo(Employee::class,'id');
+    public function setLeaveSignatories()
+    {
+        return $this->hasMany(SetLeaveSignatory::class, 'officeid', 'id');
     }
-
-    public function Route() {
-        return $this->hasMany(Route::class,'id');
-    }
-    public function SetLeaveSignatory() {
-        return $this->hasMany(SetLeaveSignatory::class,'id');
-    }
-
-    public function SetTravelOrderSignatory() {
-        return $this->hasMany(SetTravelOrderSignatory::class,'id');
+    public function setTravelOrderSignatories()
+    {
+        return $this->hasMany(SetTravelOrderSignatory::class, 'officeid', 'id');
     }
 }

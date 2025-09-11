@@ -7,30 +7,46 @@ use Illuminate\Database\Eloquent\Model;
 
 class Section extends Model
 {
-    protected $table='Section';
     use HasFactory;
-    protected $guarded = [];    
-  
 
-    public function Office() {
-       return $this->belongsTo(Office::class,'officeid');
-    }
+    // Table name (lowercase to match MySQL)
+    protected $table = 'section';
+    protected $guarded = [];
 
-    public function Unit() {
-        return $this->hasOne(Unit::class,'id');
-    }
-    public function Employee() {
-        return $this->belongsTo(Employee::class,'id');
-    }
-    public function Route() {
-        return $this->hasMany(Route::class,'id');
+    // Relationships (keep ONE name only, lower camelCase)
+
+    public function office()
+    {
+        // section.officeid -> office.id
+        return $this->belongsTo(Office::class, 'officeid', 'id');
     }
 
-    public function SetLeaveSignatory() {
-        return $this->hasMany(SetLeaveSignatory::class,'id');
+    public function employees()
+    {
+        // employee.sectionid -> section.id
+        return $this->hasMany(Employee::class, 'sectionid', 'id');
     }
 
-    public function SetTravelOrderSignatory() {
-        return $this->hasMany(SetTravelOrderSignatory::class,'id');
+    public function setLeaveSignatory()
+    {
+        // set_leave_signatory.sectionid -> section.id
+        return $this->hasMany(SetLeaveSignatory::class, 'sectionid', 'id');
+    }
+
+    public function setTravelOrderSignatory()
+    {
+        // set_travel_order_signatory.sectionid -> section.id
+        return $this->hasMany(SetTravelOrderSignatory::class, 'sectionid', 'id');
+    }
+
+    // The rest are kept for compatibility; adjust only if you really use them.
+    public function unit()
+    {
+        return $this->hasOne(Unit::class, 'sectionid', 'id');
+    }
+
+    public function route()
+    {
+        return $this->hasMany(Route::class, 'sectionid', 'id');
     }
 }

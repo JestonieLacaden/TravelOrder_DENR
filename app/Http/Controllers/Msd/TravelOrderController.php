@@ -186,156 +186,188 @@ public function updateApprove2(Request $request, TravelOrder $travel_order)
 
     }
 
-    public function accept(TravelOrder $TravelOrder) {
-        try
-        {
-          $this->authorize('accept', $TravelOrder);
-      
-          $TravelOrderofEmployee = Employee::where('id','=', $TravelOrder->employeeid)->get()->first();
-          $SetTravelOrderSignatory = SetTravelOrderSignatory::where('sectionid','=',$TravelOrderofEmployee->sectionid)->get()->first();
-          $TravelOrderSignatory = TravelOrderSignatory::where('id','=',$SetTravelOrderSignatory->travelordersignatoryid)->get()->first();
-          $Employee = Employee::where('email','=',auth()->user()->email)->get()->first();
-        
-            if($TravelOrderSignatory->approver1 == $Employee->id && auth()->check()) 
-            {
-              $formfields['is_approve1'] = true;
-              $TravelOrder->update($formfields);
-              return back()->with('message', 'Travel Order Successfully Approved!');
-            } 
-            if($TravelOrderSignatory->approver2 == $Employee->id && auth()->check()) 
-            {
-              $formfields['is_approve2'] = true;
-              $TravelOrder->update($formfields);
-                //
-              $data['employeeid'] = $TravelOrder->id;
-              $project = TravelOrderApproved::where('travelorderid', 'LIKE', '%' . date('Y') . '%')->latest()->first();
-        
-             if($project != null) 
-              {
-                $newproject = $project->id;
-                $projectcount = (int)$newproject + 1;
-              }
-              else
-                {
-                  $projectcount = 1;
+    public function accept(\App\Models\TravelOrder $TravelOrder)
+    {
+        try {
+            $this->authorize('accept', $TravelOrder);
+
+            $current = \App\Models\Employee::where('email', auth()->user()->email)->firstOrFail();
+            $sig = \App\Models\TravelOrderSignatory::findOrFail($TravelOrder->travelordersignatoryid);
+
+            // Approver 1 path
+            if ($sig->approver1 == $current->id) {
+                if ($TravelOrder->is_approve1 || $TravelOrder->is_rejected1) {
+                    return back()->with('message', 'Already processed by Approver 1.');
+                }
+                $TravelOrder->update(['is_approve1' => true]);
+                return back()->with('message', 'Travel Order Successfully Approved!');
+            }
+
+            // Approver 2 path
+            if ($sig->approver2 == $current->id) {
+                if (!$TravelOrder->is_approve1) {
+                    return back()->with('SignatoryError', 'Approver 1 must approve first.');
+                }
+                if ($TravelOrder->is_approve2 || $TravelOrder->is_rejected2) {
+                    return back()->with('message', 'Already processed by Approver 2.');
                 }
 
-             $data['travelorderid'] = 'TO'.'-'.date('Y') .'-'. str_pad($projectcount, 5, '0', STR_PAD_LEFT) ;
+                $TravelOrder->update(['is_approve2' => true]);
 
-             TravelOrderApproved::create($data);
+                // Keep your TO number issuance (if any) here...
+                // (TravelOrderApproved::create([...]) etc.)
 
-                
-              return back()->with('message', 'Travel Order Successfully Approved!');
-            } 
-           
-        
-      }    
-      catch (Throwable $e) {
-        report($e);
-      
-        return false;
-      }
-      } 
-      
-      public function reject(TravelOrder $TravelOrder) {
-        $this->authorize('reject', $TravelOrder);
-        $TravelOrderSignatories = TravelOrderSignatory::get();
-        $Employee = Employee::where('email','=',auth()->user()->email)->get()->first();
-       
-        foreach($TravelOrderSignatories as $TravelOrderSignatory)
-        {
-          if($TravelOrderSignatory->approver1 == $Employee->id && auth()->check()) 
-          {
-            $formfields['is_rejected1'] = true;
-            $TravelOrder->update($formfields);
-            return back()->with('message', 'Travel Order Successfully Rejected!');
-          } 
-          if($TravelOrderSignatory->approver2 == $Employee->id && auth()->check()) 
-          {
-            $formfields['is_rejected2'] = true;
-            $TravelOrder->update($formfields);
-            return back()->with('message', 'Travel Order Successfully Rejected!');
-          } 
-          
+                return back()->with('message', 'Travel Order Successfully Approved!');
+            }
+
+            return back()->with('SignatoryError', 'You are not assigned for this Travel Order.');
+        } catch (\Throwable $e) {
+            report($e);
+            return back()->with('SignatoryError', 'Unexpected error.');
         }
     }
 
-    public function userindex() 
-    {
-      $this->authorize('viewTravelOrderIndex', \App\Models\TravelOrder::class);
-        $Employee = Employee::where('email','=', auth()->user()->email)->get()->first();
-    
-        $TravelOrders = TravelOrder::where('employeeid','=',$Employee->id)->with('Employee')->orderBy('created_at','asc')->get();
-  
-        $ApprovedTravelOrders = TravelOrderApproved::get();
 
 
-        return view('user.travel-order.index', compact('Employee','TravelOrders','ApprovedTravelOrders'));
+
+    public function reject(TravelOrder $TravelOrder)
+{
+    $this->authorize('reject', $TravelOrder);
+
+    $current = Employee::where('email', auth()->user()->email)->first();
+    if (!$current) return back()->with('SignatoryError', 'No employee profile for current user.');
+
+    $sig = $TravelOrder->travelordersignatoryid
+        ? TravelOrderSignatory::find($TravelOrder->travelordersignatoryid)
+        : null;
+
+    if (!$sig) {
+        $owner = Employee::find($TravelOrder->employeeid);
+        $sigId = SetTravelOrderSignatory::where('officeid', $owner->officeid)
+                ->where('sectionid', $owner->sectionid)
+                ->value('travelordersignatoryid')
+            ?? SetTravelOrderSignatory::where('sectionid', $owner->sectionid)->value('travelordersignatoryid');
+
+        $sig = $sigId ? TravelOrderSignatory::find($sigId) : null;
     }
 
-    public function storeUserTravelOrder(Request $request) {
-        
-      $this->authorize('AddUserTravelOrder', \App\Models\TravelOrder::class);
+    if (!$sig) return back()->with('SignatoryError', 'No signatory configured for this Travel Order.');
 
-      $formfields = $request->validate([
-           
-            'daterange' => 'required',
-            'destinationoffice' => 'required',
-            'purpose' => 'required',
-            'perdime' => 'required',
-            'appropriation' => 'required',
-            'remarks' => 'required',
-         
-      ]);
+    if ($sig->approver1 == $current->id) {
+        $TravelOrder->update(['is_rejected1' => true]);
+        return back()->with('message', 'Travel Order Successfully Rejected!');
+    }
+
+    if ($sig->approver2 == $current->id) {
+        $TravelOrder->update(['is_rejected2' => true]);
+        return back()->with('message', 'Travel Order Successfully Rejected!');
+    }
+
+    return back()->with('SignatoryError', 'You are not the assigned approver for this Travel Order.');
+}
 
 
-      $Employee = Employee::where('email','=', auth()->user()->email)->get()->first();
-      $SetTravelOrderSignatory = SetTravelOrderSignatory::where('sectionid','=',$Employee->sectionid)->get()->first();
+    public function userindex() 
+    {
+      
+    $this->authorize('viewTravelOrderIndex', \App\Models\TravelOrder::class);
+    $Employee = Employee::where('email', auth()->user()->email)->first();
+    $TravelOrders = TravelOrder::where('employeeid', $Employee->id)->with('Employee')->orderBy('created_at','asc')->get();
+    $ApprovedTravelOrders = TravelOrderApproved::get();
 
-      if(!empty($SetTravelOrderSignatory))
-      {
-        $formfields['userid'] = auth()->user()->id;
-        $formfields['employeeid'] = $Employee->id;
-        TravelOrder::create($formfields);
+    $SignatoryOptions = SetTravelOrderSignatory::where('sectionid', $Employee->sectionid)
+                          ->with('TravelOrderSignatory') // so we can show names
+                          ->get();
 
-        return back()->with('message', 'Travel Order Added Successfully');
-      }
-      else
-      {
-        return back()->with('SignatoryError', 'Error!');
-      }
+    return view('user.travel-order.index', compact('Employee','TravelOrders','ApprovedTravelOrders','SignatoryOptions'));
+      
+      // $this->authorize('viewTravelOrderIndex', \App\Models\TravelOrder::class);
+      //   $Employee = Employee::where('email','=', auth()->user()->email)->get()->first();
+    
+      //   $TravelOrders = TravelOrder::where('employeeid','=',$Employee->id)->with('Employee')->orderBy('created_at','asc')->get();
+  
+      //   $ApprovedTravelOrders = TravelOrderApproved::get();
 
-  }
 
-  public function print(TravelOrder $TravelOrder) {
+      //   return view('user.travel-order.index', compact('Employee','TravelOrders','ApprovedTravelOrders'));
+    }
 
- 
+    // app/Http/Controllers/Msd/TravelOrderController.php
+public function storeUserTravelOrder(Request $request)
+{
+    $this->authorize('AddUserTravelOrder', \App\Models\TravelOrder::class);
+
+    $formfields = $request->validate([
+        'daterange'        => 'required',
+        'destinationoffice'=> 'required',
+        'purpose'          => 'required',
+        'perdime'          => 'required',
+        'appropriation'    => 'required',
+        'remarks'          => 'required',
+    ]);
+
+    $employee = \App\Models\Employee::where('email', auth()->user()->email)->first();
+
+    // find the mapped signatory for the requester’s section
+    $set = \App\Models\SetTravelOrderSignatory::where('sectionid', $employee->sectionid)->first();
+    if (!$set) {
+        return back()->with('SignatoryError', 'No signatory mapping for your section.');
+    }
+
+    $formfields['userid']                  = auth()->id();
+    $formfields['employeeid']              = $employee->id;
+    $formfields['travelordersignatoryid']  = $set->travelordersignatoryid;
+
+    \App\Models\TravelOrder::create($formfields);
+
+    return back()->with('message', 'Travel Order Added Successfully');
+}
+
+
+
+
+  public function print(TravelOrder $TravelOrder)
+{
     $this->authorize('print', $TravelOrder);
 
-          $Employee = Employee::where('id','=',$TravelOrder->employeeid)->with('Office','Unit')->get()->first();
-          $GetTravelOrderSignatory = SetTravelOrderSignatory::where('sectionid','=', $Employee->sectionid)->get()->first();
+    $Employee = Employee::where('id', $TravelOrder->employeeid)
+        ->with('Office','Unit')
+        ->firstOrFail();
 
-          if(!empty($GetTravelOrderSignatory)) {
-            $TravelOrdernumber = TravelOrderApproved::where('employeeid','=',$TravelOrder->id)->get()->first();
-            $data = $TravelOrder->daterange;
-            list($startDate, $endDate) = explode(" - ", $data);
-            // Detect how the daterange is stored, e.g. "07/08/2025 - 07/11/2025" or "2025-07-08 - 2025-07-11"
-            $inputFmt = str_contains($startDate, '/') ? 'm/d/Y' : 'Y-m-d';
+    // Dates
+    [$startDate, $endDate] = explode(' - ', $TravelOrder->daterange);
+    $fmt   = str_contains($startDate, '/') ? 'm/d/Y' : 'Y-m-d';
+    $date1 = \Carbon\Carbon::createFromFormat($fmt, trim($startDate))->format('F j, Y');
+    $date2 = \Carbon\Carbon::createFromFormat($fmt, trim($endDate))->format('F j, Y');
 
-            // Full month name (F). Use 'j' for day without leading zero.
-            $date1 = \Carbon\Carbon::createFromFormat($inputFmt, trim($startDate))->format('F j, Y'); // January 1, 2025
-            $date2 = \Carbon\Carbon::createFromFormat($inputFmt, trim($endDate))->format('F j, Y');   // January 5, 2025
+    // Prefer saved signatory, fallback to mapping
+    $sig = $TravelOrder->travelordersignatoryid
+        ? TravelOrderSignatory::with('Employee1','Employee2')->find($TravelOrder->travelordersignatoryid)
+        : null;
 
-            $SetTravelOrderSignatory = TravelOrderSignatory::where('id', '=', $GetTravelOrderSignatory->travelordersignatoryid)->with('Employee1','Employee2')->get()->first();
+    if (!$sig) {
+        $sigId = SetTravelOrderSignatory::where('officeid', $Employee->officeid)
+                ->where('sectionid', $Employee->sectionid)
+                ->value('travelordersignatoryid')
+            ?? SetTravelOrderSignatory::where('sectionid', $Employee->sectionid)->value('travelordersignatoryid');
 
-            return view('msd-panel.travel-order.print',compact('TravelOrder','Employee','SetTravelOrderSignatory','TravelOrdernumber','date1','date2'));
-          }
-          else
-          {
-            return back()->with('SignatoryError', 'Error');
-          }
-     
-  }
+        $sig = $sigId ? TravelOrderSignatory::with('Employee1','Employee2')->find($sigId) : null;
+    }
+
+    if (!$sig) {
+        return back()->with('SignatoryError', 'No Travel Order signatory configured for this employee.');
+    }
+
+    $TravelOrdernumber = TravelOrderApproved::where('employeeid', $TravelOrder->id)->first();
+
+    // keep variable name used by the view
+    $SetTravelOrderSignatory = $sig;
+
+    return view('msd-panel.travel-order.print', compact(
+        'TravelOrder', 'Employee', 'SetTravelOrderSignatory', 'TravelOrdernumber', 'date1', 'date2'
+    ));
+}
+
 
   public function advance(Request $request) {
     $this->authorize('MsdCreate', \App\Models\TravelOrder::class);

@@ -51,6 +51,25 @@
                             <!-- /.input group -->
                         </div>
 
+                        {{-- <div class="form-group row">
+                          <label class="col-sm-3" for="travelordersignatoryid">
+                            Signatory: <span class="text-danger">*</span>
+                          </label>
+                          <div class="col-sm-9">
+                            <select id="travelordersignatoryid" name="travelordersignatoryid" class="form-control select2" style="width:100%;">
+                              <option value="" disabled selected>-- Choose Signatory --</option>
+                              @foreach($SignatoryOptions as $opt)
+                              <option value="{{ $opt->travelordersignatoryid }}">
+                                {{ $opt->TravelOrderSignatory->name }}
+                              </option>
+                              @endforeach
+                            </select>
+                            @error('travelordersignatoryid')
+                            <p class="text-danger text-xs mt-1">{{$message}}</p>
+                            @enderror
+                          </div>
+                        </div> --}}
+
                         <div class="form-group row">
                             <label class="col-sm-3" for="destinationoffice">Destination : <span class="text-danger">*</span></label>
                             <div class=" col-sm-9">

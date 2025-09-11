@@ -17,6 +17,8 @@ use App\Models\TravelOrder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use App\Models\TravelOrderSignatory;
+use App\Models\LeaveSignatory; //itry kong isama ito
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -124,6 +126,38 @@ class AppServiceProvider extends ServiceProvider
                 ['is_approve2',false],
                 ])->count());
 
+        View::composer('partials.sidebar', function ($view) {
+            $EmployeeRequestsTotal = 0;
+            $TravelOrderRequestsCount = 0;
+            $LeaveRequestsCount = 0;
+
+            if (auth()->check()) {
+                $me = Employee::where('email', auth()->user()->email)->first();
+
+                if ($me) {
+                    // TO count for me (as approver1/approver2)
+                    $mySigIds = TravelOrderSignatory::where('approver1', $me->id)
+                        ->orWhere('approver2', $me->id)
+                        ->pluck('id');
+
+                    $TravelOrderRequestsCount = TravelOrder::whereIn('travelordersignatoryid', $mySigIds)
+                        ->where(function ($q) {
+                            $q->where('is_approve1', false)
+                                ->orWhere(function ($qq) {
+                                    $qq->where('is_approve1', true)
+                                        ->where('is_approve2', false);
+                                });
+                        })->count();
+
+                    // (Optional) Leave count kung gusto mong isama
+                    // $LeaveRequestsCount = ... (similar sa existing LeaveSignatory rules)
+                }
+            }
+
+            $EmployeeRequestsTotal = $TravelOrderRequestsCount + $LeaveRequestsCount;
+
+            $view->with(compact('EmployeeRequestsTotal', 'TravelOrderRequestsCount', 'LeaveRequestsCount'));
+        });
 
 
     }

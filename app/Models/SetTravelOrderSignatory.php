@@ -7,20 +7,21 @@ use Illuminate\Database\Eloquent\Model;
 
 class SetTravelOrderSignatory extends Model
 {
-    protected $table='set_travel_order_signatory';
-
     use HasFactory;
 
-    protected $guarded = []; 
+    protected $table = 'set_travel_order_signatory';
+    protected $guarded = [];
 
-    public function Section() {
-        return $this->belongsTo(Section::class,'sectionid');
+    public function Section()
+    {
+        return $this->belongsTo(Section::class, 'sectionid', 'id');
     }
-    public function Office() {
-        return $this->belongsTo(Office::class,'officeid');
+    public function Office()
+    {
+        return $this->belongsTo(Office::class, 'officeid', 'id');
     }
-
-    public function TraveOrderSignatory() {
-        return $this->belongsTo(TravelOrderSignatory::class,'travelordersignatoryid');
+    public function TravelOrderSignatory()
+    {
+        return $this->belongsTo(TravelOrderSignatory::class, 'travelordersignatoryid', 'id');
     }
 }

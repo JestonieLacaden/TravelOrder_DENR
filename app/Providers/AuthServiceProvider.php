@@ -3,28 +3,17 @@
 namespace App\Providers;
 
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
-use Illuminate\Support\Facades\Gate;
 
 class AuthServiceProvider extends ServiceProvider
 {
-    /**
-     * The policy mappings for the application.
-     *
-     * @var array<class-string, class-string>
-     */
     protected $policies = [
-        // 'App\Models\Model' => 'App\Policies\ModelPolicy',
+        \App\Models\Leave::class => \App\Policies\LeavePolicy::class,
+        \App\Models\TravelOrder::class => \App\Policies\TravelOrderPolicy::class,
+        \App\Models\SetTravelOrderSignatory::class => \App\Policies\SetTravelOrderSignatoryPolicy::class, // <-- gagawin sa Step 2.3
     ];
 
-    /**
-     * Register any authentication / authorization services.
-     *
-     * @return void
-     */
     public function boot()
     {
         $this->registerPolicies();
-
-        //
     }
 }

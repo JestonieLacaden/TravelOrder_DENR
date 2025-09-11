@@ -198,30 +198,53 @@ class MailController extends Controller
    
       }
 
-    
-
-      public function travelorderequest() {
-
-        $this->authorize('acceptrequest', \App\Models\TravelOrder::class);
-
-        $TravelOrders = TravelOrder::orderby('created_at', 'desc')->with('Employee')->get();
-        $Roles = UserRole::where('userid','=', auth()->user()->id)->get();
-        $Employees = Employee::get();
 
 
-        $LeaveYear = $this->getLeaveYearPending();
+  public function travelorderequest()
+  {
+    $this->authorize('acceptrequest', \App\Models\TravelOrder::class);
 
-        $TravelOrderSignatories = TravelOrderSignatory::get();
-        $UserEmployee = Employee::where('email','=',auth()->user()->email)->get()->first();
+    $me = \App\Models\Employee::where('email', auth()->user()->email)->firstOrFail();
 
-        $Count = $this->getcountrequrest();
+    // IDs ng signatories na ako ang approver1 o approver2
+    $mySigIds = \App\Models\TravelOrderSignatory::where('approver1', $me->id)
+      ->orWhere('approver2', $me->id)
+      ->pluck('id');
 
-        return view('mails.travelorder.index',compact('TravelOrderSignatories','UserEmployee','LeaveYear','Employees','TravelOrders','Roles','Count'));
-   
-      
-      }
+    // Mga TO na naka-assign sa alinman sa signatories ko at nasa correct stage
+    $TravelOrders = \App\Models\TravelOrder::with('Employee')
+      ->whereIn('travelordersignatoryid', $mySigIds)
+      ->where(function ($q) use ($me) {
+        $q->where('is_approve1', false) // Approver1 stage
+          ->orWhere(function ($qq) {
+            $qq->where('is_approve1', true)
+              ->where('is_approve2', false); // Approver2 stage
+          });
+      })
+      ->orderBy('created_at', 'desc')
+      ->get();
 
-      public function getLeaveYearPending() {
+    $Roles = \App\Models\UserRole::where('userid', auth()->id())->get();
+    $Employees = \App\Models\Employee::get();
+    $TravelOrderSignatories = \App\Models\TravelOrderSignatory::get();
+
+    // optional: badge counts for sidebar (see Step 6)
+    $Count = $this->getcountrequrest();
+
+    return view('mails.travelorder.index', compact(
+      'TravelOrderSignatories',
+      'TravelOrders',
+      'Roles',
+      'Employees',
+      'Count'
+    ));
+  }
+
+
+
+
+
+  public function getLeaveYearPending() {
 
         $LeaveSignatories = LeaveSignatory::get();
         $Employee = Employee::where('email','=',auth()->user()->email)->get()->first();
@@ -509,40 +532,27 @@ public function LeaveRequestCount() {
 
     }
 
-    public function TravelOrderRequestCount() {
+    public function TravelOrderRequestCount()
+{
+    $me = \App\Models\Employee::where('email', auth()->user()->email)->first();
+    if (!$me) return 0;
 
-      
-      $TravelOrders = TravelOrder::orderby('created_at', 'desc')->with('Employee')->get();
-      $TravelOrderSignatories = TravelOrderSignatory::get();
-      $Employee = Employee::where('email','=',auth()->user()->email)->get()->first();
-      
+    $mySigIds = \App\Models\TravelOrderSignatory::where('approver1', $me->id)
+        ->orWhere('approver2', $me->id)
+        ->pluck('id');
 
-      $Count = 0;
-    foreach($TravelOrders as $TravelOrder)
-    {
-      foreach($TravelOrderSignatories as $TravelOrderSignatory)
-      {
-        
-        if($TravelOrder->is_approve1 != true && $TravelOrder->is_rejected1 != true)
-          {
-            if($TravelOrderSignatory->approver1 == $Employee->id && auth()->check())
-            {
-              $Count = $Count + 1;
-            }
-          }
-          if($TravelOrder->is_approve1 == true && $TravelOrder->is_rejected2 != true && $TravelOrder->is_approve2 != true && $TravelOrder->is_rejected1 == false )
-          {
-            if($TravelOrderSignatory->approver2 == $Employee->id && auth()->check())
-            {
-              $Count = $Count + 1;
-            }
-          }       
-      }
-    }
+    return \App\Models\TravelOrder::whereIn('travelordersignatoryid', $mySigIds)
+        ->where(function ($q) {
+            $q->where('is_approve1', false)
+              ->orWhere(function ($qq) {
+                  $qq->where('is_approve1', true)
+                     ->where('is_approve2', false);
+              });
+        })
+        ->count();
+}
 
-    return $Count;
 
-    }
 
 
     public function getLeaveYearApproved() {
@@ -687,7 +697,8 @@ public function LeaveRequestCount() {
   public function employeerequest()
    {
 
-    $this->authorize('acceptemployee', \App\Models\Leave::class);
+    $this->authorize('acceptemployee', \App\Models\TravelOrder::class);
+
      
     // $Employee = Employee:: where('email', auth()->user()->email )->get()->first();
     // $Routes = FinancialManagementRoute::orderBy('created_at', 'DESC')->with('Voucher','User')
