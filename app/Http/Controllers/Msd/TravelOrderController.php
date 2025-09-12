@@ -64,20 +64,15 @@ class TravelOrderController extends Controller
 
     public function update(Request $request, TravelOrder $TravelOrder)
     {
-        // If you wired a policy for update(), keep this line; otherwise you can comment it out.
-        // $this->authorize('update', $TravelOrder);
-
-        // Only the date range is editable
         $request->validate([
             'daterange' => 'required|string',
         ]);
 
-        // If nothing changed, short-circuit
         if (trim($request->daterange) === trim($TravelOrder->daterange)) {
             return back()->with('message', 'No changes to save.');
         }
 
-        // Parse the incoming range (accept MM/DD/YYYY or YYYY-MM-DD)
+
         if (!str_contains($request->daterange, ' - ')) {
             return back()->with('EventError', 'Invalid date range format.')->withInput();
         }
@@ -100,15 +95,15 @@ class TravelOrderController extends Controller
             return back()->with('EventError', 'Invalid date range format.')->withInput();
         }
 
-        // Enforce "same year" rule you already use elsewhere
+
         if ($start->year !== $end->year) {
             return back()->with('DateError1', true)->withInput();
         }
 
-        // Normalize to MM/DD/YYYY - MM/DD/YYYY (matches your table display)
+
         $normalized = $start->format('m/d/Y') . ' - ' . $end->format('m/d/Y');
 
-        // If normalized equals stored, also treat as no-op
+
         if (trim($normalized) === trim($TravelOrder->daterange)) {
             return back()->with('message', 'No changes to save.');
         }
@@ -476,7 +471,9 @@ class TravelOrderController extends Controller
             'approver1Name',
             'approver2Name',
             'approver1Pos',
-            'approver2Pos'
+            'approver2Pos',
+            'approver1Emp',
+            'approver2Emp'
         ));
     }
 

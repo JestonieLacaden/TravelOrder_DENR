@@ -44,22 +44,19 @@ class SetTravelOrderSignatoryController extends Controller
         );
     }
 
-
-
-
     public function store(Request $request)
     {
         $this->authorize('create', SetTravelOrderSignatory::class);
 
         $formfields = $request->validate([
-            'sectionid'               => ['required'], // coming as "officeid,sectionid"
+            'sectionid'               => ['required'], 
             'travelordersignatoryid'  => ['required', 'exists:travel_order_signatory,id'],
         ]);
 
-        // Split "officeid,sectionid" coming from the UI
+        
         [$Officeid, $Sectionid] = array_map('intval', explode(',', $request->sectionid));
 
-        // ✅ Allow multiple mappings per section; only block exact duplicates
+        
         $exists = SetTravelOrderSignatory::where('officeid', $Officeid)
             ->where('sectionid', $Sectionid)
             ->where('travelordersignatoryid', $formfields['travelordersignatoryid'])
@@ -89,3 +86,92 @@ class SetTravelOrderSignatoryController extends Controller
         return back()->with('message', 'Travel Order Signatory mapping updated successfully!');
     }
 }
+
+
+// public function store(Request $request)
+//     {
+//         $this->authorize('create', TravelOrderSignatory::class);
+
+//         $data = $request->validate([
+//             'name'                  => ['required', 'string', 'max:255'],
+//             'approver1'             => ['required', 'exists:employee,id'],
+//             'approver2'             => ['required', 'exists:employee,id'],
+//             'approver1_signature'   => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:2048'],
+//             'approver2_signature'   => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:2048'],
+//         ]);
+
+//         $sign = TravelOrderSignatory::create([
+//             'name'      => $data['name'],
+//             'approver1' => $data['approver1'],
+//             'approver2' => $data['approver2'],
+//         ]);
+
+//         if ($request->hasFile('approver1_signature')) {
+//             $this->saveSignatureForEmployee($data['approver1'], $request->file('approver1_signature'));
+//         }
+//         if ($request->hasFile('approver2_signature')) {
+//             $this->saveSignatureForEmployee($data['approver2'], $request->file('approver2_signature'));
+//         }
+
+//         return back()->with('message', 'Signatory created!');
+//     }
+
+//     public function update(Request $request, TravelOrderSignatory $sign)
+//     {
+//         $this->authorize('update', $sign);
+
+//         $data = $request->validate([
+//             'name'                  => ['required', 'string', 'max:255'],
+//             'approver1'             => ['required', 'exists:employee,id'],
+//             'approver2'             => ['required', 'exists:employee,id'],
+//             'approver1_signature'   => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:2048'],
+//             'approver2_signature'   => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:2048'],
+//             'clear_approver1_signature' => ['nullable', 'boolean'],
+//             'clear_approver2_signature' => ['nullable', 'boolean'],
+//         ]);
+
+//         $sign->update([
+//             'name'      => $data['name'],
+//             'approver1' => $data['approver1'],
+//             'approver2' => $data['approver2'],
+//         ]);
+
+     
+//         if ($request->boolean('clear_approver1_signature')) {
+//             $this->saveSignatureForEmployee($data['approver1'], null, true);
+//         }
+//         if ($request->boolean('clear_approver2_signature')) {
+//             $this->saveSignatureForEmployee($data['approver2'], null, true);
+//         }
+
+       
+//         if ($request->hasFile('approver1_signature')) {
+//             $this->saveSignatureForEmployee($data['approver1'], $request->file('approver1_signature'));
+//         }
+//         if ($request->hasFile('approver2_signature')) {
+//             $this->saveSignatureForEmployee($data['approver2'], $request->file('approver2_signature'));
+//         }
+
+//         return back()->with('message', 'Signatory updated!');
+//     }
+
+//     private function saveSignatureForEmployee(int $employeeId, ?\Illuminate\Http\UploadedFile $file, bool $clearIfNull = false): void
+//     {
+//         $emp = \App\Models\Employee::find($employeeId);
+//         if (!$emp) return;
+
+
+//         if ($emp->signature_path && Storage::disk('public')->exists($emp->signature_path)) {
+//             if ($clearIfNull || $file) {
+//                 Storage::disk('public')->delete($emp->signature_path);
+//                 $emp->signature_path = null;
+//             }
+//         }
+
+//         if ($file) {
+//             $path = $file->store('signatures', 'public');
+//             $emp->signature_path = $path;
+//         }
+
+//         $emp->save();
+//     }

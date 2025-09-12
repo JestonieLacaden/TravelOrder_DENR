@@ -32,6 +32,12 @@
                 
                   <form method="POST" action="{{ route('travel-order-signatory.update',[ $TravelOrderSignatory->id])}}" enctype="multipart/form-data">
 
+                    @php
+                    // Find the current approver Employee models (so we can show previews)
+                    $emp1 = $Employees->firstWhere('id', $TravelOrderSignatory->approver1);
+                    $emp2 = $Employees->firstWhere('id', $TravelOrderSignatory->approver2);
+                    @endphp
+
                     {{ csrf_field() }}
                     @method('PUT')
                     <div class="card-body">
@@ -63,6 +69,29 @@
                         </div>
                       </div>
 
+                      {{-- Approver 1 signature --}}
+                      <div class="form-group row">
+                        <label class="col-sm-3">Signature (Signatory 1)</label>
+                        <div class="col-sm-9">
+                          {{-- Preview (if any) --}}
+                          @if($emp1 && !empty($emp1->signature_path))
+                          <div class="mb-2">
+                            <img src="{{ asset('storage/'.$emp1->signature_path) }}" alt="Approver 1 signature" style="height:60px"
+                              draggable="false">
+                          </div>
+                          <div class="form-check mb-2">
+                            <input type="checkbox" class="form-check-input" id="clear_sig1" name="clear_approver1_signature" value="1">
+                            <label class="form-check-label" for="clear_sig1">Remove existing signature</label>
+                          </div>
+                          @endif
+                      
+                          {{-- Replace / upload --}}
+                          <input type="file" name="approver1_signature" accept="image/*" class="form-control">
+                          <small class="text-muted">PNG/JPG/WEBP up to 2MB</small>
+                          @error('approver1_signature')<p class="text-danger text-xs mt-1">{{ $message }}</p>@enderror
+                        </div>
+                      </div>
+
                       <div class="form-group  row">
                         <label class="col-sm-3" for="approver2">Signatory 2 : <span class="text-danger">*</span></label>
                         <div class="col-sm-9">
@@ -81,6 +110,28 @@
                         </div>
                       </div>
 
+                      {{-- Approver 2 signature --}}
+                      <div class="form-group row">
+                        <label class="col-sm-3">Signature (Signatory 2)</label>
+                        <div class="col-sm-9">
+                          {{-- Preview (if any) --}}
+                          @if($emp2 && !empty($emp2->signature_path))
+                          <div class="mb-2">
+                            <img src="{{ asset('storage/'.$emp2->signature_path) }}" alt="Approver 2 signature" style="height:60px"
+                              draggable="false">
+                          </div>
+                          <div class="form-check mb-2">
+                            <input type="checkbox" class="form-check-input" id="clear_sig2" name="clear_approver2_signature" value="1">
+                            <label class="form-check-label" for="clear_sig2">Remove existing signature</label>
+                          </div>
+                          @endif
+                      
+                          {{-- Replace / upload --}}
+                          <input type="file" name="approver2_signature" accept="image/*" class="form-control">
+                          <small class="text-muted">PNG/JPG/WEBP up to 2MB</small>
+                          @error('approver2_signature')<p class="text-danger text-xs mt-1">{{ $message }}</p>@enderror
+                        </div>
+                      </div>
                 
                     </div>
                     <!-- /.card-body -->

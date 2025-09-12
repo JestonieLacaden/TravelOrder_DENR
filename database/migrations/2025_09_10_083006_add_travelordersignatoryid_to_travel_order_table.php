@@ -11,17 +11,19 @@ class AddTravelordersignatoryidToTravelOrderTable extends Migration
      *
      * @return void
      */
-    public function up()
+    public function up(): void
     {
         Schema::table('travel_order', function (Blueprint $table) {
-            Schema::table('travel_order', function (Blueprint $table) {
-        // add nullable FK column after employeeid so old rows stay valid
-        $table->foreignId('travelordersignatoryid')
-              ->nullable()
-              ->after('employeeid')
-              ->constrained('travel_order_signatory') // references id on travel_order_signatory
-              ->nullOnDelete();                       // if signatory is deleted, set NULL
-    });
+            if (!Schema::hasColumn('travel_order', 'travelordersignatoryid')) {
+                $table->unsignedBigInteger('travelordersignatoryid')
+                    ->nullable()
+                    ->after('employeeid');
+
+                // NOTE: Kung gusto mong maglagay ng real FK, gawin mo ito:
+                // $table->foreign('travelordersignatoryid')
+                //       ->references('id')->on('travel_order_signatory')
+                //       ->nullOnDelete();
+            }
         });
     }
 
@@ -30,14 +32,21 @@ class AddTravelordersignatoryidToTravelOrderTable extends Migration
      *
      * @return void
      */
-    public function down()
+    public function down(): void
     {
         Schema::table('travel_order', function (Blueprint $table) {
-            Schema::table('travel_order', function (Blueprint $table) {
-        // drop FK first, then the column
-        $table->dropForeign(['travelordersignatoryid']); // FK name is auto: travel_order_travelordersignatoryid_foreign
-        $table->dropColumn('travelordersignatoryid');
-    });
+            if (Schema::hasColumn('travel_order', 'travelordersignatoryid')) {
+
+                // Kung NAGLAGAY ka ng real FK sa up():
+                // try {
+                //     $table->dropConstrainedForeignId('travelordersignatoryid');
+                // } catch (\Throwable $e) {
+                //     // ignore kung wala talagang FK
+                // }
+
+                // Safe kahit walang FK:
+                $table->dropColumn('travelordersignatoryid');
+            }
         });
     }
 }

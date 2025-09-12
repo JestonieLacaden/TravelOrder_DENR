@@ -231,8 +231,10 @@
                 <div class=" invoice-info mb-2 ml-2 col-5">
                     <div class="mb-2 text-center">
                         <div class="d-flex align-items-center flex-column">
-                            <img src="{{ asset('images/dummySign.png') }}" class="brand-image" style="height: 50px"
-                                draggable="false" oncontextmenu="return false;" onmousedown="return false;"
+                            <img src="{{ $approver1Emp && $approver1Emp->signature_path
+                                ? asset('storage/'.$approver1Emp->signature_path)
+                                : asset('images/dummySign.png') }}" class="brand-image" style="height: 50px" draggable="false"
+                                oncontextmenu="return false;" onmousedown="return false;"
                                 onselectstart="return false;" />
                             {{-- <span style="font-size: 12px; color: #888;">No screenshots allowed</span> --}}
                             <strong class="border-bottom"> {{ $approver1Name }} </strong>
@@ -245,7 +247,9 @@
                 <div class=" invoice-info mb-2 ml-2 col-6">
                     <div class="mb-2 text-center">
                         <div class="d-flex align-items-center flex-column">
-                            <img src="{{ asset('images/dummySign.png') }}" class="brand-image" style="height: 50px"
+                            <img src="{{ $approver2Emp && $approver2Emp->signature_path
+                                ? asset('storage/'.$approver2Emp->signature_path)
+                                : asset('images/dummySign.png') }}" class="brand-image" style="height: 50px"
                                 draggable="false" oncontextmenu="return false;" onmousedown="return false;"
                                 onselectstart="return false;" />
                             {{-- <span style="font-size: 12px; color: #888;">No screenshots allowed</span> --}}
