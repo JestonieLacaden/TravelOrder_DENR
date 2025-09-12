@@ -219,10 +219,13 @@ class TravelOrderController extends Controller
                 if ($TravelOrder->is_approve1 || $TravelOrder->is_rejected1) {
                     return back()->with('message', 'Already processed by Approver 1.');
                 }
-                $TravelOrder->update(['is_approve1' => true]);
+                $TravelOrder->forceFill([
+                    'is_approve1' => true,
+                    'approve1_by' => $current->id,
+                    'approve1_at' => now(),
+                ])->save();
                 return back()->with('message', 'Travel Order Successfully Approved!');
             }
-
             // -------------------------
             // Approver 2
             // -------------------------
@@ -234,8 +237,12 @@ class TravelOrderController extends Controller
                     return back()->with('message', 'Already processed by Approver 2.');
                 }
 
-                DB::transaction(function () use ($TravelOrder) {
-                    $TravelOrder->update(['is_approve2' => true]);
+                DB::transaction(function () use ($TravelOrder, $current) {
+                    $TravelOrder->forceFill([
+                        'is_approve2' => true,
+                        'approve2_by' => $current->id,
+                        'approve2_at' => now(),
+                    ])->save();
 
                     // iwas duplicate kung may request_id ka balang araw
                     $existing = null;
@@ -244,10 +251,10 @@ class TravelOrderController extends Controller
                     }
                     if ($existing) return;
 
-                    // monthly-reset number: YYYY-MM-#### 
-                    $now   = \Carbon\Carbon::now();
-                    $year  = (int) $now->format('Y');
-                    $month = (int) $now->format('m');
+                    // monthly-reset number: YYYY-MM-####
+                    $now   = now();
+                    $year  = $now->format('Y');
+                    $month = $now->format('m');
 
                     $count = \App\Models\TravelOrderApproved::whereYear('created_at', $year)
                         ->whereMonth('created_at', $month)
@@ -255,11 +262,10 @@ class TravelOrderController extends Controller
                         ->count();
 
                     $seq      = $count + 1;
-                    $toNumber = sprintf('%04d-%02d-%04d', $year, $month, $seq);
-                    // $toNumber = 'TESTING-'.$toNumber; // kung gusto mo ng prefix habang testing
+                    $toNumber = sprintf('%s-%s-%04d', $year, $month, $seq);
 
                     $payload = [
-                        'employeeid'    => $TravelOrder->employeeid,   // ← tamang column
+                        'employeeid'    => $TravelOrder->employeeid,
                         'travelorderid' => $toNumber,
                     ];
                     if (Schema::hasColumn('travel_order_approved', 'request_id')) {
@@ -269,13 +275,14 @@ class TravelOrderController extends Controller
                     \App\Models\TravelOrderApproved::create($payload);
                 });
 
+
                 return back()->with('message', 'Travel Order Successfully Approved!');
             }
 
             return back()->with('SignatoryError', 'You are not assigned for this Travel Order.');
         } catch (\Throwable $e) {
             report($e);
-            return back()->with('SignatoryError', 'Unexpected error.');
+            return back()->with('SignatoryError', 'Unexpected error: ' . $e->getMessage());
         }
     }
 
@@ -437,6 +444,21 @@ class TravelOrderController extends Controller
 
         $SetTravelOrderSignatory = $sig;
 
+        $approver1Emp = $TravelOrder->approve1_by
+            ? Employee::find($TravelOrder->approve1_by)
+            : optional($sig)->Employee1;
+
+        $approver2Emp = $TravelOrder->approve2_by
+            ? Employee::find($TravelOrder->approve2_by)
+            : optional($sig)->Employee2;
+
+        // Ihanda ang formatted names/positions
+        $approver1Name = $approver1Emp ? trim("{$approver1Emp->firstname} {$approver1Emp->middlename} {$approver1Emp->lastname}") : '';
+        $approver2Name = $approver2Emp ? trim("{$approver2Emp->firstname} {$approver2Emp->middlename} {$approver2Emp->lastname}") : '';
+
+        $approver1Pos  = $approver1Emp->position ?? '';
+        $approver2Pos  = $approver2Emp->position ?? '';
+
         // Document date shown on the print (when the TO was created)
         $ref      = $TravelOrder->created_at ?: $TravelOrder->updated_at ?: now();
         $docDate  = \Carbon\Carbon::parse($ref)
@@ -450,7 +472,11 @@ class TravelOrderController extends Controller
             'TravelOrdernumber',
             'date1',
             'date2',
-            'docDate'
+            'docDate',
+            'approver1Name',
+            'approver2Name',
+            'approver1Pos',
+            'approver2Pos'
         ));
     }
 

@@ -235,10 +235,10 @@
                                 draggable="false" oncontextmenu="return false;" onmousedown="return false;"
                                 onselectstart="return false;" />
                             {{-- <span style="font-size: 12px; color: #888;">No screenshots allowed</span> --}}
-                            <strong class="border-bottom"> ABE R. FRANCISCO </strong>
+                            <strong class="border-bottom"> {{ $approver1Name }} </strong>
                         </div>
                         <div class="px-2">
-                            <span class="">CHIEF, MANAGEMENT SERVICES DIVISION</span>
+                            <span class="">{{ $approver1Pos }}</span>
                         </div>
                     </div>
                 </div>
@@ -249,10 +249,10 @@
                                 draggable="false" oncontextmenu="return false;" onmousedown="return false;"
                                 onselectstart="return false;" />
                             {{-- <span style="font-size: 12px; color: #888;">No screenshots allowed</span> --}}
-                            <strong class="border-bottom"> ERNESTO E. TANADA </strong>
+                            <strong class="border-bottom"> {{ $approver2Name }} </strong>
                         </div>
                         <div class="px-2">
-                            <span class="">OIC, PROVINCIAL ENVIRONMENT AND NATURAL RESOURCES OFFICER</span>
+                            <span class="">{{ $approver2Pos }}</span>
 
                         </div>
                     </div>

@@ -10,7 +10,7 @@ class TravelOrder extends Model
     use HasFactory;
 
     protected $table = 'travel_order';
-    protected $guarded = [];
+    // protected $guarded = [];
 
     protected $fillable = [
         'userid',
@@ -22,10 +22,23 @@ class TravelOrder extends Model
         'appropriation',
         'remarks',
         'travelordersignatoryid',
-        'is_approve1',
-        'is_approve2',
-        'is_rejected1',
-        'is_rejected2',
+        // 'is_approve1',
+        // 'is_approve2',
+        // 'is_rejected1',
+        // 'is_rejected2',
+        // 'approve1_by',
+        // 'approve1_at',
+        // 'approve2_by',
+        // 'approve2_at',
+    ];
+
+    protected $casts = [
+        'is_approve1'  => 'bool',
+        'is_approve2'  => 'bool',
+        'is_rejected1' => 'bool',
+        'is_rejected2' => 'bool',
+        'approve1_at' => 'datetime',
+        'approve2_at' => 'datetime',
     ];
 
     public function Employee()
