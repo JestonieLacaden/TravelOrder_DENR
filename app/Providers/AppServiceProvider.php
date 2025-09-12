@@ -126,38 +126,49 @@ class AppServiceProvider extends ServiceProvider
                 ['is_approve2',false],
                 ])->count());
 
-        View::composer('partials.sidebar', function ($view) {
-            $EmployeeRequestsTotal = 0;
-            $TravelOrderRequestsCount = 0;
-            $LeaveRequestsCount = 0;
+        View::composer(
+            ['partials.sidebar', 'mails.employeerequest.index'], // add any views that show the badges
+            function ($view) {
 
-            if (auth()->check()) {
-                $me = Employee::where('email', auth()->user()->email)->first();
+                $toPendingCount = 0;
+                $leavePendingCount = 0;
 
-                if ($me) {
-                    // TO count for me (as approver1/approver2)
-                    $mySigIds = TravelOrderSignatory::where('approver1', $me->id)
-                        ->orWhere('approver2', $me->id)
-                        ->pluck('id');
+                if (auth()->check()) {
+                    $emp = Employee::where('email', auth()->user()->email)->first();
 
-                    $TravelOrderRequestsCount = TravelOrder::whereIn('travelordersignatoryid', $mySigIds)
-                        ->where(function ($q) {
-                            $q->where('is_approve1', false)
-                                ->orWhere(function ($qq) {
-                                    $qq->where('is_approve1', true)
-                                        ->where('is_approve2', false);
-                                });
-                        })->count();
+                    if ($emp) {
+                        // Signatory mappings for current approver
+                        $sigA1 = TravelOrderSignatory::where('approver1', $emp->id)->pluck('id');
+                        $sigA2 = TravelOrderSignatory::where('approver2', $emp->id)->pluck('id');
 
-                    // (Optional) Leave count kung gusto mong isama
-                    // $LeaveRequestsCount = ... (similar sa existing LeaveSignatory rules)
+                        // Pending for Approver 1
+                        $pendingA1 = TravelOrder::whereIn('travelordersignatoryid', $sigA1)
+                            ->where('is_approve1', false)
+                            ->where('is_rejected1', false)
+                            ->count();
+
+                        // Pending for Approver 2
+                        $pendingA2 = TravelOrder::whereIn('travelordersignatoryid', $sigA2)
+                            ->where('is_approve1', true)
+                            ->where('is_approve2', false)
+                            ->where('is_rejected1', false)
+                            ->where('is_rejected2', false)
+                            ->count();
+
+                        $toPendingCount = $pendingA1 + $pendingA2;
+
+                        // TODO: compute $leavePendingCount according to your leave flags/mapping
+                        // $leavePendingCount = Leave::...->count();
+                    }
                 }
+
+                $view->with([
+                    'toPendingCount'    => $toPendingCount,
+                    'leavePendingCount' => $leavePendingCount,
+                    'EmployeeRequestsTotal' => $toPendingCount + $leavePendingCount,
+                ]);
             }
-
-            $EmployeeRequestsTotal = $TravelOrderRequestsCount + $LeaveRequestsCount;
-
-            $view->with(compact('EmployeeRequestsTotal', 'TravelOrderRequestsCount', 'LeaveRequestsCount'));
-        });
+        );
 
 
     }

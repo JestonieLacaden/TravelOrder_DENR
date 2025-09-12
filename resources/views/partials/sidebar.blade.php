@@ -106,7 +106,7 @@
                     </a>
                 </li>
 
-                @can('acceptemployee', \App\Models\Leave::class)
+                {{-- @can('acceptemployee', \App\Models\Leave::class)
                 <li class="nav-item ">
                     <a href="{{ route('mail.leaverequest') }}"
                         class="nav-link {{ Request::is('mail/leave-request*') ? 'active' : ''}}">
@@ -123,22 +123,45 @@
                         </p>
                     </a>
                 </li>
-                @endcan
+                @endcan --}}
 
 
                 {{-- @can('acceptemployee', \App\Models\Leave::class)
                 <li class="nav-item">
-                    <a href="{{ route('travel-order-request') }}" class="nav-link">
+                    <a href="{{ route('mail.travelorderrequest') }}" class="nav-link">
                         <i class="nav-icon fas fa-users"></i>
                         <p>
                             Employee Request(s)
-                            @if(isset($Count) && is_array($Count) && count($Count) >= 2)
-                            <span class="right badge badge-info">{{ $Count[1] }}</span>
+                            @if(!empty($EmployeeRequestsTotal) && $EmployeeRequestsTotal > 0)
+                            @if ($EmployeeRequestsTotal > 999)
+                            <span class="badge badge-success right">999+</span>
+                            @else
+                            <span class="badge badge-info right">{{ $EmployeeRequestsTotal }}</span>
+                            @endif
                             @endif
                         </p>
                     </a>
                 </li>
                 @endcan --}}
+
+                @can('acceptemployee', \App\Models\Leave::class)
+                <li class="nav-item">
+                    <a href="{{ route('mail.travelorderrequest') }}" class="nav-link">
+                        <i class="nav-icon fas fa-users"></i>
+                        <p>
+                            Employee Request(s)
+                            @php $total = $EmployeeRequestsTotal ?? 0; @endphp
+                            @if($total > 0)
+                            @if ($total > 999)
+                            <span class="badge badge-success right">999+</span>
+                            @else
+                            <span class="badge badge-info right">{{ $total }}</span>
+                            @endif
+                            @endif
+                        </p>
+                    </a>
+                </li>
+                @endcan
 
 
                 @can('FMPlanning', \App\Models\FinancialManagement::class)

@@ -200,45 +200,43 @@ class MailController extends Controller
 
 
 
+  // app/Http/Controllers/User/MailController.php
+
   public function travelorderequest()
   {
     $this->authorize('acceptrequest', \App\Models\TravelOrder::class);
 
-    $me = \App\Models\Employee::where('email', auth()->user()->email)->firstOrFail();
+    // current user as Employee (ito ang $UserEmployee sa blade)
+    $UserEmployee = \App\Models\Employee::where('email', auth()->user()->email)->first();
 
-    // IDs ng signatories na ako ang approver1 o approver2
-    $mySigIds = \App\Models\TravelOrderSignatory::where('approver1', $me->id)
-      ->orWhere('approver2', $me->id)
+    // lahat ng signatory records na ako ang approver1 o approver2
+    $mySigIds = \App\Models\TravelOrderSignatory::where('approver1', optional($UserEmployee)->id)
+      ->orWhere('approver2', optional($UserEmployee)->id)
       ->pluck('id');
 
-    // Mga TO na naka-assign sa alinman sa signatories ko at nasa correct stage
-    $TravelOrders = \App\Models\TravelOrder::with('Employee')
-      ->whereIn('travelordersignatoryid', $mySigIds)
-      ->where(function ($q) use ($me) {
-        $q->where('is_approve1', false) // Approver1 stage
-          ->orWhere(function ($qq) {
-            $qq->where('is_approve1', true)
-              ->where('is_approve2', false); // Approver2 stage
-          });
-      })
-      ->orderBy('created_at', 'desc')
+    // ipakita lang ang requests na naka-assign sa signatories ko
+    $TravelOrders = \App\Models\TravelOrder::whereIn('travelordersignatoryid', $mySigIds)
+      ->with('Employee')
+      ->latest()
       ->get();
 
-    $Roles = \App\Models\UserRole::where('userid', auth()->id())->get();
-    $Employees = \App\Models\Employee::get();
     $TravelOrderSignatories = \App\Models\TravelOrderSignatory::get();
-
-    // optional: badge counts for sidebar (see Step 6)
+    $Employees = \App\Models\Employee::get();
+    $Roles = \App\Models\UserRole::where('userid', auth()->id())->get();
+    $LeaveYear = $this->getLeaveYearPending();
     $Count = $this->getcountrequrest();
 
     return view('mails.travelorder.index', compact(
       'TravelOrderSignatories',
+      'UserEmployee',         // <<--- IMPORTANT: ipinapasa sa view
+      'LeaveYear',
+      'Employees',
       'TravelOrders',
       'Roles',
-      'Employees',
       'Count'
     ));
   }
+
 
 
 

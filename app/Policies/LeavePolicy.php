@@ -277,6 +277,7 @@ class LeavePolicy
 
 
 
+
     public function accept(User $user, Leave $Leave)
     {
         $ApproverEmployee = Employee::where('email','=',auth()->user()->email)->get()->first();

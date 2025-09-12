@@ -53,7 +53,7 @@
                   </button>
                 </div>
               </div>
-              <div class="card-body p-0">
+              {{-- <div class="card-body p-0">
                 <ul class="nav nav-pills flex-column">
                   <li class="nav-item active">       
                     <a href="{{ route('mail.leaverequest') }}" class="nav-link">
@@ -74,7 +74,32 @@
                   </li>
                  
                 </ul>
+              </div> --}}
+
+              <div class="card-body p-0">
+                <ul class="nav nav-pills flex-column">
+                  <li class="nav-item">
+                    <a href="{{ route('mail.leaverequest') }}" class="nav-link">
+                      Leave Request(s)
+                      @php $l = $leavePendingCount ?? 0; @endphp
+                      @if($l > 0)
+                      <span class="badge badge-info float-right">{{ $l > 999 ? '999+' : $l }}</span>
+                      @endif
+                    </a>
+                  </li>
+              
+                  <li class="nav-item">
+                    <a href="{{ route('mail.travelorderrequest') }}" class="nav-link">
+                      T.O. Request(s)
+                      @php $t = $toPendingCount ?? 0; @endphp
+                      @if($t > 0)
+                      <span class="badge badge-warning float-right">{{ $t > 999 ? '999+' : $t }}</span>
+                      @endif
+                    </a>
+                  </li>
+                </ul>
               </div>
+
               <!-- /.card-body -->
             </div>
             <!-- /.card -->
