@@ -13,6 +13,7 @@ class TravelOrder extends Model
     // protected $guarded = [];
 
     protected $fillable = [
+        'id',
         'userid',
         'employeeid',
         'daterange',
@@ -57,5 +58,11 @@ class TravelOrder extends Model
     public function Signatory()
     {
         return $this->selectedSignatory();
+    }
+
+    public function approved()
+    {
+        // TravelOrderApproved.travelorderid -> TravelOrder.id
+        return $this->hasOne(\App\Models\TravelOrderApproved::class, 'request_id', 'id');
     }
 }

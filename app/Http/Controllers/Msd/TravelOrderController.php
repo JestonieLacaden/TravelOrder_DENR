@@ -233,42 +233,65 @@ class TravelOrderController extends Controller
                 }
 
                 DB::transaction(function () use ($TravelOrder, $current) {
+                    // 1) mark as approved by approver 2
                     $TravelOrder->forceFill([
                         'is_approve2' => true,
                         'approve2_by' => $current->id,
                         'approve2_at' => now(),
                     ])->save();
 
-                    // iwas duplicate kung may request_id ka balang araw
+                    // 2) avoid duplicate approval record for the same request
                     $existing = null;
                     if (Schema::hasColumn('travel_order_approved', 'request_id')) {
                         $existing = \App\Models\TravelOrderApproved::where('request_id', $TravelOrder->id)->first();
                     }
                     if ($existing) return;
 
-                    // monthly-reset number: YYYY-MM-####
-                    $now   = now();
-                    $year  = $now->format('Y');
-                    $month = $now->format('m');
+                    // 3) generate monthly sequence: YYYY-MM-#### (race-safe with retry)
+                    $attempts = 0;
+                    while (true) {
+                        $attempts++;
+                        $now   = now();
+                        $year  = $now->format('Y');
+                        $month = $now->format('m');
 
-                    $count = \App\Models\TravelOrderApproved::whereYear('created_at', $year)
-                        ->whereMonth('created_at', $month)
-                        ->lockForUpdate()
-                        ->count();
+                        // lock the latest row for THIS month, then compute next seq
+                        $last = \App\Models\TravelOrderApproved::whereYear('created_at', $year)
+                            ->whereMonth('created_at', $month)
+                            ->orderByDesc('id')
+                            ->lockForUpdate()
+                            ->first();
 
-                    $seq      = $count + 1;
-                    $toNumber = sprintf('%s-%s-%04d', $year, $month, $seq);
+                        $seq = 1;
+                        if ($last && preg_match('/(\d{4})$/', (string) $last->travelorderid, $m)) {
+                            $seq = (int) $m[1] + 1;
+                        }
 
-                    $payload = [
-                        'employeeid'    => $TravelOrder->employeeid,
-                        'travelorderid' => $toNumber,
-                    ];
-                    if (Schema::hasColumn('travel_order_approved', 'request_id')) {
-                        $payload['request_id'] = $TravelOrder->id;
+                        $toNumber = sprintf('%s-%s-%04d', $year, $month, $seq);
+
+                        $payload = [
+                            'employeeid'    => $TravelOrder->employeeid,
+                            'travelorderid' => $toNumber,
+                        ];
+                        if (Schema::hasColumn('travel_order_approved', 'request_id')) {
+                            $payload['request_id'] = $TravelOrder->id;
+                        }
+
+                        try {
+                            \App\Models\TravelOrderApproved::create($payload);
+                            break; // success
+                        } catch (\Illuminate\Database\QueryException $e) {
+                            // duplicate key (unique index on travelorderid) → retry a few times
+                            if ($e->getCode() === '23000' && $attempts < 5) {
+                                // loop will re-lock & recompute $last, then try again
+                                continue;
+                            }
+                            throw $e; // rethrow if not duplicate or too many attempts
+                        }
                     }
-
-                    \App\Models\TravelOrderApproved::create($payload);
                 });
+
+
 
 
                 return back()->with('message', 'Travel Order Successfully Approved!');
@@ -328,14 +351,21 @@ class TravelOrderController extends Controller
 
         $this->authorize('viewTravelOrderIndex', \App\Models\TravelOrder::class);
         $Employee = Employee::where('email', auth()->user()->email)->first();
-        $TravelOrders = TravelOrder::where('employeeid', $Employee->id)->with('Employee')->orderBy('created_at', 'asc')->get();
-        $ApprovedTravelOrders = TravelOrderApproved::get();
+        $TravelOrders = TravelOrder::where('employeeid', $Employee->id)
+            ->with(['Employee', 'approved']) // load approved relation
+            ->orderBy('created_at', 'asc')
+            ->get();
+        // $TravelOrders = TravelOrder::where('employeeid', $Employee->id)->with('Employee')->orderBy('created_at', 'asc')->get();
+        // $ApprovedTravelOrders = TravelOrderApproved::get();
+        // $approvedIds = TravelOrderApproved::where('employeeid', $Employee->id)
+        //     ->pluck('travelorderid')
+        //     ->toArray();
 
         $SignatoryOptions = SetTravelOrderSignatory::where('sectionid', $Employee->sectionid)
             ->with('TravelOrderSignatory') // so we can show names
             ->get();
 
-        return view('user.travel-order.index', compact('Employee', 'TravelOrders', 'ApprovedTravelOrders', 'SignatoryOptions'));
+        return view('user.travel-order.index', compact('Employee', 'TravelOrders', 'SignatoryOptions'));
 
         // $this->authorize('viewTravelOrderIndex', \App\Models\TravelOrder::class);
         //   $Employee = Employee::where('email','=', auth()->user()->email)->get()->first();

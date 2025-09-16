@@ -82,7 +82,7 @@
                 </li>
                 @endcan
 
-                @can ('viewDTRIndex', \App\Models\Dtr_History::class)
+                {{-- @can ('viewDTRIndex', \App\Models\Dtr_History::class)
                 <li class="nav-item  ">
                     <a href="{{ route('my-daily-time-record.index') }}" class="nav-link
                             {{ Request::is('my-daily-time-record') ? 'active' : '' }}">
@@ -93,7 +93,7 @@
                         </p>
                     </a>
                 </li>
-                @endcan
+                @endcan --}}
 
 
                 @can('viewany', \App\Models\Mail::class)
@@ -164,7 +164,7 @@
                 @endcan
 
 
-                @can('FMPlanning', \App\Models\FinancialManagement::class)
+                {{-- @can('FMPlanning', \App\Models\FinancialManagement::class)
                 <li class="nav-item ">
                     <a href="{{ route('fmplanning.incoming') }}"
                         class="nav-link {{ Request::is('financial-management/planning-section/*') ? 'active' : ''}}">
@@ -174,9 +174,9 @@
                         </p>
                     </a>
                 </li>
-                @endcan
+                @endcan --}}
 
-                @can('FMBudget', \App\Models\FinancialManagement::class)
+                {{-- @can('FMBudget', \App\Models\FinancialManagement::class)
                 <li class="nav-item ">
                     <a href="{{ route('fmbudget.incoming') }}"
                         class="nav-link {{ Request::is('financial-management/budget-section/*') ? 'active' : ''}}">
@@ -186,9 +186,9 @@
                         </p>
                     </a>
                 </li>
-                @endcan
+                @endcan --}}
 
-                @can('FMAccounting', \App\Models\FinancialManagement::class)
+                {{-- @can('FMAccounting', \App\Models\FinancialManagement::class)
                 <li class="nav-item ">
                     <a href="{{ route('fmaccounting.incoming') }}"
                         class="nav-link {{ Request::is('financial-management/accounting-section/*') ? 'active' : ''}}">
@@ -198,9 +198,9 @@
                         </p>
                     </a>
                 </li>
-                @endcan
+                @endcan --}}
 
-                @can('FMCashier', \App\Models\FinancialManagement::class)
+                {{-- @can('FMCashier', \App\Models\FinancialManagement::class)
                 <li class="nav-item ">
                     <a href="{{ route('fmcashier.incoming') }}"
                         class="nav-link {{ Request::is('financial-management/cashier-section/*') ? 'active' : ''}}">
@@ -210,9 +210,9 @@
                         </p>
                     </a>
                 </li>
-                @endcan
+                @endcan --}}
 
-                @can('FMRecords', \App\Models\FinancialManagement::class)
+                {{-- @can('FMRecords', \App\Models\FinancialManagement::class)
                 <li class="nav-item ">
                     <a href="{{ route('fmrecords.incoming') }}"
                         class="nav-link {{ Request::is('financial-management/records-section/*') ? 'active' : ''}}">
@@ -222,9 +222,9 @@
                         </p>
                     </a>
                 </li>
-                @endcan
+                @endcan --}}
 
-                @can('FMSignatory', \App\Models\FinancialManagement::class)
+                {{-- @can('FMSignatory', \App\Models\FinancialManagement::class)
                 <li class="nav-item ">
                     <a href="{{ route('fmsignatory.incoming') }}"
                         class="nav-link {{ Request::is('financial-management/signatory-section/*') ? 'active' : ''}}">
@@ -234,9 +234,9 @@
                         </p>
                     </a>
                 </li>
-                @endcan
+                @endcan --}}
 
-                @can('FMOthers', \App\Models\FinancialManagement::class)
+                {{-- @can('FMOthers', \App\Models\FinancialManagement::class)
                 <li class="nav-item ">
                     <a href="{{ route('fmothers.incoming') }}"
                         class="nav-link {{ Request::is('financial-management/others-section/*') ? 'active' : ''}}">
@@ -246,11 +246,11 @@
                         </p>
                     </a>
                 </li>
-                @endcan
+                @endcan --}}
 
                 @endcan
 
-                <li class="nav-header">Record - Section</li>
+                {{-- <li class="nav-header">Record - Section</li>
                 <li class="nav-item ">
                     <a href="{{ route('document-tracking.index') }}"
                         class="nav-link {{ 'document-tracking' == request()->path() ? 'active' : ''}}">
@@ -266,10 +266,10 @@
                             @endif
                         </p>
                     </a>
-                </li>
+                </li> --}}
 
 
-                @can('create', \App\Models\Document::class)
+                {{-- @can('create', \App\Models\Document::class)
                 <li class="nav-item ">
                     <a href="{{ route('document-tracking.create') }}" class="nav-link">
                         <i class="nav-icon fas fa-plus"></i>
@@ -278,7 +278,7 @@
                         </p>
                     </a>
                 </li>
-                @endcan
+                @endcan --}}
 
 
                 @can('viewMSDSection', \App\Models\Dtr_History::class)
@@ -545,7 +545,7 @@
                 @endcan --}}
 
 
-                @can('viewany', \App\Models\FinancialManagement::class)
+                {{-- @can('viewany', \App\Models\FinancialManagement::class)
                 <li class="nav-item">
                     <a href="#"
                         class="nav-link  {{ Request::is('financial-management/allocation*') ? 'active' : '' }} {{ Request::is('financial-management/financial_tracking') ? 'active' : '' }} {{ Request::is('financial-management/realignment_report') ? 'active' : '' }}">
@@ -615,8 +615,8 @@
 
                         </li>
                     </ul>
-                    @endcan
-                    <ul class="nav nav-treeview">
+                    @endcan --}}
+                    {{-- <ul class="nav nav-treeview">
                         <li class="nav-item ">
                             <a href="{{ route('financial-management.FinancialTracking') }}"
                                 class="nav-link {{ 'financial-management/financial_tracking' == request()->path() ? 'active' : ''}}">
@@ -642,7 +642,7 @@
 
 
                 </li>
-                @endcan
+                @endcan --}}
 
 
                 {{-- @can('viewany', \App\Models\FinancialManagement::class)
@@ -658,7 +658,7 @@
                 @endcan --}}
 
 
-                @can('create', \App\Models\FinancialManagement::class)
+                {{-- @can('create', \App\Models\FinancialManagement::class)
                 <li class="nav-item ">
                     <a href="{{ route('financial-management.create') }}" class="nav-link">
                         <i class="nav-icon fas fa-plus"></i>
@@ -678,7 +678,7 @@
                         </p>
                     </a>
                 </li>
-                @endcan
+                @endcan --}}
 
             </ul>
         </nav>
