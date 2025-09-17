@@ -14,6 +14,7 @@ use App\Http\Controllers\Msd\LeaveController;
 use App\Http\Controllers\Msd\TravelOrderController;
 use App\Http\Controllers\User\DtrController as UserDtrController;
 use App\Http\Controllers\User\MailController;
+use App\Http\Controllers\EmployeeSignatureController;
 use App\Models\Document;
 use App\Models\Event;
 use App\Models\TravelOrder;
@@ -298,6 +299,7 @@ Route::get('logout', [AuthController::class, 'logout'])->name('logout')->middlew
         
         Route::post('financial-management/route', ['App\Http\Controllers\FinancialManagement\FinancialManagementRouteController','store'])->name('fmroute.store');
         Route::post('financial-management/route-by-ada', ['App\Http\Controllers\FinancialManagement\FinancialManagementRouteController','storebyAda'])->name('fmroutebyada.store');
+        Route::post('/profile/signature', [EmployeeSignatureController::class, 'update'])->name('profile.signature.update');
     
         route::group([
             'auth' => 'admin',

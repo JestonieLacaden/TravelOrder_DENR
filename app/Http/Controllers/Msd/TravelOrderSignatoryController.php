@@ -30,8 +30,8 @@ class TravelOrderSignatoryController extends Controller
             'name'                => ['required', 'string', 'max:255'],
             'approver1'           => ['required', 'exists:employee,id'],
             'approver2'           => ['required', 'exists:employee,id'],
-            'approver1_signature' => ['nullable', 'image', 'mimes:png,jpg,jpeg', 'max:2048'],
-            'approver2_signature' => ['nullable', 'image', 'mimes:png,jpg,jpeg', 'max:2048'],
+            'approver1_signature' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:2048'],
+            'approver2_signature' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:2048'],
         ]);
 
         // Prevent duplicate signatory name
@@ -61,8 +61,10 @@ class TravelOrderSignatoryController extends Controller
             'name'                => ['required', 'string', 'max:255'],
             'approver1'           => ['required', 'exists:employee,id'],
             'approver2'           => ['required', 'exists:employee,id'],
-            'approver1_signature' => ['nullable', 'image', 'mimes:png,jpg,jpeg', 'max:2048'],
-            'approver2_signature' => ['nullable', 'image', 'mimes:png,jpg,jpeg', 'max:2048'],
+            'approver1_signature' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:2048'],
+            'approver2_signature' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:2048'],
+            'clear_approver1_signature'  => ['sometimes', 'boolean'],
+            'clear_approver2_signature'  => ['sometimes', 'boolean'],
         ]);
 
         // Unique name check except current row
@@ -79,6 +81,14 @@ class TravelOrderSignatoryController extends Controller
             'approver1' => $data['approver1'],
             'approver2' => $data['approver2'],
         ]);
+
+        // Clear toggles (kahit walang bagong upload)
+        if ($request->boolean('clear_approver1_signature')) {
+            $this->clearSignatureForEmployee((int) $data['approver1']);
+        }
+        if ($request->boolean('clear_approver2_signature')) {
+            $this->clearSignatureForEmployee((int) $data['approver2']);
+        }
 
         // Upload/replace signatures (optional per file)
         $this->saveSignatureForEmployee($request->file('approver1_signature'), (int) $data['approver1']);
@@ -102,6 +112,16 @@ class TravelOrderSignatoryController extends Controller
         $path = $file->store('signatures', 'public');
 
         $emp->forceFill(['signature_path' => $path])->save();
+    }
+
+    private function clearSignatureForEmployee(int $employeeId): void
+    {
+        $emp = Employee::findOrFail($employeeId);
+        if ($emp->signature_path && Storage::disk('public')->exists($emp->signature_path)) {
+            Storage::disk('public')->delete($emp->signature_path);
+        }
+        $emp->signature_path = null;
+        $emp->save();
     }
     
     // public function store(Request $request)

@@ -14,6 +14,63 @@
     <link rel="stylesheet" href="{{ asset('plugins/fontawesome-free/css/all.min.css') }}">
     <!-- Theme style -->
     <link rel="stylesheet" href="{{ asset('dist/css/adminlte.min.css') }}">
+    
+    {{-- <style>
+        @media screen {
+            .print-only {
+                display: none;
+            }
+        }
+
+        @media print {
+
+            /* itago ang app chrome sa print */
+            .no-print,
+            .main-header,
+            .main-sidebar,
+            .content-header,
+            .navbar,
+            .footer,
+            .sidebar,
+            .btn,
+            .card-header {
+                display: none !important;
+            }
+
+            html,
+            body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            @page {
+                size: A4 portrait;
+                margin: 12mm;
+            }
+
+            img {
+                max-width: 100%;
+            }
+
+            table {
+                width: 100%;
+                border-collapse: collapse;
+            }
+
+            tr,
+            td,
+            th,
+            img {
+                page-break-inside: avoid;
+            }
+
+            .page-break {
+                page-break-before: always;
+            }
+        }
+
+    </style> --}}
+
 </head>
 
 <body>
@@ -24,8 +81,7 @@
             <div class="text-center">
                 <div class="row">
                     <div class="col-12 text-center p-0">
-                        <img src="{{ asset('images/logo.png') }}" class="brand-image img-circle elevation-3 "
-                            style="height: 50px">
+                        <img src="{{ asset('images/logo.png') }}" class="brand-image img-circle elevation-3 " style="height: 50px">
                         <div>Republic of the Philippines
                         </div>
                         <div>
@@ -228,40 +284,56 @@
             </div>
 
             <div class="row mt-4">
-                <div class=" invoice-info mb-2 ml-2 col-5">
+                {{-- @php
+                use Illuminate\Support\Facades\Storage;
+
+               
+                $sigUrl1 = null;
+                if (!empty($approver1Emp?->signature_path)) {
+                $p1 = ltrim(str_replace('\\','/',$approver1Emp->signature_path), '/');
+                if (Storage::disk('public')->exists($p1)) {
+                $sigUrl1 = Storage::url($p1);
+                } elseif (file_exists(public_path($p1))) {
+                $sigUrl1 = asset($p1); 
+                }
+                }
+
+               
+                $sigUrl2 = null;
+                if (!empty($approver2Emp?->signature_path)) {
+                $p2 = ltrim(str_replace('\\','/',$approver2Emp->signature_path), '/');
+                if (Storage::disk('public')->exists($p2)) {
+                $sigUrl2 = Storage::url($p2);
+                } elseif (file_exists(public_path($p2))) {
+                $sigUrl2 = asset($p2);
+                }
+                }
+                @endphp --}}
+
+                <div class="invoice-info mb-2 ml-2 col-5">
                     <div class="mb-2 text-center">
                         <div class="d-flex align-items-center flex-column">
-                            <img src="{{ $approver1Emp && $approver1Emp->signature_path
-                                ? asset('storage/'.$approver1Emp->signature_path)
-                                : asset('images/dummySign.png') }}" class="brand-image" style="height: 50px" draggable="false"
-                                oncontextmenu="return false;" onmousedown="return false;"
-                                onselectstart="return false;" />
-                            {{-- <span style="font-size: 12px; color: #888;">No screenshots allowed</span> --}}
-                            <strong class="border-bottom"> {{ $approver1Name }} </strong>
+                            <img src="{{ $approver1Emp->signature_url ?? asset('images/dummySign.png') }}" style="height:50px">
+                            <strong class="border-bottom">{{ $approver1Name }}</strong>
                         </div>
-                        <div class="px-2">
-                            <span class="">{{ $approver1Pos }}</span>
-                        </div>
+                        <div class="px-2"><span>{{ $approver1Pos }}</span></div>
+                        {{-- DEBUG: {{ $sigUrl1 }} --}}
                     </div>
                 </div>
-                <div class=" invoice-info mb-2 ml-2 col-6">
+
+                <div class="invoice-info mb-2 ml-2 col-6">
                     <div class="mb-2 text-center">
                         <div class="d-flex align-items-center flex-column">
-                            <img src="{{ $approver2Emp && $approver2Emp->signature_path
-                                ? asset('storage/'.$approver2Emp->signature_path)
-                                : asset('images/dummySign.png') }}" class="brand-image" style="height: 50px"
-                                draggable="false" oncontextmenu="return false;" onmousedown="return false;"
-                                onselectstart="return false;" />
-                            {{-- <span style="font-size: 12px; color: #888;">No screenshots allowed</span> --}}
-                            <strong class="border-bottom"> {{ $approver2Name }} </strong>
+                            <img src="{{ $approver2Emp->signature_url ?? asset('images/dummySign.png') }}" style="height:50px">
+                            <strong class="border-bottom">{{ $approver2Name }}</strong>
                         </div>
-                        <div class="px-2">
-                            <span class="">{{ $approver2Pos }}</span>
-
-                        </div>
+                        <div class="px-2"><span>{{ $approver2Pos }}</span></div>
+                        {{-- DEBUG: {{ $sigUrl2 }} --}}
                     </div>
                 </div>
             </div>
+
+
             <div class="text-center mt-4">
                 <div class="mt-2">
                     <h5>AUTHORIZATION :</h5>
@@ -301,8 +373,40 @@
 
     <!-- Page specific script -->
     <script>
-        window.addEventListener("load", window.print());
-  
+        // window.addEventListener("load", window.print());
+
+        // (function () {
+        // function openPrint() { try { window.print(); } catch (e) {} }
+        // function goBack() { history.back(); }
+
+      
+        // if ('onafterprint' in window) {
+        // window.addEventListener('afterprint', goBack);
+        // } else {
+        
+        // const mql = window.matchMedia('print');
+        // mql.addListener(function (mq) {
+        // if (!mq.matches) goBack();
+        // });
+        // }
+
+        // window.addEventListener('load', openPrint);
+        // })();
+
+        (function () {
+        const params = new URLSearchParams(location.search);
+        const embedded = params.has('embed');
+
+        // auto-open print dialog
+        window.addEventListener('load', () => window.print());
+
+        // kung HINDI embedded (i.e., direct visit), bumalik sa list pagkatapos
+        if (!embedded) {
+        window.addEventListener('afterprint', () => history.back());
+        }
+        })();
+
+
     </script>
 </body>
 

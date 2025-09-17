@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class Employee extends Model
 {
@@ -104,6 +106,17 @@ class Employee extends Model
     public function TravelOrder()
     {
         return $this->hasMany(TravelOrder::class, 'employeeid', 'id');
+    }
+
+    public function getSignatureUrlAttribute(): ?string
+    {
+        if (!$this->signature_path) return null;
+
+        $p = ltrim(str_replace('\\', '/', $this->signature_path), '/');
+        if (Storage::disk('public')->exists($p)) return Storage::url($p);
+        if (file_exists(public_path($p))) return asset($p);
+
+        return null; // fallback handled sa Blade
     }
     
 }

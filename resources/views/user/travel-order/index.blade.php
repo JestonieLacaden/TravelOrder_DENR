@@ -150,11 +150,19 @@
                         {{__('Delete')}}
                       </button>
                       @endcan
-                      @can('print', $TravelOrder)
+                      {{-- @can('print', $TravelOrder)
 
-                      <a href="  {{ route('travelorder.print',[$TravelOrder->id]) }}" rel="noopener" target="_blank"
+                      <a href="  {{ route('travelorder.print',[$TravelOrder->id]) }}"
                         class="btn btn-default"><i class="fas fa-print"></i> Print</a>
+                      @endcan --}}
+
+
+                      @can('print', $TravelOrder)
+                      <button type="button" class="btn btn-default" onclick="printTO('{{ route('travelorder.print', [$TravelOrder->id]) }}')">
+                          <i class="fas fa-print"></i> Print
+                      </button>
                       @endcan
+
                     </td>
                   </tr>
                   {{-- @include('msd-panel.event-panel.event.edit')
@@ -233,6 +241,36 @@
   $(function () {
               $('#daterange').daterangepicker()   
             });
+</script>
+
+
+<script>
+    function printTO(url) {
+        // sabihin sa print view na naka-embed tayo para hindi ito mag history.back()
+        const src = url + (url.includes('?') ? '&' : '?') + 'embed=1';
+
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = '0';
+        iframe.src = src;
+
+        document.body.appendChild(iframe);
+
+        iframe.onload = function() {
+            try {
+                iframe.contentWindow.focus();
+                iframe.contentWindow.print();
+            } finally {
+                // linisin pagkatapos mag-open ang print dialog
+                setTimeout(() => iframe.remove(), 2000);
+            }
+        };
+    }
+
 </script>
 
 @include('partials.flashmessage')

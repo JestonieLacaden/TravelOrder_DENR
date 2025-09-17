@@ -13,9 +13,9 @@ class AddSignaturePathToEmployeeTable extends Migration
      */
     public function up(): void
     {
-        Schema::table('employee', function (Blueprint $t) {
-            if (!Schema::hasColumn('employee', 'signature_path')) {
-                $t->string('signature_path')->nullable()->after('position');
+        Schema::table('employees', function (Blueprint $t) {
+            if (!Schema::hasColumn('employees', 'signature_path')) {
+                $t->string('signature_path')->nullable()->after('photo_path'); // or after any column
             }
         });
     }
@@ -27,10 +27,10 @@ class AddSignaturePathToEmployeeTable extends Migration
      */
     public function down(): void
     {
-        Schema::table('employee', function (Blueprint $t) {
-            if (Schema::hasColumn('employee', 'signature_path')) {
+        Schema::table('employees', function (Blueprint $t) {
+            if (Schema::hasColumn('employees', 'signature_path')) {
                 $t->dropColumn('signature_path');
             }
         });
     }
-}
+};
