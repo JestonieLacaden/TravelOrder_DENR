@@ -96,15 +96,15 @@
                 @endcan --}}
 
 
-                @can('viewany', \App\Models\Mail::class)
+                @can('acceptemployee', \App\Models\Leave::class)
                 <li class="nav-header">My Mail </li>
-                <li class="nav-item">
+                {{-- <li class="nav-item">
                     <a href="{{ route('mail.incoming') }}"
                         class="nav-link {{ Request::is('document-tracking/mail/*') ? 'active' : ''}}">
                         <i class="nav-icon fas fa-envelope"></i>
                         <p>Document Tracking</p>
                     </a>
-                </li>
+                </li> --}}
 
                 {{-- @can('acceptemployee', \App\Models\Leave::class)
                 <li class="nav-item ">

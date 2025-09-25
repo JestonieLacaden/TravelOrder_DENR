@@ -14,362 +14,385 @@
     <link rel="stylesheet" href="{{ asset('plugins/fontawesome-free/css/all.min.css') }}">
     <!-- Theme style -->
     <link rel="stylesheet" href="{{ asset('dist/css/adminlte.min.css') }}">
-    
-    {{-- <style>
-        @media screen {
-            .print-only {
-                display: none;
-            }
+
+    <style>
+        @page {
+            size: A4;
+            margin: 18mm;
         }
 
+        html,
+        body {
+            height: 100%;
+        }
+
+        body {
+            margin: 0;
+            font-family: "Times New Roman", serif;
+            line-height: 1.35;
+            color: #000;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .doc {
+            max-width: 210mm;
+            margin: 0 auto;
+            padding: 0;
+        }
+
+        /* Header */
+        .header {
+            display: grid;
+            grid-template-columns: 90px 1fr 90px;
+            align-items: center;
+            border-bottom: 2px solid #000;
+            padding-bottom: 8px;
+        }
+
+        .header img {
+        display: block;
+        margin: auto;
+        }
+
+        .header .logoLeft{
+            max-width: 85px;
+            max-height: 85px;
+        }
+
+        .header .logoRight{
+            max-width: 110px;
+        }
+
+        .hdr-text {
+            text-align: center;
+        }
+
+        .hdr-text p {
+            margin: 0px;
+            line-height: 1;
+            font-size: 18px;
+        }
+
+        .hdr-text .office {
+            font-weight: 600;
+        }
+
+        .hdr-text h3,
+        .hdr-text h2 {
+            margin: 0;
+            line-height: 1.2;
+            font-weight: 100;
+            font-size: 18px;
+        }
+
+
+        .hdr-text h2 {
+            margin-top: 6px;
+            font-weight: 600
+        }
+
+        .travel-no {
+            text-align: right;
+            font-size: 14px;
+            margin-top: 6px;
+        }
+
+        /* Info grid */
+        .section {
+            padding: 12px 0;
+        }
+
+        .section .title{
+            text-align: center
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 26% 34% 18% 22%;
+            column-gap: 10px;
+            row-gap: 10px;
+        }
+
+        .label {
+            font-weight: bold;
+            font-size: 18px
+        }
+
+        .field {
+            border-bottom: 1px solid #000;
+            min-height: 22px;
+            padding: 2px 4px;
+            text-align: left;
+            align-self: anchor-center
+        }
+
+        .field-block {
+            border: 1px solid #000;
+            padding: 8px;
+            min-height: 48px;
+        }
+
+        .mono {
+            font-family: "Courier New", monospace;
+        }
+
+        /* Certification & Authorization */
+        .title {
+            font-weight: bold;
+            text-transform: uppercase;
+            margin: 8px 0 4px;
+        }
+
+        .justify {
+            text-align: justify;
+        }
+
+        /* Signatures */
+        .sign-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            column-gap: 18px;
+            margin-top: 24px;
+        }
+
+        .sign-box {
+            text-align: center;
+            padding-top: 36px;
+            margin-left: 110px
+        }
+
+        .line {
+            border-bottom: 1.4px solid #000;
+            margin: 0 auto 4px;
+            width: 90%;
+        }
+
+        .sign-name {
+            font-weight: bold;
+        }
+
+        .sign-role {
+            font-size: 14px;
+        }
+
+        /* signature */
+        .sig-block{
+        display:flex;
+        align-items:center;
+        justify-content: center
+        gap:2px
+        }
+        .sig-img{
+        max-height:60px
+        }
+        .sig-meta{
+        font-size:12px;
+        line-height:1.15;
+        color:#333;
+        text-align: left;
+        }
         @media print {
+        .sig-meta{color:#000}
+        }
 
-            /* itago ang app chrome sa print */
-            .no-print,
-            .main-header,
-            .main-sidebar,
-            .content-header,
-            .navbar,
-            .footer,
-            .sidebar,
-            .btn,
-            .card-header {
-                display: none !important;
+
+        /* Footer */
+        .footer {
+            margin-top: 22px;
+            font-size: 13px;
+            text-align: center;
+        }
+
+        @media screen {
+            .doc {
+                padding: 18mm;
+                border: 1px solid #ddd;
+                background: #fff;
             }
 
-            html,
             body {
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-            }
-
-            @page {
-                size: A4 portrait;
-                margin: 12mm;
-            }
-
-            img {
-                max-width: 100%;
-            }
-
-            table {
-                width: 100%;
-                border-collapse: collapse;
-            }
-
-            tr,
-            td,
-            th,
-            img {
-                page-break-inside: avoid;
-            }
-
-            .page-break {
-                page-break-before: always;
+                background: #f4f4f4;
             }
         }
 
-    </style> --}}
+    </style>
+
 
 </head>
 
 <body>
-    <div class="wrapper">
-        <!-- Main content -->
-        <section class="invoice">
-            <!-- title row -->
-            <div class="text-center">
-                <div class="row">
-                    <div class="col-12 text-center p-0">
-                        <img src="{{ asset('images/logo.png') }}" class="brand-image img-circle elevation-3 " style="height: 50px">
-                        <div>Republic of the Philippines
-                        </div>
-                        <div>
-                            Department of Environment and Natural Resources
-                        </div>
-                        <div>
-                            <strong>PENRO - Occidental Mindoro</strong>
-                        </div>
-                    </div>
-                </div>
-                <div class='pt-4'>
-                    <h5>TRAVEL ORDER</h5>
-                </div>
-                <div>
-                    No. <span class="text-bold"> {{ $TravelOrdernumber->travelorderid }}</span>
-                </div>
-            </div>
-            <div class="row">
-                <div class=" invoice-info mb-2 ml-2 mt-4 col-6">
-                    <div class="row mb-2">
-                        <div class="">
-                            &nbsp;
-                        </div>
-                    </div>
-                    <div class="row mb-2">
-                        <div class="">
-                            <strong> Name : </strong>
-                        </div>
-                        <div class="px-2">
-                            {{$Employee->firstname .' '. $Employee->middlename .' '. $Employee->lastname }}
-                        </div>
-                    </div>
-                    <div class="row mb-2">
-                        <div class="">
-                            <strong> Position : </strong>
-                        </div>
-                        <div class="px-2">
-                            {{$Employee->position }}
-                        </div>
-                    </div>
+    <div class="doc">
 
-                </div>
+        <!-- Header -->
+        <div class="header">
+            <!-- DENR Logo -->
+            <img class="logoLeft" src="{{ asset('images/logo.png') }}" alt="DENR Logo">
 
-                <div class=" invoice-info mb-2 ml-2 mt-4 col-5">
-                    <div class="row mb-2">
-                        <div>
-                            <strong> Date : </strong>
-                        </div>
-                        <div class="px-2">
-                            {{ $docDate }}
-                        </div>
-                    </div>
-                    <div class="row mb-2">
-                        <div>
-                            <strong> Salary (PhP) : </strong>
-                        </div>
-                        <div class="px-2">
 
-                        </div>
-                    </div>
-                    <div class="row mb-2">
-                        <div>
-                            <strong> Div/Sec/Unit : </strong>
-                        </div>
-                        <div class="px-2">
-                            {{$Employee->unit->unit}}
-
-                        </div>
-                    </div>
-                    <div class="row mb-2">
-                        <div>
-                            <strong> Official Station : </strong>
-                        </div>
-                        <div class="px-2">
-                            {{$Employee->office->office}}
-                        </div>
-                    </div>
-
-                </div>
-
+            <div class="hdr-text">
+                <p>Republic of the Philippines</p>
+                <p>Department of Environment and Natural Resources</p>
+                <h3>MIMAROPA Region</h3>
+                @if(!empty($officeHeader))
+                <h3 class="office">{{ $officeHeader }}</h3>
+                @endif
+                <h3>Mamburao, Occidental Mindoro</h3>
+                <h2>TRAVEL ORDER</h2>
             </div>
 
-            <div class="row">
-                <div class=" invoice-info mb-2 ml-2 col-6">
-                    <div class="row mb-2">
-                        <div class="">
-                            <strong> Departure Date : </strong>
-                        </div>
-                        <div class="px-2">
-                            {{$date1 }}
-                        </div>
-                    </div>
-                </div>
-                <div class=" invoice-info mb-2 ml-2 col-5">
-                    <div class="row mb-2">
-                        <div>
-                            <strong> Arrival Date : </strong>
-                        </div>
-                        <div class="px-2">
-                            {{$date2}}
+            <!-- Bagong Pilipinas Logo -->
+            <img src="{{ asset('images/bagongPilipinasLogo.png') }}" class="logoRight" alt="Bagong Pilipinas Logo">
+        </div>
 
-                        </div>
-                    </div>
-                </div>
+        <div class="travel-no"><span class="label">No.:</span> <span class="mono">{{ $TravelOrdernumber->travelorderid }}</span></div>
 
+        <!-- Info grid -->
+        <div class="section grid">
+            <div class="label">Name:</div>
+            <div class="field">{{$Employee->firstname .' '. $Employee->middlename .' '. $Employee->lastname }}</div>
+            <div class="label">Date:</div>
+            <div class="field">{{ $docDate }}</div>
+
+            <div class="label">Position:</div>
+            <div class="field">{{$Employee->position }}</div>
+            <div class="label">Salary (PhP):</div>
+            <div class="field">&nbsp;</div>
+
+            <div class="label">Div/Sec/Unit:</div>
+            <div class="field">{{$Employee->unit->unit}}</div>
+            <div class="label">Official Station:</div>
+            <div class="field">{{$Employee->office->office}}</div>
+
+            <div class="label">Departure Date:</div>
+            <div class="field">{{$date1}}</div>
+            <div class="label">Arrival:</div>
+            <div class="field">{{$date2}}</div>
+
+            <div class="label">Destination:</div>
+            <div class="field" style="grid-column: span 3;">
+                {{$TravelOrder->destinationoffice}}
             </div>
 
-
-            <div>
-                <div class="row mb-2 ml-1">
-                    <div class="">
-                        <strong> Destination : </strong>
-                    </div>
-                    <div class="px-2">
-                        {{$TravelOrder->destinationoffice}}
-                    </div>
-
-                </div>
-            </div>
-            <div>
-                <div class="row mb-2 ml-1">
-                    <div class="">
-                        <strong> Purpose of Travel : </strong>
-                    </div>
-                    <div class="px-2">
-                        {{$TravelOrder->purpose}}
-                    </div>
-
-                </div>
-            </div>
-            <div>
-                <div class="row mb-2 ml-1">
-                    <div class="">
-                        <strong> Per Diems/Expenses Allowed : </strong>
-                    </div>
-                    <div class="px-2">
-                        {{$TravelOrder->perdime}}
-                    </div>
-
-                </div>
-            </div>
-            <div>
-                <div class="row mb-2 ml-1">
-                    <div class="">
-                        <strong> Appropriations to which travel should be charged : </strong>
-                    </div>
-                    <div class="px-2">
-                        {{$TravelOrder->appropriation }}
-                    </div>
-
-                </div>
-            </div>
-            <div>
-                <div class="row mb-2 ml-1">
-                    <div class="">
-                        <strong> Remarks or Special Instructions : </strong>
-                    </div>
-                    <div class="px-2">
-                        {{$TravelOrder->remarks }}
-                    </div>
-
-                </div>
-            </div>
-            <br>
-            <div class="text-center mt-4">
-                <div class="mt-2">
-                    <h5>CERTIFICATION :</h5>
-                </div>
-
-            </div>
-            <div class="mb-4">
-                <div>
-                    This is to certify that the travel is necessary and is connected with the functions of the
-                    official/employee of the Div/Sec/Unit.
-                </div>
+            <div class="label">Purpose of Travel:</div>
+            <div class="field" style="grid-column: span 3;">
+                <!-- To conduct preparatory activities for the upcoming “Support for the Organizing and Strengthening of the
+                Provincial CBFM-People’s Organizations (CBFM-PO) Federation in the Province of Occidental Mindoro and
+                the documentation of success story of Palbong CBFM.” -->
+                {{$TravelOrder->purpose}}
             </div>
 
-            <div class="row mt-4">
-                <div class=" invoice-info mb-2 ml-2 col-6">
-                    <div class="mb-2 text-center">
-                        <div class="">
+            <div class="label">Per Diems/Expenses allowed:</div>
+            <div class="field">{{$TravelOrder->perdime}}</div>
+            <div></div>
+            <div></div>
+            <div class="label">Appropriations to which travel should be charged:</div>
+            <div class="field" style="grid-column: span 1;">{{$TravelOrder->appropriation }}</div>
+            <div></div>
+            <div></div>
 
-                        </div>
-                        <div class="px-2 ">
+            <div class="label" style="grid-column: span 1;">Remarks or Special Instructions:</div>
+            <div class="field" style="grid-column: span 2;">{{$TravelOrder->remarks }}</div>
+        </div>
 
+        <!-- Certification -->
+        <div class="section">
+            <div class="title">Certification</div>
+            <div class="justify">
+                <i>
+                This is to certify that the travel is necessary and is connected with the functions of the
+                official/employee of the Div/Sec/Unit.
+                </i>
+            </div>
+
+            @php
+            use Illuminate\Support\Facades\Storage;
+            $tz = config('app.timezone', 'Asia/Manila');
+
+            $makeSigUrl = function ($emp) {
+            if (!$emp || empty($emp->signature_path)) return null;
+            $p = ltrim(str_replace('\\','/',$emp->signature_path), '/');
+            if (Storage::disk('public')->exists($p)) return Storage::url($p);
+            if (file_exists(public_path($p))) return asset($p);
+            return null;
+            };
+
+            $sigUrl1 = $makeSigUrl($approver1Emp);
+            $sigUrl2 = $makeSigUrl($approver2Emp);
+
+            $ap1 = $TravelOrder->approve1_at ? \Carbon\Carbon::parse($TravelOrder->approve1_at)->timezone($tz) : null;
+            $ap2 = $TravelOrder->approve2_at ? \Carbon\Carbon::parse($TravelOrder->approve2_at)->timezone($tz) : null;
+
+            // gawing “+08'00'” ang offset para kahawig ng sample (-04'00')
+            $off1 = $ap1 ? str_replace(':', "'", $ap1->format('P')) : null;
+            $off2 = $ap2 ? str_replace(':', "'", $ap2->format('P')) : null;
+            @endphp
+
+
+
+            <div class="sign-row">
+                <div class="sign-box">
+                    <div class="sig-block">
+                        <img src="{{ $sigUrl1 ?? asset('images/dummySign.png') }}" class="sig-img" draggable="false" oncontextmenu="return false;" onmousedown="return false;" onselectstart="return false;">
+                        <div class="sig-meta">
+                            <div><strong>Digitally signed</strong> by</div>
+                            <div>{{ $approver1Name }}</div>
+                            @if($ap1)
+                            <div>Date: {{ $ap1->format('Y.m.d') }}</div>
+                            <div>{{ $ap1->format('H:i:s') }} {{ $off1 }}</div>
+                            @endif
                         </div>
                     </div>
+
+                    <div class="sign-name"><u>{{ $approver1Name }}</u></div>
+                    <div class="sign-role">{{ $approver1Pos }}</div>
                 </div>
-                <div class=" invoice-info mb-2 ml-2 col-5">
-                    <div class="mb-2">
-                        <div>
-                            <strong> Approved : </strong>
+                <div class="sign-box">
+                    <div class="sig-block">
+                        <img src="{{ $sigUrl2 ?? asset('images/dummySign.png') }}" class="sig-img" draggable="false" oncontextmenu="return false;" onmousedown="return false;" onselectstart="return false;">
+                        <div class="sig-meta">
+                            <div><strong>Digitally signed</strong> by</div>
+                            <div>{{ $approver2Name }}</div>
+                            @if($ap2)
+                            <div>Date: {{ $ap2->format('Y.m.d') }}</div>
+                            <div>{{ $ap2->format('H:i:s') }} {{ $off2 }}</div>
+                            @endif
                         </div>
-                        <div class="px-2">
-
-
-                        </div>
                     </div>
+                    <div class="sign-name"><u>{{ $approver2Name }}</u></div>
+                    <div class="sign-role">{{ $approver2Pos }}</div>
                 </div>
             </div>
+        </div>
 
-            <div class="row mt-4">
-                {{-- @php
-                use Illuminate\Support\Facades\Storage;
-
-               
-                $sigUrl1 = null;
-                if (!empty($approver1Emp?->signature_path)) {
-                $p1 = ltrim(str_replace('\\','/',$approver1Emp->signature_path), '/');
-                if (Storage::disk('public')->exists($p1)) {
-                $sigUrl1 = Storage::url($p1);
-                } elseif (file_exists(public_path($p1))) {
-                $sigUrl1 = asset($p1); 
-                }
-                }
-
-               
-                $sigUrl2 = null;
-                if (!empty($approver2Emp?->signature_path)) {
-                $p2 = ltrim(str_replace('\\','/',$approver2Emp->signature_path), '/');
-                if (Storage::disk('public')->exists($p2)) {
-                $sigUrl2 = Storage::url($p2);
-                } elseif (file_exists(public_path($p2))) {
-                $sigUrl2 = asset($p2);
-                }
-                }
-                @endphp --}}
-
-                <div class="invoice-info mb-2 ml-2 col-5">
-                    <div class="mb-2 text-center">
-                        <div class="d-flex align-items-center flex-column">
-                            <img src="{{ $approver1Emp->signature_url ?? asset('images/dummySign.png') }}" style="height:50px">
-                            <strong class="border-bottom">{{ $approver1Name }}</strong>
-                        </div>
-                        <div class="px-2"><span>{{ $approver1Pos }}</span></div>
-                        {{-- DEBUG: {{ $sigUrl1 }} --}}
-                    </div>
-                </div>
-
-                <div class="invoice-info mb-2 ml-2 col-6">
-                    <div class="mb-2 text-center">
-                        <div class="d-flex align-items-center flex-column">
-                            <img src="{{ $approver2Emp->signature_url ?? asset('images/dummySign.png') }}" style="height:50px">
-                            <strong class="border-bottom">{{ $approver2Name }}</strong>
-                        </div>
-                        <div class="px-2"><span>{{ $approver2Pos }}</span></div>
-                        {{-- DEBUG: {{ $sigUrl2 }} --}}
-                    </div>
-                </div>
+        <!-- Authorization -->
+        <div class="section">
+            <div class="title">Authorization</div>
+            <div class="justify">
+                I hereby authorize the Accountant to deduct the corresponding amount of the unliquidated
+                cash advance from my succeeding salary for my failure to liquidate this travel within the
+                prescribed thirty-day period upon return to my permanent official station pursuant to item
+                5.1.3 Circular 97-002 dated February 10, 1997 and sec. 16 EO No. 248 dated May 29, 1995.
             </div>
 
+            <div class="sign-row" style="grid-template-columns: 1fr;">
+                <div class="sign-box" style="max-width: 320px; margin: 0 auto;">
+                    <div class="sign-name"><u>{{$Employee->firstname .' '. $Employee->middlename .' '.
+                    $Employee->lastname }}</u></div>
 
-            <div class="text-center mt-4">
-                <div class="mt-2">
-                    <h5>AUTHORIZATION :</h5>
+                    <div class="sign-role">Official/Employee</div>
                 </div>
             </div>
+        </div>
 
-            <div class="mb-4">
-                <div>
-                    I hereby authorize the Accountant to deduct the corresponding amount of the unliquidated cash
-                    advance from my succeeding salary for my failure to liquidate this travel within the prescribed
-                    thirty-day period upon return to my permanent official station pursuant to item 5.1.3 Circular
-                    97-002 dated February 10, 1997 and Sec. 16 EO no.248 dated May 29, 1995.
-                </div>
-            </div>
-            <br>
-            <br>
+        <!-- Footer -->
+        <div class="footer">
+             So. Pag-asa, Brgy. Payompon, Mamburao, Occidental Mindoro {{--· Email: tsdocomin04@gmail.com --}}
 
+        </div>
 
-            <div class="mt-4">
-                <div class="mb-2 text-center">
-                    <div>
-                        <strong class="border-bottom"> {{$Employee->firstname .' '. $Employee->middlename .' '.
-                            $Employee->lastname }} </strong>
-                    </div>
-                    <div class="px-2">
-                        Official/Employee
-
-                    </div>
-                </div>
-
-            </div>
-
-
-
-        </section>
     </div>
+
 
     <!-- Page specific script -->
     <script>
@@ -379,11 +402,11 @@
         // function openPrint() { try { window.print(); } catch (e) {} }
         // function goBack() { history.back(); }
 
-      
+
         // if ('onafterprint' in window) {
         // window.addEventListener('afterprint', goBack);
         // } else {
-        
+
         // const mql = window.matchMedia('print');
         // mql.addListener(function (mq) {
         // if (!mq.matches) goBack();
@@ -393,19 +416,18 @@
         // window.addEventListener('load', openPrint);
         // })();
 
-        (function () {
-        const params = new URLSearchParams(location.search);
-        const embedded = params.has('embed');
+        (function() {
+            const params = new URLSearchParams(location.search);
+            const embedded = params.has('embed');
 
-        // auto-open print dialog
-        window.addEventListener('load', () => window.print());
+            // auto-open print dialog
+            window.addEventListener('load', () => window.print());
 
-        // kung HINDI embedded (i.e., direct visit), bumalik sa list pagkatapos
-        if (!embedded) {
-        window.addEventListener('afterprint', () => history.back());
-        }
+            // kung HINDI embedded (i.e., direct visit), bumalik sa list pagkatapos
+            if (!embedded) {
+                window.addEventListener('afterprint', () => history.back());
+            }
         })();
-
 
     </script>
 </body>

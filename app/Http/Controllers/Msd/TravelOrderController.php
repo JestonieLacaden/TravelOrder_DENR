@@ -465,6 +465,12 @@ class TravelOrderController extends Controller
             ], 409);
         }
 
+        $officeHeader = match ((int) $Employee->officeid) {
+            1 => 'PROVINCIAL ENVIRONMENT AND NATURAL RESOURCES OFFICE',
+            2, 3 => 'COMMUNITY ENVIRONMENT AND NATURAL RESOURCES OFFICE',
+            default => '',
+        };
+
 
 
         $SetTravelOrderSignatory = $sig;
@@ -503,7 +509,8 @@ class TravelOrderController extends Controller
             'approver1Pos',
             'approver2Pos',
             'approver1Emp',
-            'approver2Emp'
+            'approver2Emp',
+            'officeHeader',
         ));
     }
 
