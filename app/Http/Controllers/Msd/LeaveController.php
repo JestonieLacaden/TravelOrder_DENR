@@ -194,21 +194,26 @@ class LeaveController extends Controller
         }
     }
 
-    public function userindex() 
-    {
-      $this->authorize('viewLeaveindex', \App\Models\Leave::class);
-        $Employee = Employee::where('email','=', auth()->user()->email)->get()->first();
-        $Leave_Types = Leave_Type::orderBy ('id', 'asc')->get();
-        $Leaves = Leave::where('employeeid','=',$Employee->id)->with('Employee')->with('Leave_type')->orderBy('created_at','asc')->get();
-  
-        $EmployeeLeaveCount = $this->getEmployeeLeaveCount();
+  public function userindex()
+  {
+    $this->authorize('viewLeaveindex', \App\Models\Leave::class);
+
+    $Employee    = Employee::where('email', '=', auth()->user()->email)->first();
+    $Leave_Types = Leave_Type::orderBy('id', 'asc')->get();
+
+    // NEWEST FIRST
+    $Leaves = Leave::where('employeeid', $Employee->id)
+      ->with('Employee', 'Leave_type')
+      ->orderBy('created_at', 'desc')   // <—
+      ->get();
+
+    $EmployeeLeaveCount = $this->getEmployeeLeaveCount();
+
+    return view('user.leave.index', compact('Employee', 'EmployeeLeaveCount', 'Leave_Types', 'Leaves'));
+  }
 
 
-        // $Events = Event::orderBy('date', 'asc')->with('User')->get();
-        return view('user.leave.index', compact('Employee','EmployeeLeaveCount','Leave_Types','Leaves'));
-    }
-
-    public function storeUserLeave(Request $request) {
+  public function storeUserLeave(Request $request) {
         
       $this->authorize('AddUserLeave', \App\Models\Leave::class);
 

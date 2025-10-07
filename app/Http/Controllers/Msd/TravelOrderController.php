@@ -292,6 +292,7 @@ class TravelOrderController extends Controller
                 });
 
 
+                event(new \App\Events\TravelOrderStatusChanged($TravelOrder));
 
 
                 return back()->with('message', 'Travel Order Successfully Approved!');
@@ -341,6 +342,8 @@ class TravelOrderController extends Controller
             $TravelOrder->update(['is_rejected2' => true]);
             return back()->with('message', 'Travel Order Successfully Rejected!');
         }
+
+        event(new \App\Events\TravelOrderStatusChanged($TravelOrder));
 
         return back()->with('SignatoryError', 'You are not the assigned approver for this Travel Order.');
     }

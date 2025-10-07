@@ -4,7 +4,7 @@
 
 @section('mails')
 
-<div class="col-md-9">
+<div class="col-md-12">
   <div class="card-header bg-primary">
     <h3 class="card-title ">Travel Order Request(s) </h3>
     <h5></h5>

@@ -48,6 +48,119 @@
 
     {{-- Page-specific scripts (e.g., your edit modal init) --}}
     @stack('scripts')
+    
+
+    <script>
+      window.employeeId = {{ optional(auth()->user()->Employee)->id ?? 'null' }};
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/pusher-js@7/dist/web/pusher.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/laravel-echo@1/dist/echo.iife.js"></script>
+
+    <script>
+        window.Echo = new Echo({
+            broadcaster: 'pusher'
+            , key: 'local-key'
+            , wsHost: window.location.hostname
+            , wsPort: 6001
+            , forceTLS: false
+            , disableStats: true
+            , enabledTransports: ['ws', 'wss']
+        , });
+
+        // 1) listen for your own Travel Order updates
+        if (window.employeeId) {
+            window.Echo.private('users/' + window.employeeId)
+                .listen('.TravelOrderStatusChanged', (e) => {
+                    // find row and update the status text
+                    const row = document.querySelector(`[data-to-id="${e.id}"]`);
+                    const cell = row ? row.querySelector('.js-status') : null;
+                    if (!cell) return;
+
+                    if (e.is_approve2) {
+                        cell.className = 'js-status bg-success p-2 rounded';
+                        cell.textContent = e.approved_code ? `Approved (${e.approved_code})` : 'Approved';
+                    } else {
+                        cell.className = 'js-status bg-warning p-2 rounded';
+                        cell.textContent = 'Pending : 2nd Approval';
+                    }
+                });
+        }
+
+        // 2) signatory badge
+        window.Echo.private('signatories')
+            .listen('.RequestsCountChanged', (e) => {
+                const badge = document.getElementById('req-badge');
+                if (!badge) return;
+                const c = e.count || 0;
+                badge.textContent = c > 999 ? '999+' : c;
+                badge.style.display = c > 0 ? '' : 'none';
+            });
+
+    </script>
+
+    <script>
+        (function() {
+            var endpoint = @json(route('mail.pending-counts'));
+
+            function setBadge(selector, value) {
+                var el = $(selector);
+                if (!el.length) return;
+                value = Number(value || 0);
+                if (value > 0) el.text(value > 999 ? '999+' : value).show();
+                else el.hide();
+            }
+
+            // badge refresher for sidebar
+            function refreshBadges() {
+                $.getJSON(endpoint).done(function(d) {
+                    setBadge('#leave-badge', d && d.leave);
+                    setBadge('#to-badge', d && d.to);
+                });
+            }
+
+            refreshBadges();
+            setInterval(refreshBadges, 15000);
+
+            // auto-reload kapag nasa list page at nagbago ang bilang
+            var path = window.location.pathname;
+            var lastTO = Number(@json(($toPendingCount ?? 0)));
+            var lastLeave = Number(@json(($leavePendingCount ?? 0)));
+
+            function watchAndReload() {
+                $.getJSON(endpoint).done(function(d) {
+                    var to = Number(d && d.to || 0);
+                    var leave = Number(d && d.leave || 0);
+
+                    if (path.indexOf('/mail/travel-order-request') !== -1 && to !== lastTO) {
+                        location.reload();
+                    }
+                    if (path.indexOf('/mail/leave-request') !== -1 && leave !== lastLeave) {
+                        location.reload();
+                    }
+
+                    lastTO = to;
+                    lastLeave = leave;
+                });
+            }
+
+            // kung nasa alinman sa dalawang pages, i-watch din
+            if (path.indexOf('/mail/travel-order-request') !== -1 ||
+                path.indexOf('/mail/leave-request') !== -1) {
+                setInterval(watchAndReload, 15000);
+            }
+        })();
+
+    </script>
+
+
+
+
+
+
+
+
+
 </body>
 
 </html>

@@ -126,50 +126,63 @@ class AppServiceProvider extends ServiceProvider
                 ['is_approve2',false],
                 ])->count());
 
-        View::composer(
-            ['partials.sidebar', 'mails.employeerequest.index'], // add any views that show the badges
-            function ($view) {
+        View::composer(['partials.sidebar', 'mails.employeerequest.index'], function ($view) {
 
-                $toPendingCount = 0;
-                $leavePendingCount = 0;
+            $toPendingCount = 0;
+            $leavePendingCount = 0;
+            $showTO = false;
+            $showLeave = false;
 
-                if (auth()->check()) {
-                    $emp = Employee::where('email', auth()->user()->email)->first();
+            if (auth()->check()) {
+                $emp = \App\Models\Employee::where('email', auth()->user()->email)->first();
 
-                    if ($emp) {
-                        // Signatory mappings for current approver
-                        $sigA1 = TravelOrderSignatory::where('approver1', $emp->id)->pluck('id');
-                        $sigA2 = TravelOrderSignatory::where('approver2', $emp->id)->pluck('id');
+                if ($emp) {
+                    // --- TRAVEL ORDER signatory + pending
+                    $sigA1 = \App\Models\TravelOrderSignatory::where('approver1', $emp->id)->pluck('id');
+                    $sigA2 = \App\Models\TravelOrderSignatory::where('approver2', $emp->id)->pluck('id');
 
-                        // Pending for Approver 1
-                        $pendingA1 = TravelOrder::whereIn('travelordersignatoryid', $sigA1)
-                            ->where('is_approve1', false)
-                            ->where('is_rejected1', false)
-                            ->count();
+                    $showTO = $sigA1->isNotEmpty() || $sigA2->isNotEmpty();
 
-                        // Pending for Approver 2
-                        $pendingA2 = TravelOrder::whereIn('travelordersignatoryid', $sigA2)
-                            ->where('is_approve1', true)
-                            ->where('is_approve2', false)
-                            ->where('is_rejected1', false)
-                            ->where('is_rejected2', false)
-                            ->count();
+                    $pendingA1 = \App\Models\TravelOrder::whereIn('travelordersignatoryid', $sigA1)
+                        ->where('is_approve1', false)
+                        ->where('is_rejected1', false)
+                        ->count();
 
-                        $toPendingCount = $pendingA1 + $pendingA2;
+                    $pendingA2 = \App\Models\TravelOrder::whereIn('travelordersignatoryid', $sigA2)
+                        ->where('is_approve1', true)
+                        ->where('is_approve2', false)
+                        ->where('is_rejected1', false)
+                        ->where('is_rejected2', false)
+                        ->count();
 
-                        // TODO: compute $leavePendingCount according to your leave flags/mapping
-                        // $leavePendingCount = Leave::...->count();
-                    }
+                    $toPendingCount = $pendingA1 + $pendingA2;
+
+                    // --- LEAVE signatory + pending
+                    // Note: kung may leavesignatoryid column sa Leaves, idagdag mo ang whereIn(...) sa bawat query.
+                    $isA1 = \App\Models\LeaveSignatory::where('approver1', $emp->id)->exists();
+                    $isA2 = \App\Models\LeaveSignatory::where('approver2', $emp->id)->exists();
+                    $isA3 = \App\Models\LeaveSignatory::where('approver3', $emp->id)->exists();
+
+                    $showLeave = $isA1 || $isA2 || $isA3;
+
+                    $q1 = $isA1 ? \App\Models\Leave::where('is_approve1', false)->where('is_rejected1', false)->count() : 0;
+                    $q2 = $isA2 ? \App\Models\Leave::where('is_approve1', true)->where('is_approve2', false)->where('is_rejected1', false)->where('is_rejected2', false)->count() : 0;
+                    $q3 = $isA3 ? \App\Models\Leave::where('is_approve2', true)->where('is_approve3', false)->where('is_rejected2', false)->where('is_rejected3', false)->count() : 0;
+
+                    $leavePendingCount = $q1 + $q2 + $q3;
                 }
-
-                $view->with([
-                    'toPendingCount'    => $toPendingCount,
-                    'leavePendingCount' => $leavePendingCount,
-                    'EmployeeRequestsTotal' => $toPendingCount + $leavePendingCount,
-                ]);
             }
-        );
 
+            // optional realtime broadcast mo dati
+            event(new \App\Events\RequestsCountChanged($toPendingCount + $leavePendingCount));
 
+            $view->with([
+                'showTO'              => $showTO,
+                'showLeave'           => $showLeave,
+                'toPendingCount'      => $toPendingCount,
+                'leavePendingCount'   => $leavePendingCount,
+                'EmployeeRequestsTotal' => $toPendingCount + $leavePendingCount,
+            ]);
+        });
     }
 }

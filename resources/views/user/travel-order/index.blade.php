@@ -96,39 +96,43 @@
                   @if(!empty($TravelOrders))
                   @foreach($TravelOrders as $TravelOrder)
 
-                  <tr>
+                  <tr data-to-id="{{ $TravelOrder->id }}">
                     <td> {{$TravelOrder->created_at}}</td>
                     <td> {{$TravelOrder->daterange}}</td>
                     <td> {{$TravelOrder->destinationoffice}}</td>
                     <td> {{$TravelOrder->purpose}}</td>
                     <td class="text-center">
                         @php
-                        // primary: relation ->approved->travelorderid
-                        // fallback: column from LEFT JOIN (approved_code) kung meron
+                        // Get the approved code (relation first, then optional joined column)
                         $approvedCode = optional($TravelOrder->approved)->travelorderid
                         ?? ($TravelOrder->approved_code ?? null);
+
+                        // Decide initial text + color (JS will update these via websockets)
+                        $statusClass = '';
+                        $statusText = '';
+
+                        if ($TravelOrder->is_rejected1) {
+                        $statusClass = 'bg-danger';
+                        $statusText = 'Rejected First Approval';
+                        } elseif (!$TravelOrder->is_approve1) {
+                        $statusClass = 'bg-warning';
+                        $statusText = 'Pending : 1st Approval';
+                        } elseif ($TravelOrder->is_rejected2) {
+                        $statusClass = 'bg-danger';
+                        $statusText = 'Rejected Final Approval';
+                        } elseif (!$TravelOrder->is_approve2) {
+                        $statusClass = 'bg-warning';
+                        $statusText = 'Pending : 2nd Approval';
+                        } else {
+                        $statusClass = 'bg-success';
+                        $statusText = $approvedCode ? "Approved ($approvedCode)" : 'Approved';
+                        }
                         @endphp
 
-                        @if($TravelOrder->is_rejected1)
-                        <span class="bg-danger p-2 rounded">Rejected First Approval</span>
-
-                        @elseif(!$TravelOrder->is_approve1)
-                        <span class="bg-warning p-2 rounded">Pending : 1st Approval</span>
-
-                        @elseif($TravelOrder->is_rejected2)
-                        <span class="bg-danger p-2 rounded">Rejected Final Approval</span>
-
-                        @elseif(!$TravelOrder->is_approve2)
-                        <span class="bg-warning p-2 rounded">Pending : 2nd Approval</span>
-
-                        @else
-                        @if($approvedCode)
-                        <span class="bg-success p-2 rounded">Approved ( {{ $approvedCode }} )</span>
-                        @else
-                        <span class="bg-success p-2 rounded">Approved</span>
-                        @endif
-                        @endif
+                        <span class="js-status p-2 rounded {{ $statusClass }}">{{ $statusText }}</span>
                     </td>
+
+
 
 
 
@@ -228,12 +232,10 @@
 <script>
   $(function () {
               $("#example1").DataTable({
-                "responsive": true, "lengthChange": false, "autoWidth": false,
-              
-              }).buttons().container().appendTo('#example1_wrapper .col-md-6:eq(0)');
-           
+              responsive: true, lengthChange: false, autoWidth: false,
+              order: [[0, 'desc']]
+              });
             });
-
           
 </script>
 
