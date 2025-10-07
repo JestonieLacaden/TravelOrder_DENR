@@ -377,8 +377,11 @@
     <!-- /.row -->
 <!-- Page specific script -->
 <script>
-    window.addEventListener("load", window.print());
-  
+    window.addEventListener('load', () => window.print());
+    window.onafterprint = () => location.replace("{{ route('userleave.index') }}");
+
 </script>
+
+
 </body>
 </html>

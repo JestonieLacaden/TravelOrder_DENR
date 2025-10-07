@@ -87,7 +87,7 @@
                             <tr>        
                                 <td>{{ $SetTravelOrderSignatory->office->office}}</td>    
                                 <td>{{ $SetTravelOrderSignatory->section->section}}</td> 
-                                <td class='text-center'> <span class ="bg-success p-2 rounded ml-1"> {{ $SetTravelOrderSignatory->TraveOrderSignatory->name }}</span></td>
+                                <td class='text-center'> <span class ="bg-success p-2 rounded ml-1"> {{ $SetTravelOrderSignatory->TravelOrderSignatory->name }}</span></td>
                                 <td class="text-center">   
                                     @can('edit', \App\Models\SetTravelOrderSignatory::class)
                                     <button type="button" class="btn btn-default" title="Delete" data-toggle="modal"  data-target="#edit-signatory-modal-lg{{ $SetTravelOrderSignatory->id }} " data-backdrop="static" data-keyboard="false">

@@ -11,14 +11,16 @@ class CreateDtrSignatoryTable extends Migration
      *
      * @return void
      */
-    public function up()
+    public function up(): void
     {
-        Schema::create('dtr_signatory', function (Blueprint $table) {
-            $table->id();
-            $table->string('employeeid');
-            $table->string('signatory');
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('dtr_signatory')) {
+            Schema::create('dtr_signatory', function (Blueprint $table) {
+                $table->id();
+                $table->string('employeeid');
+                $table->string('signatory');
+                $table->timestamps();
+            });
+        }
     }
 
     /**
@@ -26,7 +28,7 @@ class CreateDtrSignatoryTable extends Migration
      *
      * @return void
      */
-    public function down()
+    public function down(): void
     {
         Schema::dropIfExists('dtr_signatory');
     }

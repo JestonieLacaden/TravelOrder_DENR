@@ -122,7 +122,13 @@ class LeavePolicy
          }
         }
 
-        $Employee = Employee::where('email','=',auth()->user()->email)->get()->first();
+        // $Employee = Employee::where('email','=',auth()->user()->email)->get()->first();
+
+        $Employee = Employee::where('email', auth()->user()->email)->first();
+        if (!$Employee) {
+            // User has no employee record; deny gracefully instead of crashing
+            return false;
+        }
      
            
         if(!empty($Employee))
@@ -235,63 +241,42 @@ class LeavePolicy
         }
     }
 
-    public function acceptemployee(User $user)
-    
+    //     public function acceptemployee(User $user)
+    // {
+    //     $emp = \App\Models\Employee::where('email', $user->email)->first();
+    //     if (!$emp) return false;
+
+    //     return \App\Models\LeaveSignatory::where('approver1', $emp->id)
+    //             ->orWhere('approver2', $emp->id)
+    //             ->orWhere('approver3', $emp->id)
+    //             ->exists()
+    //         || \App\Models\TravelOrderSignatory::where('approver1', $emp->id)
+    //             ->orWhere('approver2', $emp->id)
+    //             ->exists();
+    // }
+
+    public function acceptemployee(\App\Models\User $user)
     {
-        $LeaveSignatories = LeaveSignatory::get();
-        $Employee = Employee::where('email','=',auth()->user()->email)->get()->first();
+        $employee = \App\Models\Employee::where('email', $user->email)->first();
+        if (!$employee) return false;
 
+        $hasLeave = \App\Models\LeaveSignatory::where(function ($q) use ($employee) {
+            $q->where('approver1', $employee->id)
+                ->orWhere('approver2', $employee->id)
+                ->orWhere('approver3', $employee->id);
+        })->exists();
 
-        if(!empty($LeaveSignatories))
-        {
-      
-          foreach ($LeaveSignatories as $LeaveSignatory)
-            {
-                if ($LeaveSignatory->approver1 == $Employee->id && auth()->check())
-                {          
-                    { 
-                        return ($user); 
-                    }
-                }
-                if ($LeaveSignatory->approver2 == $Employee->id && auth()->check())
-                {
-                    { 
-                        return ($user); 
-                    }
-                }
-                if ($LeaveSignatory->approver3 == $Employee->id && auth()->check())
-                {
-                         { 
-                        return ($user); 
-                    }
-                }
-            }
-        }
+        $hasTO = \App\Models\TravelOrderSignatory::where(function ($q) use ($employee) {
+            $q->where('approver1', $employee->id)
+                ->orWhere('approver2', $employee->id);
+        })->exists();
 
-        $TravelOrderSignatories = TravelOrderSignatory::get();
-
-
-        if(!empty($TravelOrderSignatories))
-        {
-      
-          foreach ($TravelOrderSignatories as $TravelOrderSignatory)
-            {
-                if ($TravelOrderSignatory->approver1 == $Employee->id && auth()->check())
-                {          
-                    { 
-                        return ($user); 
-                    }
-                }
-                if ($TravelOrderSignatory->approver2 == $Employee->id && auth()->check())
-                {
-                    { 
-                        return ($user); 
-                    }
-                }
-               
-            }
-        }
+        return $hasLeave || $hasTO;
     }
+
+
+
+
 
     public function accept(User $user, Leave $Leave)
     {
@@ -519,44 +504,63 @@ class LeavePolicy
          }
      }
 
-     public function print(User $user, Leave $Leave)
+    // app/Policies/LeavePolicy.php
+    public function print(User $user, Leave $leave): bool
     {
-        $Roles = UserRole::where('userid','=',$user->id)->get();
+        // Admin / MSD (hal. roleid 1 or 5)
+        $roles = UserRole::where('userid', $user->id)->pluck('roleid')->map(fn($r) => (int)$r)->all();
+        $isAdminOrMsd = in_array(1, $roles, true) || in_array(5, $roles, true);
 
-        if(!empty($Roles))
-        {
-         {
-          foreach ($Roles as $Role)
-            {
-                if ($Role->roleid == '1' || $Role->roleid =='5')
-                {
-                    if($Leave->is_rejected1 != true && $Leave->is_rejected2 != true  && $Leave->is_rejected3 != true  && $Leave->is_approve1 == true)
-                    {
-                        return ($user); 
-                    }
-                }
+        // Owner ng request
+        $employee = Employee::where('email', $user->email)->first();
+        $isOwner = $employee && ($leave->employeeid == $employee->id || $leave->userid == $user->id);
 
-            }
-         }
-        }
+        // fully approved, walang rejection
+        $isFullyApproved = $leave->is_approve3
+            && !$leave->is_rejected1 && !$leave->is_rejected2 && !$leave->is_rejected3;
 
-
-        $Employee = Employee::where('email','=',auth()->user()->email)->get()->first();
-     
-           
-        if(!empty($Employee))
-        {
-            if ($Employee->empstatus == 'PERMANENT' && $Leave->employeeid == $Employee->id || $Leave->userid == auth()->user()->id)
-            {
-                if($Leave->is_rejected1 != true && $Leave->is_rejected2 != true  && $Leave->is_rejected3 != true  )
-                {
-                return ($user); 
-                }
-                    
-            }
-        }     
-        
+        return ($isAdminOrMsd || $isOwner) && $isFullyApproved;
     }
+
+
+    //  public function print(User $user, Leave $Leave)
+    // {
+    //     $Roles = UserRole::where('userid','=',$user->id)->get();
+
+    //     if(!empty($Roles))
+    //     {
+    //      {
+    //       foreach ($Roles as $Role)
+    //         {
+    //             if ($Role->roleid == '1' || $Role->roleid =='5')
+    //             {
+    //                 if($Leave->is_rejected1 != true && $Leave->is_rejected2 != true  && $Leave->is_rejected3 != true  && $Leave->is_approve1 == true)
+    //                 {
+    //                     return ($user); 
+    //                 }
+    //             }
+
+    //         }
+    //      }
+    //     }
+
+
+    //     $Employee = Employee::where('email','=',auth()->user()->email)->get()->first();
+
+
+    //     if(!empty($Employee))
+    //     {
+    //         if ($Employee->empstatus == 'PERMANENT' && $Leave->employeeid == $Employee->id || $Leave->userid == auth()->user()->id)
+    //         {
+    //             if($Leave->is_rejected1 != true && $Leave->is_rejected2 != true  && $Leave->is_rejected3 != true  )
+    //             {
+    //             return ($user); 
+    //             }
+
+    //         }
+    //     }     
+
+    // }
 
     public function summary(User $user)
     {

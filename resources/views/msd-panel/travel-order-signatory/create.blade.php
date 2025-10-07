@@ -59,6 +59,15 @@
                         </div>
                       </div>
 
+                      <div class="form-group row">
+                        <label class="col-sm-3">Signature (Signatory 1)</label>
+                        <div class="col-sm-9">
+                          <input type="file" name="approver1_signature" accept="image/*" class="form-control">
+                          <small class="text-muted">PNG/JPG/WEBP up to 2MB</small>
+                          @error('approver1_signature')<p class="text-danger text-xs mt-1">{{ $message }}</p>@enderror
+                        </div>
+                      </div>
+
                       <div class="form-group  row">
                         <label class="col-sm-3" for="approver2">Signatory 2 : <span class="text-danger">*</span></label>
                         <div class="col-sm-9">
@@ -71,6 +80,15 @@
                           @error('approver2')
                             <p class="text-danger text-xs mt-1">{{$message}}</p>
                           @enderror
+                        </div>
+                      </div>
+
+                      <div class="form-group row">
+                        <label class="col-sm-3">Signature (Signatory 2)</label>
+                        <div class="col-sm-9">
+                          <input type="file" name="approver2_signature" accept="image/*" class="form-control">
+                          <small class="text-muted">PNG/JPG/WEBP up to 2MB</small>
+                          @error('approver2_signature')<p class="text-danger text-xs mt-1">{{ $message }}</p>@enderror
                         </div>
                       </div>
 

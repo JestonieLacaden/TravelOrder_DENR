@@ -142,23 +142,37 @@
                             </td>
                         
                             <td>{{ $Leave->user->username}}</td>          
-                                <td class="text-center">   
-                                {{-- @can('update', $Leave)
-                                <button type="button" class="btn btn-default" title="Delete" data-toggle="modal"  data-target="#edit-leave-modal-lg{{ $Leave->id }} " data-backdrop="static" data-keyboard="false">
-                                <i class="fas fa-edit"></i>
-                                {{__('Edit')}}
-                                </button> --}}
-                                {{-- @endcan --}}
-                                @can('delete', $Leave)
-                                <button type="button" class="btn btn-default" title="Delete" data-toggle="modal"  data-target="#delete-leave-modal-lg{{ $Leave->id }} " data-backdrop="static" data-keyboard="false">
-                                <i class="fas fa-trash-alt"></i>
-                                {{__('Delete')}}
-                                </button>
-                                @endcan
-                                {{-- @can('print', $Leave)
-                                <a href="{{ route('leave.print',[$Leave->id]) }}" rel="noopener" target="_blank" class="btn btn-default"><i class="fas fa-print" ></i> Print</a>
-                                @endcan --}}
-                            </td> 
+                                <td class="text-center">
+                                    {{-- PRINT: only when fully approved and not rejected --}}
+                                    @if($Leave->is_approve3 && !$Leave->is_rejected1 && !$Leave->is_rejected2 && !$Leave->is_rejected3)
+                                    {{-- @can('print', $Leave)
+                                    <button type="button" class="btn btn-default btn-print-leave" data-url="{{ route('leave.print', $Leave->id) }}">
+                                        <i class="fas fa-print"></i> Print
+                                    </button>
+                                    @endcan --}}
+
+                                    @can('print', $Leave)
+                                    <button type="button" class="btn btn-default btn-print-leave" onclick="printLeaveInline({{ $Leave->id }})">
+
+                                        <i class="fas fa-print"></i> Print
+                                    </button>
+                                    @endcan
+
+
+
+
+
+                                    @endif
+
+                                    {{-- DELETE: only while still pending (no final approval & no rejection) --}}
+                                    @if(!$Leave->is_approve3 && !$Leave->is_rejected1 && !$Leave->is_rejected2 && !$Leave->is_rejected3)
+                                    @can('delete', $Leave)
+                                    <button type="button" class="btn btn-default" title="Delete" data-toggle="modal" data-target="#delete-leave-modal-lg{{ $Leave->id }}" data-backdrop="static" data-keyboard="false">
+                                        <i class="fas fa-trash-alt"></i> {{ __('Delete') }}
+                                    </button>
+                                    @endcan
+                                    @endif
+                                </td>
                         </tr>
                         {{-- @include('msd-panel.event-panel.event.edit')
                         @include('msd-panel.event-panel.event.delete') --}}
@@ -223,10 +237,9 @@
           <script>
             $(function () {
               $("#example1").DataTable({
-                "responsive": true, "lengthChange": false, "autoWidth": false,
-              
+              responsive: true, lengthChange: false, autoWidth: false,
+              order: [[0, 'desc']] // unang column (Date Created) – latest first
               }).buttons().container().appendTo('#example1_wrapper .col-md-6:eq(0)');
-           
             });
 
           
@@ -237,6 +250,57 @@
               $('#daterange').daterangepicker()   
             });
           </script>
+
+          <script>
+              function printLeaveInline(id) {
+                  // buuin ang URL ng print page
+                  const url = "{{ route('leave.print', ':id') }}".replace(':id', id);
+
+                  // gumamit ng one-off hidden iframe
+                  const iframe = document.createElement('iframe');
+                  iframe.style.position = 'fixed';
+                  iframe.style.right = '0';
+                  iframe.style.bottom = '0';
+                  iframe.style.width = '0';
+                  iframe.style.height = '0';
+                  iframe.style.border = '0';
+
+                  iframe.onload = function() {
+                      // kapag loaded na ang print page, saka lang mag-print
+                      const w = this.contentWindow;
+                      // linisin pagkatapos magsara ang print dialog
+                      w.onafterprint = () => document.body.removeChild(iframe);
+                      w.focus();
+                      w.print();
+                  };
+
+                  iframe.src = url;
+                  document.body.appendChild(iframe);
+              }
+
+          </script>
+
+
+
+          {{-- <script>
+              $(document).on('click', '.btn-print-leave', function(e) {
+                  e.preventDefault();
+                  const url = $(this).data('url');
+
+                  let $frame = $('#print-frame');
+                  if (!$frame.length) {
+                      $frame = $('<iframe id="print-frame" style="display:none;"></iframe>').appendTo('body');
+                  }
+                  $frame.off('load').on('load', function() {
+                      this.contentWindow.focus();
+                      this.contentWindow.print();
+                  });
+                  $frame.attr('src', url);
+              });
+
+          </script> --}}
+
+
                     
 @include('partials.flashmessage')
 @endsection

@@ -32,7 +32,28 @@ class SetTravelOrderSignatoryPolicy
                 }
 
             }
-        }    
+        }
+
+
+    // protected function isAdmin(User $user): bool
+    // {
+    //     $roles = \App\Models\UserRole::where('userid', $user->id)->pluck('roleid')->all();
+    //     return in_array('1', $roles) || in_array('5', $roles);
+    // }
+
+    // public function viewAny(User $user)
+    // {
+    //     return $this->isAdmin($user);
+    // }
+    // public function create(User $user)
+    // {
+    //     return $this->isAdmin($user);
+    // }
+    // public function update(User $user)
+    // {
+    //     return $this->isAdmin($user);
+    // }
+
     }
 
     /**
