@@ -12,16 +12,52 @@
   <link rel="stylesheet" href="{{ asset('plugins/fontawesome-free/css/all.min.css') }}">
   <!-- Theme style -->
   <link rel="stylesheet" href="{{ asset('dist/css/adminlte.min.css') }}">
+
+  <style>
+    .sig{
+        width:auto; 
+        max-width: 60px; 
+        min-width:40px;
+
+    }
+  </style>
 </head>
+@php
+use Illuminate\Support\Facades\Storage;
+
+$a1 = optional($Leave->approvals->firstWhere('step', 1));
+$a2 = optional($Leave->approvals->firstWhere('step', 2));
+$a3 = optional($Leave->approvals->firstWhere('step', 3));
+
+$paths = [
+1 => $a1->signature_path
+?? optional($signatory ?? null)->signature1_path
+?? optional(optional($signatory ?? null)->employee1)->signature_path,
+2 => $a2->signature_path
+?? optional($signatory ?? null)->signature2_path
+?? optional(optional($signatory ?? null)->employee2)->signature_path,
+3 => $a3->signature_path
+?? optional($signatory ?? null)->signature3_path
+?? optional(optional($signatory ?? null)->employee3)->signature_path,
+];
+
+$src = [];
+foreach ([1,2,3] as $i) {
+$p = $paths[$i] ?? null;
+$src[$i] = ($p && Storage::disk('public')->exists($p)) ? asset('storage/'.$p) : null;
+}
+@endphp
+
 <body>
 <div class="wrapper">
+
   <!-- Main content -->
   <section class="invoice">
     <!-- title row -->
 
         <i>System Generated Leave id: {{$Leave->id }}
    
-        <table class="table table-bordered">
+        <table class="table table-bordered border border-black">
             <tbody>
                 <tr>
                     <td colspan="5">
@@ -115,12 +151,12 @@
                     @foreach($Leave_types as $LeaveType)
                         @if($LeaveType->id == $Leave->leaveid)
                             <div class="icheck-primary text-sm">
-                                <input type="checkbox" checked disabled value="" id="check1">
+                                <input type="checkbox" checked value="" id="check1">
                                 <label for="check1" class="text-xs"> {{ $LeaveType->leave_type}}</label>
                             </div>
                       @else
                         <div class="icheck-primary text-sm">
-                            <input type="checkbox"  disabled value="" id="check1">
+                            <input type="checkbox" value="" id="check1">
                             <label for="check1" class="text-xs"> {{ $LeaveType->leave_type}}</label>
                         </div>
                       @endif
@@ -221,11 +257,12 @@
                             <label for="check1"> Requested</label>
                         </div>
                         <div class="text-center pt-2">
+                            <img src="{{asset('images/dummySign.png')}}" class="sig" alt="Signature">
                             <div class="text-bold">
                                 {{$Employee->firstname . ' ' . $Employee->middlename . ' ' .  $Employee->lastname }}
                             </div>
                             <div class="">
-                                (Applicant)
+                                (Signature of Applicant)
                             </div>
                          </div>
                     </div>
@@ -273,13 +310,12 @@
 
                             </table>
                          </div>
-                         <div class="text-center pt-4">
-                            <div class="text-bold">
-                                {{$SetLeaveSignatory->employee1->firstname .' '. $SetLeaveSignatory->employee1->middlename .' '. $SetLeaveSignatory->employee1->lastname}}
-                            </div>
-                            <div class="">
-                                {{$SetLeaveSignatory->employee1->position}}
-                            </div>
+                         <div class="text-center pt-2">
+                             @if($src[1])
+                             <img src="{{ $src[1] }}" alt="Signature" height="50">
+                             @endif
+                             <div class="text-bold">{{ $a2->approver_name ?? '—' }}</div>
+                             <div>{{ $a2->approver_position ?? '' }}</div>
                          </div>
                     </td>
                     <td>
@@ -301,14 +337,13 @@
                             _________________________________________________________
                         </div>
                      
-                        <div class="text-center pt-5">
-                            <div class="text-bold">
-                                {{$SetLeaveSignatory->employee2->firstname .' '. $SetLeaveSignatory->employee2->middlename .' '. $SetLeaveSignatory->employee2->lastname}}
-                            </div>
-                            <div class="">
-                                {{$SetLeaveSignatory->employee2->position}}
-                            </div>
-                         </div>
+                        <div class="text-center pt-4">
+                            @if($src[2])
+                            <img src="{{ $src[2] }}" alt="Signature" height="50">
+                            @endif
+                            <div class="text-bold">{{ $a2->approver_name ?? '—' }}</div>
+                            <div>{{ $a2->approver_position ?? '' }}</div>
+                        </div>
                     </td>
                 </tr>
                 <tr>
@@ -357,14 +392,13 @@
                             </div>
                     
                         </div>
-                        <div class="text-center pt-5">
-                            <div class="text-bold">
-                                {{$SetLeaveSignatory->employee3->firstname .' '. $SetLeaveSignatory->employee3->middlename .' '. $SetLeaveSignatory->employee3->lastname}}
-                            </div>
-                            <div class="">
-                                {{$SetLeaveSignatory->employee3->position}}
-                            </div>
-                         </div>
+                        <div class="text-center pt-4">
+                            @if($src[3])
+                            <img src="{{ $src[3] }}" alt="Signature" height="50">
+                            @endif
+                            <div class="text-bold">{{ $a3->approver_name ?? '—' }}</div>
+                            <div>{{ $a3->approver_position ?? '' }}</div>
+                        </div>
                     </td>
                 </tr>
            
@@ -376,11 +410,22 @@
     </div>
     <!-- /.row -->
 <!-- Page specific script -->
-<script>
+{{-- <script>
     window.addEventListener('load', () => window.print());
     window.onafterprint = () => location.replace("{{ route('userleave.index') }}");
 
+</script> --}}
+@if (empty($preview))
+<script>
+    window.addEventListener('load', function() {
+        window.print();
+    });
+    window.onafterprint = function() {
+        location.replace(@json(route('userleave.index'))); // /leave-management
+    };
+
 </script>
+@endif
 
 
 </body>

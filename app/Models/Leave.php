@@ -23,4 +23,12 @@ class Leave extends Model
     public function User() {
         return $this->belongsTo(User::class, 'userid','id');
     }
+    public function approvals()
+    {
+        return $this->hasMany(\App\Models\LeaveApproval::class);
+    }
+    public function approvalsOrdered()
+    {
+        return $this->approvals()->orderBy('step');
+    }
 }

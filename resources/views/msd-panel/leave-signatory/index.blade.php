@@ -77,7 +77,7 @@
                   <th class="text-center">Signatory Name</th>
                   <th class="text-center">Signatory 1 (First Approval)</th>
                   <th class="text-center">Signatory 2(Second Approval)</th>
-                  <th class="text-center">Signatory 3(Fianal Approval)</th>
+                  <th class="text-center">Signatory 3(Final Approval)</th>
                   <th class="text-center">Action</th>
                 </tr>
                 </thead>

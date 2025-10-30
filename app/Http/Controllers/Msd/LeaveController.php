@@ -13,6 +13,7 @@ use Illuminate\Support\Carbon;
 use App\Models\SetLeaveSignatory;
 use App\Http\Controllers\Controller;
 use App\Models\SetTravelOrderSignatory;
+use Illuminate\Support\Facades\DB;
 
 class LeaveController extends Controller
 {
@@ -99,75 +100,100 @@ class LeaveController extends Controller
 
   }
 
-    public function print(Leave $Leave) {
- 
-      $this->authorize('print', $Leave);
-        
-            $Leave_types = Leave_Type::get();
-            $Employee = Employee::where('id','=',$Leave->employeeid)->with('Office')->get()->first();
+  public function print(\Illuminate\Http\Request $request, \App\Models\Leave $Leave)
+  {
+    $this->authorize('print', $Leave);
 
-            $data = $Leave->daterange;
-            list($startDate, $endDate) = explode(" - ", $data);
-            $date1 = new carbon($startDate);  
-            $date2 = new carbon($endDate);  
-            $Count = 0;       
+    $Leave_types = \App\Models\Leave_Type::get();
+    $Employee    = \App\Models\Employee::with('Office')->findOrFail($Leave->employeeid);
 
-      
-              while ($date1->lte($date2))
-              {
-                $Count =  $Count + 1;      
-                $date1->addDay();       
-              }
-            
-            $GetLeaveSignatory = SetLeaveSignatory::where('sectionid','=', $Employee->sectionid)->get()->first();
-            if(!empty($GetLeaveSignatory)) {
-              $SetLeaveSignatory = LeaveSignatory::where('id', '=', $GetLeaveSignatory->leavesignatoryid)->with('Employee1','Employee2','Employee3')->get()->first();
-              return view('mails.leave.print',compact('Leave_types','Employee','Leave','Count','SetLeaveSignatory'));
-            }
-            else
-            {
-              return back()->with('SignatoryError', 'Error');
-            }
-       
-    }
-    public function accept(Leave $Leave) {
-      try
-      {
-        $this->authorize('accept', $Leave);
+    // count days
+    [$startDate, $endDate] = explode(' - ', $Leave->daterange);
+    $date1  = new \Carbon\Carbon($startDate);
+    $date2  = new \Carbon\Carbon($endDate);
+    $Count  = $date1->diffInDays($date2) + 1;
 
-        $LeaveSignatories = LeaveSignatory::get();
-        $Employee = Employee::where('email','=',auth()->user()->email)->get()->first();
-        foreach($LeaveSignatories as $LeaveSignatory)
-        {
-          if($LeaveSignatory->approver1 == $Employee->id && auth()->check()) 
-          {
-            $formfields['is_approve1'] = true;
-            $Leave->update($formfields);
-            return back()->with('message', 'Leave Successfully Approved!');
-          } 
-          if($LeaveSignatory->approver2 == $Employee->id && auth()->check()) 
-          {
-            $formfields['is_approve2'] = true;
-            $Leave->update($formfields);
-            return back()->with('message', 'Leave Successfully Approved!');
-          } 
-          if($LeaveSignatory->approver3 == $Employee->id && auth()->check()) 
-          {
-            $formfields['is_approve3'] = true;
-            $Leave->update($formfields);
-            return back()->with('message', 'Leave Successfully Approved!');
-          } 
+    $preview = $request->boolean('preview');
+
+    // load snapshots
+    $Leave->load('approvals');
+
+    // current signatory (fallback only)
+    $set       = \App\Models\SetLeaveSignatory::where('sectionid', $Employee->sectionid)->first();
+    $signatory = $set
+      ? \App\Models\LeaveSignatory::with('Employee1', 'Employee2', 'Employee3')->find($set->leavesignatoryid)
+      : null;
+
+    return view('mails.leave.print', compact('Leave_types', 'Employee', 'Leave', 'Count', 'preview', 'signatory'));
+  }
+
+
+
+  public function accept(Leave $Leave)
+  {
+    try {
+      $this->authorize('accept', $Leave);
+
+      $approver = Employee::where('email', auth()->user()->email)->firstOrFail();
+
+      $applicant   = Employee::findOrFail($Leave->employeeid);
+      $set         = SetLeaveSignatory::where('sectionid', $applicant->sectionid)->first();
+      if (!$set)  return back()->with('message', 'No signatory set found.');
+
+      $signatory   = LeaveSignatory::find($set->leavesignatoryid);
+      if (!$signatory) return back()->with('message', 'Signatory record missing.');
+
+      $step = null;
+      if ($signatory->approver1 == $approver->id && !$Leave->is_approve1 && !$Leave->is_rejected1) {
+        $step = 1;
+        $Leave->update(['is_approve1' => true]);
+      } elseif ($signatory->approver2 == $approver->id && $Leave->is_approve1 && !$Leave->is_approve2 && !$Leave->is_rejected2) {
+        $step = 2;
+        $Leave->update(['is_approve2' => true]);
+      } elseif ($signatory->approver3 == $approver->id && $Leave->is_approve1 && $Leave->is_approve2 && !$Leave->is_approve3 && !$Leave->is_rejected3) {
+        $step = 3;
+        $Leave->update(['is_approve3' => true]);
+      }
+
+      if (!$step) return back()->with('message', 'You are not the active approver for this request.');
+
+      // --- pick a signature path
+      $sigField       = "signature{$step}_path";
+      $signature_path = $signatory->{$sigField};                 // prefer per-signatory upload
+
+      // if blank, try the employee's saved signature
+      if (!$signature_path) {
+        $approverId = [1 => $signatory->approver1, 2 => $signatory->approver2, 3 => $signatory->approver3][$step] ?? null;
+        $fallback   = optional(Employee::find($approverId))->signature_path; // might be "signatures/<file>.png"
+        if ($fallback && Storage::disk('public')->exists($fallback)) {
+          $signature_path = $fallback;
         }
-    }    
-    catch (Throwable $e) {
+      }
+
+      // snapshot fields
+      $Leave->approvals()->updateOrCreate(
+        ['step' => $step],
+        [
+          'approver_employee_id' => $approver->id,
+          'approver_name'        => trim($approver->firstname . ' ' . $approver->middlename . ' ' . $approver->lastname),
+          'approver_position'    => $approver->position,
+          'signature_path'       => $signature_path, // can be null if really none
+          'approved_at'          => now(),
+        ]
+      );
+
+      return back()->with('message', 'Leave Successfully Approved!');
+    } catch (\Throwable $e) {
       report($e);
-    
-      return false;
+      return back()->with('message', 'Error approving leave.');
     }
-    }    
-    
-   
-    public function reject(Leave $Leave) {
+  }
+
+
+
+
+
+  public function reject(Leave $Leave) {
         $this->authorize('reject', $Leave);
         $LeaveSignatories = LeaveSignatory::get();
         $Employee = Employee::where('email','=',auth()->user()->email)->get()->first();
