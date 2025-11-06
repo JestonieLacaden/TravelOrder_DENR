@@ -1,118 +1,117 @@
-
 <!-- /.modal -->
 
-<div class="modal fade" id="edit-signatory-modal-lg{{ $LeaveSignatory->id }}" >
+<div class="modal fade" id="edit-signatory-modal-lg{{ $LeaveSignatory->id }}">
     <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h4 class="modal-title">Edit Signatory</h4>
-          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-            <span aria-hidden="true">&times;</span>
-          </button>
-        </div>
-          <div class="modal-body">
-        
-        
-        <!-- Main content -->
-
-        <section class="content">
-          <div class="container-fluid">
-            <div class="row">
-              <!-- left column -->
-              <div class="col-md-12">
-                <!-- general form elements -->
-                <div class="card card-primary">
-                  <div class="card-header">
-                    <h3 class="card-title">Signatory Information</h3>
-                
-                  </div>
-                  
-                  <!-- /.card-header -->
-                  <!-- form start -->
-                
-                  <form method="POST" action="{{ route('leave-signatory.update',[ $LeaveSignatory->id])}}" enctype="multipart/form-data">
-
-                    {{ csrf_field() }}
-                    @method('PUT')
-                    <div class="card-body">
-
-                      @foreach ([1,2,3] as $i)
-                      @php
-                      $approverField = "approver{$i}";
-                      $sigColumn = "signature{$i}_path";
-                      $currentApproverId = $LeaveSignatory->{$approverField};
-                      $currentSigUrl = $LeaveSignatory->{$sigColumn} ? asset('storage/'.$LeaveSignatory->{$sigColumn}) : null;
-                      @endphp
-
-                      <div class="form-group row">
-                          <label class="col-sm-3" for="approver{{ $i }}">Signatory {{ $i }} : <span class="text-danger">*</span></label>
-
-                          {{-- IMPORTANT: data-* attributes for JS logic --}}
-                          <div class="col-sm-9" data-slot="{{ $i }}" data-current-approver-id="{{ $currentApproverId }}" data-current-sig-url="{{ $currentSigUrl }}">
-                              <select id="approver{{ $i }}" name="approver{{ $i }}" class="form-control select2" style="width:100%;">
-                                  <option value="" disabled>-- Choose Employee Name --</option>
-                                  @foreach($Employees as $emp)
-                                  <option value="{{ $emp->id }}" {{ $emp->id == $currentApproverId ? 'selected' : '' }}>
-                                      {{ $emp->lastname.', '.$emp->firstname.' '.$emp->middlename }}
-                                  </option>
-                                  @endforeach
-                              </select>
-                              @error("approver{$i}") <p class="text-danger text-xs mt-1">{{ $message }}</p> @enderror
-                          </div>
-                      </div>
-
-                      <div class="form-group row">
-                          <label class="col-sm-3">Signature {{ $i }} (PNG/JPG)</label>
-                          <div class="col-sm-9">
-
-                              {{-- CURRENT SIGNATURE + REMOVE (auto-toggle sa JS) --}}
-                              <div id="currentSigBlock{{ $i }}" style="{{ $currentSigUrl ? '' : 'display:none' }}">
-                                  <div class="mb-2">
-                                      <small class="text-muted d-block">Current:</small>
-                                      @if($currentSigUrl)
-                                      <img src="{{ $currentSigUrl }}" alt="signature{{ $i }}" style="height:60px">
-                                      @endif
-                                  </div>
-                                  <div class="form-check mb-2">
-                                      <input class="form-check-input" type="checkbox" id="remove_signature{{ $i }}" name="remove_signature{{ $i }}" value="1">
-                                      <label class="form-check-label" for="remove_signature{{ $i }}">Remove existing signature</label>
-                                  </div>
-                              </div>
-
-                              <input id="signatureInput{{ $i }}" type="file" name="signature{{ $i }}" class="form-control" accept="image/png,image/jpeg" onchange="previewSig(this,'sig{{ $i }}Preview{{ $LeaveSignatory->id }}')">
-                              <small class="text-muted">PNG/JPG up to ~500KB.</small>
-
-                              <div class="mt-2">
-                                  <img id="sig{{ $i }}Preview{{ $LeaveSignatory->id }}" style="height:60px;display:none;">
-                              </div>
-
-                              @error("signature{$i}") <p class="text-danger text-xs mt-1">{{ $message }}</p> @enderror
-                          </div>
-                      </div>
-                      @endforeach
-
-
-                
-                    </div>
-                    <!-- /.card-body -->
-                     <div class="card-footer">
-                      <button type="submit"  class="btn btn-primary">Submit</button>
-                    </div>
-                
-                  </form>
-                </div>
-                <!-- /.card -->
-              </div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Edit Signatory</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
             </div>
-          </div>
-        </section>
-    </div>
-      </div>
-      <!-- /.modal-content -->
+            <div class="modal-body">
+
+
+                <!-- Main content -->
+
+                <section class="content">
+                    <div class="container-fluid">
+                        <div class="row">
+                            <!-- left column -->
+                            <div class="col-md-12">
+                                <!-- general form elements -->
+                                <div class="card card-primary">
+                                    <div class="card-header">
+                                        <h3 class="card-title">Signatory Information</h3>
+
+                                    </div>
+
+                                    <!-- /.card-header -->
+                                    <!-- form start -->
+
+                                    <form method="POST" action="{{ route('leave-signatory.update',[ $LeaveSignatory->id])}}" enctype="multipart/form-data">
+
+                                        {{ csrf_field() }}
+                                        @method('PUT')
+                                        <div class="card-body">
+
+                                            @foreach ([1,2,3] as $i)
+                                            @php
+                                            $approverField = "approver{$i}";
+                                            $sigColumn = "signature{$i}_path";
+                                            $currentApproverId = $LeaveSignatory->{$approverField};
+                                            $currentSigUrl = $LeaveSignatory->{$sigColumn} ? asset('storage/'.$LeaveSignatory->{$sigColumn}) : null;
+                                            @endphp
+
+                                            <div class="form-group row">
+                                                <label class="col-sm-3" for="approver{{ $i }}">Signatory {{ $i }} : <span class="text-danger">*</span></label>
+
+                                                {{-- IMPORTANT: data-* attributes for JS logic --}}
+                                                <div class="col-sm-9" data-slot="{{ $i }}" data-current-approver-id="{{ $currentApproverId }}" data-current-sig-url="{{ $currentSigUrl }}">
+                                                    <select id="approver{{ $i }}" name="approver{{ $i }}" class="form-control select2" style="width:100%;">
+                                                        <option value="" disabled>-- Choose Employee Name --</option>
+                                                        @foreach($Employees as $emp)
+                                                        <option value="{{ $emp->id }}" {{ $emp->id == $currentApproverId ? 'selected' : '' }}>
+                                                            {{ $emp->lastname.', '.$emp->firstname.' '.$emp->middlename }}
+                                                        </option>
+                                                        @endforeach
+                                                    </select>
+                                                    @error("approver{$i}") <p class="text-danger text-xs mt-1">{{ $message }}</p> @enderror
+                                                </div>
+                                            </div>
+
+                                            <div class="form-group row">
+                                                <label class="col-sm-3">Signature {{ $i }} (PNG/JPG)</label>
+                                                <div class="col-sm-9">
+
+                                                    {{-- CURRENT SIGNATURE + REMOVE (auto-toggle sa JS) --}}
+                                                    <div id="currentSigBlock{{ $i }}" style="{{ $currentSigUrl ? '' : 'display:none' }}">
+                                                        <div class="mb-2">
+                                                            <small class="text-muted d-block">Current:</small>
+                                                            @if($currentSigUrl)
+                                                            <img src="{{ $currentSigUrl }}" alt="signature{{ $i }}" style="height:60px">
+                                                            @endif
+                                                        </div>
+                                                        <div class="form-check mb-2">
+                                                            <input class="form-check-input" type="checkbox" id="remove_signature{{ $i }}" name="remove_signature{{ $i }}" value="1">
+                                                            <label class="form-check-label" for="remove_signature{{ $i }}">Remove existing signature</label>
+                                                        </div>
+                                                    </div>
+
+                                                    <input id="signatureInput{{ $i }}" type="file" name="signature{{ $i }}" class="form-control" accept="image/png,image/jpeg" onchange="previewSig(this,'sig{{ $i }}Preview{{ $LeaveSignatory->id }}')">
+                                                    <small class="text-muted">PNG/JPG up to ~500KB.</small>
+
+                                                    <div class="mt-2">
+                                                        <img id="sig{{ $i }}Preview{{ $LeaveSignatory->id }}" style="height:60px;display:none;">
+                                                    </div>
+
+                                                    @error("signature{$i}") <p class="text-danger text-xs mt-1">{{ $message }}</p> @enderror
+                                                </div>
+                                            </div>
+                                            @endforeach
+
+
+
+                                        </div>
+                                        <!-- /.card-body -->
+                                        <div class="card-footer">
+                                            <button type="submit" class="btn btn-primary">Submit</button>
+                                        </div>
+
+                                    </form>
+                                </div>
+                                <!-- /.card -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+        <!-- /.modal-content -->
     </div>
     <!-- /.modal-dialog -->
-  </div>
-  <!-- /.modal -->
+</div>
+<!-- /.modal -->
 @push('scripts')
 <script>
     function previewSig(input, imgId) {
@@ -162,10 +161,4 @@
 
 </script>
 @endpush
-
-
-
-
-
-
 
