@@ -75,15 +75,15 @@
                                 {{ __ ('Add Leave')}}
                             </button>
                             @endcan
-                            @can('AddUserLeave', \App\Models\Leave::class)
+                            {{-- @can('AddUserLeave', \App\Models\Leave::class)
                             <a href="{{route('leave.summary')}}">
-                                <button type="button" class="btn btn-default float-right">
+                            <button type="button" class="btn btn-default float-right">
 
-                                    <i class="fas fa-eye"></i>
-                                    {{ __ ('View Summary')}}
-                                </button>
+                                <i class="fas fa-eye"></i>
+                                {{ __ ('View Summary')}}
+                            </button>
                             </a>
-                            @endcan
+                            @endcan --}}
                         </div>
                         <!-- /.card-header -->
                         <div class="card-body">
@@ -157,7 +157,7 @@
                                                 <i class="fas fa-print"></i> Print
                                             </button>
                                             <a href="{{ route('leave.print', ['Leave' => $Leave->id, 'preview' => 1]) }}" target="_blank">
-                                                Open print view
+                                            Open print view
                                             </a>
                                             @endcan
 
@@ -288,6 +288,58 @@
 
 </script>
 
+<script>
+    // Smart notification system - check for updates without auto-refresh
+    let lastCheckTime = new Date().getTime();
+
+    // Check for updates every 30 seconds
+    setInterval(function() {
+        $.ajax({
+            url: "{{ route('leave.checkUpdates') }}"
+            , method: 'GET'
+            , data: {
+                lastCheck: lastCheckTime
+            }
+            , success: function(response) {
+                if (response.hasUpdates) {
+                    showUpdateNotification();
+                    lastCheckTime = new Date().getTime();
+                }
+            }
+            , error: function() {
+                // Silent fail - don't disrupt user experience
+                console.log('Failed to check for updates');
+            }
+        });
+    }, 30000); // check every 30 seconds
+
+    function showUpdateNotification() {
+        // Show non-intrusive notification
+        if ($('#update-banner').length === 0) {
+            const banner = `
+                <div id="update-banner" class="alert alert-info alert-dismissible" 
+                     style="position: fixed; top: 80px; right: 20px; z-index: 9999; width: 350px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                    <button type="button" class="close" data-dismiss="alert">&times;</button>
+                    <h5><i class="icon fas fa-info-circle"></i> Updates Available</h5>
+                    New leave status updates are available.
+                    <button class="btn btn-sm btn-primary mt-2 w-100" onclick="location.reload()">
+                        <i class="fas fa-sync"></i> Refresh Now
+                    </button>
+                </div>
+            `;
+            $('body').append(banner);
+
+            // Auto-dismiss after 15 seconds
+            setTimeout(() => {
+                $('#update-banner').fadeOut(400, function() {
+                    $(this).remove();
+                });
+            }, 15000);
+        }
+    }
+
+</script>
+
 
 
 {{-- <script>
@@ -322,4 +374,3 @@
 <link rel="stylesheet" href="{{asset('/plugins/datatables-buttons/css/buttons.bootstrap4.min.css') }}">
 
 @endsection
-
