@@ -35,6 +35,14 @@
                                         @method('PUT')
                                         <div class="card-body">
 
+                                            <div class="form-group row">
+                                                <label class="col-sm-3" for="name">Signatory Name : <span class="text-danger">*</span></label>
+                                                <div class="col-sm-9">
+                                                    <input id="name" name="name" type="text" class="form-control" value="{{ old('name', $LeaveSignatory->name) }}" placeholder="e.g. PENRO - MAMBUROAO">
+                                                    @error('name') <p class="text-danger text-xs mt-1">{{ $message }}</p> @enderror
+                                                </div>
+                                            </div>
+
                                             @foreach ([1,2,3] as $i)
                                             @php
                                             $approverField = "approver{$i}";
@@ -161,4 +169,3 @@
 
 </script>
 @endpush
-

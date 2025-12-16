@@ -335,9 +335,13 @@ Route::group(['middleware' => 'auth'], function () {
 
         Route::put('leave/{Leave}/accept', [LeaveController::class, 'accept'])->name('leave.accept');
         Route::put('leave/{Leave}/reject', [LeaveController::class, 'reject'])->name('leave.reject');
+        Route::put('leave/{Leave}/credits-save', [LeaveController::class, 'saveCredits'])->name('leave.credits.save');
+        Route::put('leave/{Leave}/approver2-save', [LeaveController::class, 'saveApprover2'])->name('leave.approver2.save');
+        Route::put('leave/{Leave}/approver3-save', [LeaveController::class, 'saveApprover3'])->name('leave.approver3.save');
         Route::get('leave/{Leave}/print', [LeaveController::class, 'print'])->name('leave.print');
 
         Route::get('leave-management', [LeaveController::class, 'userindex'])->name('userleave.index');
+        Route::get('leave-management/check-updates', [LeaveController::class, 'checkUpdates'])->name('leave.checkUpdates');
         Route::post('leave-management/create', [LeaveController::class, 'storeUserLeave'])->name('userleave.storeUserLeave');
         Route::get('leave-management/summary', [LeaveController::class, 'summary'])->name('leave.summary');
         Route::get('leave-management/summary/filtered', [LeaveController::class, 'summaryfilter'])->name('leave.summaryfilter');

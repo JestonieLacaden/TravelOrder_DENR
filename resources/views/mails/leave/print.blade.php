@@ -15,9 +15,26 @@
     <style>
         .sig {
             width: auto;
-            max-width: 60px;
-            min-width: 40px;
+            max-width: 70px;
+        }
 
+        /* Align 7.C and 7.D to top, prevent one column from affecting the other */
+        .section-7c-7d {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        .section-7c-7d>div {
+            flex: 1;
+        }
+
+        .approver3-sign {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding-top: 12px;
         }
 
     </style>
@@ -29,23 +46,48 @@ $a1 = optional($Leave->approvals->firstWhere('step', 1));
 $a2 = optional($Leave->approvals->firstWhere('step', 2));
 $a3 = optional($Leave->approvals->firstWhere('step', 3));
 
-$paths = [
-1 => $a1->signature_path
-?? optional($signatory ?? null)->signature1_path
-?? optional(optional($signatory ?? null)->employee1)->signature_path,
-2 => $a2->signature_path
-?? optional($signatory ?? null)->signature2_path
-?? optional(optional($signatory ?? null)->employee2)->signature_path,
-3 => $a3->signature_path
-?? optional($signatory ?? null)->signature3_path
-?? optional(optional($signatory ?? null)->employee3)->signature_path,
+// Snapshot-only sourcing: names, positions, signatures come from leave_approvals
+// This preserves historic records when employees change later.
+
+$resolve = function ($p) {
+if (!$p) return null;
+$p = ltrim(str_replace('\\', '/', $p), '/');
+if (preg_match('/^https?:\/:\//i', $p)) return $p;
+if (str_starts_with($p, 'storage/')) return asset($p);
+return asset('storage/'.$p);
+};
+
+$src = [
+1 => $resolve($a1->signature_path ?? null),
+2 => $resolve($a2->signature_path ?? null),
+3 => $resolve($a3->signature_path ?? null),
 ];
 
-$src = [];
-foreach ([1,2,3] as $i) {
-$p = $paths[$i] ?? null;
-$src[$i] = ($p && Storage::disk('public')->exists($p)) ? asset('storage/'.$p) : null;
-}
+$names = [
+1 => trim($a1->approver_name ?? ''),
+2 => trim($a2->approver_name ?? ''),
+3 => trim($a3->approver_name ?? ''),
+];
+
+$positions = [
+1 => trim($a1->approver_position ?? ''),
+2 => trim($a2->approver_position ?? ''),
+3 => trim($a3->approver_position ?? ''),
+];
+
+// Use stored edited values if available, otherwise use computed leaveCredits
+$displayCredits = [
+'vacation' => [
+'earned' => $Leave->vacation_earned ?? ($leaveCredits['vacation']['earned'] ?? 0),
+'this_app' => $Leave->vacation_this_app ?? ($leaveCredits['vacation']['this_app'] ?? 0),
+'balance' => $Leave->vacation_balance ?? ($leaveCredits['vacation']['balance'] ?? 0),
+],
+'sick' => [
+'earned' => $Leave->sick_earned ?? ($leaveCredits['sick']['earned'] ?? 0),
+'this_app' => $Leave->sick_this_app ?? ($leaveCredits['sick']['this_app'] ?? 0),
+'balance' => $Leave->sick_balance ?? ($leaveCredits['sick']['balance'] ?? 0),
+],
+];
 @endphp
 
 <body>
@@ -170,36 +212,36 @@ $src[$i] = ($p && Storage::disk('public')->exists($p)) ? asset('storage/'.$p) : 
                                     <i class="text-sm">In case of Vacation/Special Privilege Leave:</i>
                                 </div>
                                 <div class="form-group row check-primary text-sm">
-                                    <input type="checkbox" value="" id="check1">
+                                    <input type="checkbox" value="" id="check1" {{ !empty($Leave->location_within_ph) ? 'checked' : '' }}>
                                     <label class="col-sm-4" for="datereceived">Within the Philippines </label>
                                     <div class=" col-sm-7">
-                                        <input type="text" class="form-control" value="" oninput="this.value = this.value.toUpperCase()">
+                                        <input type="text" class="form-control" value="{{ $Leave->location_within_ph ?? '' }}" oninput="this.value = this.value.toUpperCase()">
                                     </div>
 
                                 </div>
                                 <div class="form-group row check-primary text-sm">
-                                    <input type="checkbox" value="" id="check1">
+                                    <input type="checkbox" value="" id="check1" {{ !empty($Leave->location_abroad) ? 'checked' : '' }}>
                                     <label class="col-sm-4" for="datereceived">Abroad (Specify) </label>
                                     <div class=" col-sm-7">
-                                        <input type="text" class="form-control" value="" oninput="this.value = this.value.toUpperCase()">
+                                        <input type="text" class="form-control" value="{{ $Leave->location_abroad ?? '' }}" oninput="this.value = this.value.toUpperCase()">
                                     </div>
                                 </div>
 
                                 <div class="">
-                                    <i class="text-sm">In case of Vacation/Special Privilege Leave:</i>
+                                    <i class="text-sm">In case of Sick Leave:</i>
                                 </div>
                                 <div class="form-group row check-primary text-sm">
-                                    <input type="checkbox" value="" id="check1">
+                                    <input type="checkbox" value="" id="check1" {{ !empty($Leave->hospital_specify) ? 'checked' : '' }}>
                                     <label class="col-sm-4" for="datereceived"> In Hospital (Specify Illness) </label>
                                     <div class=" col-sm-7">
-                                        <input type="text" class="form-control" value="" oninput="this.value = this.value.toUpperCase()">
+                                        <input type="text" class="form-control" value="{{ $Leave->hospital_specify ?? '' }}" oninput="this.value = this.value.toUpperCase()">
                                     </div>
                                 </div>
                                 <div class="form-group row check-primary text-sm">
-                                    <input type="checkbox" value="" id="check1">
+                                    <input type="checkbox" value="" id="check1" {{ !empty($Leave->outpatient_specify) ? 'checked' : '' }}>
                                     <label class="col-sm-4" for="datereceived"> Out Patient (Specify Illness) </label>
                                     <div class=" col-sm-7">
-                                        <input type="text" class="form-control" value="" oninput="this.value = this.value.toUpperCase()">
+                                        <input type="text" class="form-control" value="{{ $Leave->outpatient_specify ?? '' }}" oninput="this.value = this.value.toUpperCase()">
                                     </div>
                                 </div>
 
@@ -207,23 +249,23 @@ $src[$i] = ($p && Storage::disk('public')->exists($p)) ? asset('storage/'.$p) : 
                                     <i class="text-sm">In case of Study Leave:</i>
                                 </div>
                                 <div class="icheck-primary text-sm">
-                                    <input type="checkbox" value="" id="check1">
+                                    <input type="checkbox" value="" id="check1" {{ ($Leave->study_masters_degree ?? false) ? 'checked' : '' }} disabled>
                                     <label for="check1"> Completion of Master's Degree</label>
                                 </div>
                                 <div class="icheck-primary text-sm">
-                                    <input type="checkbox" value="" id="check1">
-                                    <label for="check1"> BAR/Board Examination Review</label>
+                                    <input type="checkbox" value="" id="check2" {{ ($Leave->study_bar_board ?? false) ? 'checked' : '' }} disabled>
+                                    <label for="check2"> BAR/Board Examination Review</label>
                                 </div>
                                 <div class="pt-2">
                                     <i class="text-sm">Other Purpose:</i>
                                 </div>
                                 <div class="icheck-primary text-sm">
-                                    <input type="checkbox" value="" id="check1">
-                                    <label for="check1"> Monetization of Leave Credits</label>
+                                    <input type="checkbox" value="" id="check3" {{ ($Leave->other_monetization ?? false) ? 'checked' : '' }} disabled>
+                                    <label for="check3"> Monetization of Leave Credits</label>
                                 </div>
                                 <div class="icheck-primary text-sm">
-                                    <input type="checkbox" value="" id="check1">
-                                    <label for="check1"> Terminal Leave</label>
+                                    <input type="checkbox" value="" id="check4" {{ ($Leave->other_terminal_leave ?? false) ? 'checked' : '' }} disabled>
+                                    <label for="check4"> Terminal Leave</label>
                                 </div>
 
                             </td>
@@ -249,15 +291,32 @@ $src[$i] = ($p && Storage::disk('public')->exists($p)) ? asset('storage/'.$p) : 
                                     6.D. COMMUTATION
                                 </div>
                                 <div class="icheck-primary text-sm">
-                                    <input type="checkbox" value="" id="check1">
+                                    <input type="checkbox" value="" id="check1" {{ (is_string($Leave->commutation ?? null) && $Leave->commutation === 'not_requested') ? 'checked' : '' }}>
                                     <label for="check1"> Not Requested</label>
                                 </div>
                                 <div class="icheck-primary text-sm">
-                                    <input type="checkbox" value="" id="check1">
+                                    <input type="checkbox" value="" id="check1" {{ (is_string($Leave->commutation ?? null) && $Leave->commutation === 'requested') ? 'checked' : '' }}>
                                     <label for="check1"> Requested</label>
                                 </div>
                                 <div class="text-center pt-2">
-                                    <img src="{{asset('images/dummySign.png')}}" class="sig" alt="Signature">
+                                    @php
+                                    $applicantSig = '';
+                                    if (!empty($Employee->signature_path)) {
+                                    // Try different path formats
+                                    if (filter_var($Employee->signature_path, FILTER_VALIDATE_URL)) {
+                                    $applicantSig = $Employee->signature_path;
+                                    } elseif (strpos($Employee->signature_path, 'storage/') === 0) {
+                                    $applicantSig = asset($Employee->signature_path);
+                                    } elseif (strpos($Employee->signature_path, '/storage/') === 0) {
+                                    $applicantSig = asset($Employee->signature_path);
+                                    } else {
+                                    $applicantSig = asset('storage/' . $Employee->signature_path);
+                                    }
+                                    }
+                                    @endphp
+                                    @if (!empty($applicantSig))
+                                    <img src="{{ $applicantSig }}" class="sig" onerror="this.style.display='none'">
+                                    @endif
                                     <div class="text-bold">
                                         {{$Employee->firstname . ' ' . $Employee->middlename . ' ' .  $Employee->lastname }}
                                     </div>
@@ -293,29 +352,29 @@ $src[$i] = ($p && Storage::disk('public')->exists($p)) ? asset('storage/'.$p) : 
                     <tbody>
                         <tr>
                             <td class="p-0 m-0">Total Earned</td>
-                            <td class="p-0 m-0"></td>
-                            <td class="p-0 m-0"></td>
+                            <td class="p-0 m-0 text-center">{{ $displayCredits['vacation']['earned'] ?? 0 }}</td>
+                            <td class="p-0 m-0 text-center">{{ $displayCredits['sick']['earned'] ?? 0 }}</td>
                         </tr>
                         <tr>
                             <td class="p-0 m-0">Less this Application</td>
-                            <td class="p-0 m-0"></td>
-                            <td class="p-0 m-0"></td>
+                            <td class="p-0 m-0 text-center">{{ $displayCredits['vacation']['this_app'] ?? 0 }}</td>
+                            <td class="p-0 m-0 text-center">{{ $displayCredits['sick']['this_app'] ?? 0 }}</td>
                         </tr>
                         <tr>
                             <td class="p-0 m-0">Balance</td>
-                            <td class="p-0 m-0"></td>
-                            <td class="p-0 m-0"></td>
+                            <td class="p-0 m-0 text-center">{{ $displayCredits['vacation']['balance'] ?? 0 }}</td>
+                            <td class="p-0 m-0 text-center">{{ $displayCredits['sick']['balance'] ?? 0 }}</td>
                         </tr>
                     </tbody>
 
                 </table>
             </div>
             <div class="text-center pt-2">
-                @if($src[1])
-                <img src="{{ $src[1] }}" alt="Signature" height="50">
+                @if (!empty($src[1]))
+                <img src="{{ $src[1] }}" class="sig" onerror="this.style.display='none'">
                 @endif
-                <div class="text-bold">{{ $a2->approver_name ?? '—' }}</div>
-                <div>{{ $a2->approver_position ?? '' }}</div>
+                <div class="text-bold">{{ ($names[1] ?? '') !== '' ? $names[1] : '—' }}</div>
+                <div>{{ ($positions[1] ?? '') !== '' ? $positions[1] : '—' }}</div>
             </div>
         </td>
         <td>
@@ -323,81 +382,92 @@ $src[$i] = ($p && Storage::disk('public')->exists($p)) ? asset('storage/'.$p) : 
                 7.B. RECOMMENDATION
             </div>
             <div class="icheck-primary text-sm pt-2">
-                <input type="checkbox" value="" id="check1">
+                <input type="checkbox" value="" id="check1" {{ ($Leave->recommendation ?? '') === 'for_approval' ? 'checked' : '' }}>
                 <label for="check1"> For Approval</label>
             </div>
             <div class="icheck-primary text-sm">
-                <input type="checkbox" value="" id="check1">
+                <input type="checkbox" value="" id="check1" {{ ($Leave->recommendation ?? '') === 'for_disapproval' ? 'checked' : '' }}>
                 <label for="check1"> For Disapproval</label>
             </div>
             <div>
-                _________________________________________________________
+                <strong><u>{{ $Leave->recommendation_notes ?? '_________________________________________________________' }}</u></strong>
             </div>
             <div>
+                @if(empty($Leave->recommendation_notes))
                 _________________________________________________________
+                @endif
             </div>
 
             <div class="text-center pt-4">
-                @if($src[2])
-                <img src="{{ $src[2] }}" alt="Signature" height="50">
+                @if (!empty($src[2]))
+                <img src="{{ $src[2] }}" class="sig" onerror="this.style.display='none'">
                 @endif
-                <div class="text-bold">{{ $a2->approver_name ?? '—' }}</div>
-                <div>{{ $a2->approver_position ?? '' }}</div>
+                <div class="text-bold">{{ ($names[2] ?? '') !== '' ? $names[2] : '—' }}</div>
+                <div>{{ ($positions[2] ?? '') !== '' ? $positions[2] : '—' }}</div>
             </div>
         </td>
     </tr>
     <tr>
         <td colspan="5">
-            <div class="row">
-                <div class="col-sm-6">
-                    7.C. APPROVED FOR:
-                </div>
-                <div class="col-sm-5 pl-4">
-                    7.D. DISAPPROVED DUE TO:
-                </div>
+            <div class="section-7c-7d">
+                <div>
+                    <div class="">
+                        <strong>7.C. APPROVED FOR:</strong>
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-2">
+                            <u><strong>{{ $Leave->days_with_pay ?? '_________' }}</strong></u>
+                        </div>
+                        <div class="col-sm-10">
+                            days with Pay
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-2">
+                            <u><strong>{{ $Leave->days_without_pay ?? '_________' }}</strong></u>
+                        </div>
+                        <div class="col-sm-10">
+                            days without Pay
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-2">
+                            <u><strong>{{ $Leave->approved_others ?? '_________' }}</strong></u>
+                        </div>
+                        <div class="col-sm-10">
+                            Others (Specify)
+                        </div>
+                    </div>
+                    {{-- <div class="text-center pt-4">
+                        @if (!empty($src[3]))
+                        <img src="{{ $src[3] }}" class="sig" onerror="this.style.display='none'">
+                    @endif
+                    <div class="text-bold">{{ ($names[3] ?? '') !== '' ? $names[3] : '—' }}</div>
+                    <div>{{ ($positions[3] ?? '') !== '' ? $positions[3] : '—' }}</div>
+                </div> --}}
             </div>
-            <div class="row">
-                <div class="col-sm-1">
-                    _________
+
+            <div>
+                <div class="">
+                    <strong>7.D. DISAPPROVED DUE TO:</strong>
                 </div>
-                <div class="col-sm-5">
-                    days with Pay
+                <div class="pt-2">
+                    <strong><u>{{ $Leave->disapproved_reason ?? '_________________________________________________' }}</u></strong>
                 </div>
-                <div class="col-sm-3 pl-4">
+                @if(empty($Leave->disapproved_reason))
+                <div>
                     _________________________________________________
                 </div>
-
-            </div>
-            <div class="row">
-                <div class="col-sm-1">
-                    _________
-                </div>
-                <div class="col-sm-5">
-                    days without Pay
-                </div>
-                <div class="col-sm-3 pl-4">
-                    _________________________________________________
-                </div>
-
-            </div>
-            <div class="row">
-                <div class="col-sm-1">
-                    _________
-                </div>
-                <div class="col-sm-5">
-                    Others (Specify)
-                </div>
-                <div class="col-sm-3 pl-4">
-                    _________________________________________________
-                </div>
-
-            </div>
-            <div class="text-center pt-4">
-                @if($src[3])
-                <img src="{{ $src[3] }}" alt="Signature" height="50">
                 @endif
-                <div class="text-bold">{{ $a3->approver_name ?? '—' }}</div>
-                <div>{{ $a3->approver_position ?? '' }}</div>
+            </div>
+            </div>
+
+            <div class="approver3-sign">
+                @if (!empty($src[3]))
+                <img src="{{ $src[3] }}" class="sig" onerror="this.style.display='none'">
+                @endif
+                <div class="text-bold">{{ ($names[3] ?? '') !== '' ? $names[3] : '—' }}</div>
+                <div>{{ ($positions[3] ?? '') !== '' ? $positions[3] : '—' }}</div>
             </div>
         </td>
     </tr>
@@ -430,4 +500,3 @@ $src[$i] = ($p && Storage::disk('public')->exists($p)) ? asset('storage/'.$p) : 
 
 </body>
 </html>
-

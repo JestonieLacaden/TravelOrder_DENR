@@ -10,6 +10,7 @@ use App\Models\Leave_Type;
 use Illuminate\Http\Request;
 use App\Models\LeaveSignatory;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 use App\Models\SetLeaveSignatory;
 use App\Http\Controllers\Controller;
 use App\Models\SetTravelOrderSignatory;
@@ -100,6 +101,9 @@ class LeaveController extends Controller
     $Leave_types = \App\Models\Leave_Type::get();
     $Employee    = \App\Models\Employee::with('Office')->findOrFail($Leave->employeeid);
 
+    // determine application year (stored yearapplied or derived from range start)
+    $yearApplied = $Leave->yearapplied ?? Carbon::parse(explode(' - ', $Leave->daterange)[0])->year;
+
     // count days
     [$startDate, $endDate] = explode(' - ', $Leave->daterange);
     $date1  = new \Carbon\Carbon($startDate);
@@ -108,8 +112,8 @@ class LeaveController extends Controller
 
     $preview = $request->boolean('preview');
 
-    // load snapshots
-    $Leave->load('approvals');
+    // load snapshots with approver relation for robust fallbacks
+    $Leave->load(['approvals', 'approvals.approver']);
 
     // current signatory (fallback only)
     $set       = \App\Models\SetLeaveSignatory::where('sectionid', $Employee->sectionid)->first();
@@ -117,7 +121,10 @@ class LeaveController extends Controller
       ? \App\Models\LeaveSignatory::with('Employee1', 'Employee2', 'Employee3')->find($set->leavesignatoryid)
       : null;
 
-    return view('mails.leave.print', compact('Leave_types', 'Employee', 'Leave', 'Count', 'preview', 'signatory'));
+    // compute leave credit snapshot (Vacation/Sick) for this employee/year
+    $leaveCredits = $this->buildLeaveCredits($Employee->id, $yearApplied, $Leave_types, $Leave->leaveid, $Count);
+
+    return view('mails.leave.print', compact('Leave_types', 'Employee', 'Leave', 'Count', 'preview', 'signatory', 'leaveCredits'));
   }
 
 
@@ -210,6 +217,77 @@ class LeaveController extends Controller
     }
   }
 
+  /**
+   * Save edited leave credits from Approver1.
+   * Stores the manually entered values for Vacation/Sick leave totals.
+   */
+  public function saveCredits(Request $request, Leave $Leave)
+  {
+    try {
+      $this->authorize('accept', $Leave);
+
+      // Approver1 can only edit: 7.A (Leave Credits) and 7.C (Approved For)
+      $validated = $request->validate([
+        'vacation_earned'     => 'required|integer|min:0',
+        'vacation_this_app'   => 'required|integer|min:0',
+        'vacation_balance'    => 'required|integer|min:0',
+        'sick_earned'         => 'required|integer|min:0',
+        'sick_this_app'       => 'required|integer|min:0',
+        'sick_balance'        => 'required|integer|min:0',
+        'days_with_pay'       => 'nullable|integer|min:0',
+        'days_without_pay'    => 'nullable|integer|min:0',
+        'approved_others'     => 'nullable|string|max:255',
+      ]);
+
+      // Store edited values in the Leave record
+      $Leave->update($validated);
+
+      return back()->with('message', 'Leave Details Updated Successfully!');
+    } catch (\Throwable $e) {
+      report($e);
+      return back()->with('message', 'Error saving leave details.');
+    }
+  }
+
+  public function saveApprover2(Request $request, Leave $Leave)
+  {
+    try {
+      $this->authorize('accept', $Leave);
+
+      // Approver2 can only edit: 7.B (Recommendation)
+      $validated = $request->validate([
+        'recommendation'      => 'nullable|in:for_approval,for_disapproval',
+        'recommendation_notes' => 'nullable|string',
+      ]);
+
+      $Leave->update($validated);
+
+      return back()->with('message', 'Recommendation Updated Successfully!');
+    } catch (\Throwable $e) {
+      report($e);
+      return back()->with('message', 'Error saving recommendation.');
+    }
+  }
+
+  public function saveApprover3(Request $request, Leave $Leave)
+  {
+    try {
+      $this->authorize('accept', $Leave);
+
+      // Approver3 can only edit: 7.D (Disapproved Due To)
+      $validated = $request->validate([
+        'disapproved_reason'  => 'nullable|string',
+      ]);
+
+      $Leave->update($validated);
+
+      return back()->with('message', 'Disapproval Reason Updated Successfully!');
+    } catch (\Throwable $e) {
+      report($e);
+      return back()->with('message', 'Error saving disapproval reason.');
+    }
+  }
+
   public function userindex()
   {
     $this->authorize('viewLeaveindex', \App\Models\Leave::class);
@@ -228,34 +306,114 @@ class LeaveController extends Controller
     return view('user.leave.index', compact('Employee', 'EmployeeLeaveCount', 'Leave_Types', 'Leaves'));
   }
 
+  public function checkUpdates(Request $request)
+  {
+    try {
+      $lastCheck = $request->lastCheck ?
+        Carbon::createFromTimestamp($request->lastCheck / 1000) :
+        Carbon::now()->subMinutes(5);
+
+      $Employee = Employee::where('email', '=', auth()->user()->email)->first();
+
+      if (!$Employee) {
+        return response()->json(['hasUpdates' => false]);
+      }
+
+      // Check if may bagong updates sa user's leaves since last check
+      $hasUpdates = Leave::where('employeeid', $Employee->id)
+        ->where('updated_at', '>', $lastCheck)
+        ->exists();
+
+      return response()->json(['hasUpdates' => $hasUpdates]);
+    } catch (\Exception $e) {
+      return response()->json(['hasUpdates' => false]);
+    }
+  }
+
 
   public function storeUserLeave(Request $request)
   {
-
     $this->authorize('AddUserLeave', \App\Models\Leave::class);
 
-    $formfields = $request->validate([
-
-      'leaveid' => 'required',
+    $base = $request->validate([
+      'leaveid'   => 'required|exists:leave_type,id',
       'daterange' => 'required',
-
     ]);
 
-    $data = $request->daterange;
-    list($startDate, $endDate) = explode(" -", $data);
-    $date1 = Carbon::createFromDate($startDate)->format('Y');
-    $date2 = Carbon::createFromDate($endDate)->format('Y');
-    $formfields['userid'] = auth()->user()->id;
-    if ($date1 == $date2) {
-      $formfields['yearapplied'] = $date1;
-      $Employeeid = Employee::where('email', '=', auth()->user()->email)->get()->first();
-      $formfields['employeeid'] = $Employeeid->id;
-      Leave::create($formfields);
+    $leaveType = Leave_Type::findOrFail($base['leaveid']);
+    $typeText  = Str::lower(trim($leaveType->leave_type ?? ''));
 
-      return back()->with('message', 'Leave Added Successfully');
-    } else {
+    // Parse date range (expects "start - end")
+    $data = $base['daterange'];
+    [$startDate, $endDate] = array_pad(explode(' -', $data), 2, null);
+    $date1 = Carbon::parse($startDate)->format('Y');
+    $date2 = Carbon::parse($endDate)->format('Y');
+
+    if ($date1 !== $date2) {
       return back()->with('DateError1', 'Error');
     }
+
+    $employee = Employee::where('email', auth()->user()->email)->firstOrFail();
+
+    // Defaults
+    $payload = [
+      'leaveid'               => $base['leaveid'],
+      'daterange'             => $base['daterange'],
+      'yearapplied'           => $date1,
+      'userid'                => auth()->id(),
+      'employeeid'            => $employee->id,
+      'location_within_ph'    => null,
+      'location_abroad'       => null,
+      'hospital_specify'      => null,
+      'outpatient_specify'    => null,
+      'study_masters_degree'  => 0,
+      'study_bar_board'       => 0,
+      'other_monetization'    => 0,
+      'other_terminal_leave'  => 0,
+      'commutation'           => 'not_requested',
+    ];
+
+    // Conditional validation + assignment per leave type
+    if (Str::contains($typeText, ['vacation', 'mandatory', 'forced', 'special privilege'])) {
+      $extra = $request->validate([
+        'location_choice'     => 'required|in:within_ph,abroad',
+        'location_within_ph'  => 'required_if:location_choice,within_ph|nullable|string',
+        'location_abroad'     => 'required_if:location_choice,abroad|nullable|string',
+      ]);
+      if ($extra['location_choice'] === 'within_ph') {
+        $payload['location_within_ph'] = $extra['location_within_ph'];
+      } else {
+        $payload['location_abroad'] = $extra['location_abroad'];
+      }
+    } elseif (Str::contains($typeText, 'sick')) {
+      $extra = $request->validate([
+        'sick_choice'        => 'required|in:hospital,outpatient',
+        'hospital_specify'   => 'required_if:sick_choice,hospital|nullable|string',
+        'outpatient_specify' => 'required_if:sick_choice,outpatient|nullable|string',
+      ]);
+      if ($extra['sick_choice'] === 'hospital') {
+        $payload['hospital_specify'] = $extra['hospital_specify'];
+      } else {
+        $payload['outpatient_specify'] = $extra['outpatient_specify'];
+      }
+    } elseif (Str::contains($typeText, 'study')) {
+      $extra = $request->validate([
+        'study_choice' => 'required|in:masters,bar_board',
+      ]);
+      $payload['study_masters_degree'] = $extra['study_choice'] === 'masters' ? 1 : 0;
+      $payload['study_bar_board']      = $extra['study_choice'] === 'bar_board' ? 1 : 0;
+    } elseif (Str::contains($typeText, ['others', 'other'])) {
+      $extra = $request->validate([
+        'others_choice' => 'required|in:monetization,terminal',
+      ]);
+      $payload['other_monetization']   = $extra['others_choice'] === 'monetization' ? 1 : 0;
+      $payload['other_terminal_leave'] = $extra['others_choice'] === 'terminal' ? 1 : 0;
+      $payload['commutation']          = 'requested';
+    }
+
+    Leave::create($payload);
+
+    return back()->with('message', 'Leave Added Successfully');
   }
 
   public function getLeaveYearApproved()
@@ -352,6 +510,73 @@ class LeaveController extends Controller
       }
     }
     return $Final;
+  }
+
+  /**
+   * Build per-leave-type credit numbers for the print view.
+   * - Total Earned: configured available from Leave_Type
+   * - Used: total approved days in the given year (already applied/approved)
+   * - Less this Application: current request days if it matches the type
+   * - Balance: total - used - currentApplication
+   */
+  private function buildLeaveCredits(int $employeeId, int $year, $leaveTypes, int $currentLeaveTypeId, int $currentDays): array
+  {
+    // accumulate approved usage per leave type for the year
+    $approved = Leave::where('employeeid', $employeeId)
+      ->where('is_approve3', true)
+      ->where('yearapplied', $year)
+      ->get();
+
+    $usedPerType = [];
+    foreach ($approved as $leave) {
+      [$start, $end] = explode(' - ', $leave->daterange);
+      $d1 = new Carbon($start);
+      $d2 = new Carbon($end);
+      $days = $d1->diffInDays($d2) + 1;
+      $usedPerType[$leave->leaveid] = ($usedPerType[$leave->leaveid] ?? 0) + $days;
+    }
+
+    // identify Vacation and Sick leave type IDs by name (case-insensitive contains match)
+    $vacationId = null;
+    $sickId     = null;
+    foreach ($leaveTypes as $lt) {
+      $name = strtolower($lt->leave_type ?? '');
+      if (strpos($name, 'vacation') !== false) {
+        $vacationId = $lt->id;
+      }
+      if (strpos($name, 'sick') !== false) {
+        $sickId = $lt->id;
+      }
+    }
+
+    $makeRow = function ($typeId) use ($leaveTypes, $usedPerType, $currentLeaveTypeId, $currentDays) {
+      $available = 0;
+      foreach ($leaveTypes as $lt) {
+        if ($lt->id == $typeId) {
+          $available = (int) ($lt->available ?? 0);
+          break;
+        }
+      }
+
+      $used  = (int) ($usedPerType[$typeId] ?? 0);
+      $thisApp = $currentLeaveTypeId === $typeId ? $currentDays : 0;
+      $balance = $available - $used - $thisApp;
+      if ($balance < 0) {
+        $balance = 0; // avoid negative display
+      }
+
+      return [
+        'earned'    => $available,
+        'used'      => $used,
+        'this_app'  => $thisApp,
+        'balance'   => $balance,
+      ];
+    };
+
+    return [
+      'vacation' => $vacationId ? $makeRow($vacationId) : ['earned' => 0, 'used' => 0, 'this_app' => 0, 'balance' => 0],
+      'sick'     => $sickId ? $makeRow($sickId) : ['earned' => 0, 'used' => 0, 'this_app' => 0, 'balance' => 0],
+    ];
   }
 
   public function summary()
