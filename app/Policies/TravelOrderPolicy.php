@@ -231,96 +231,95 @@ class TravelOrderPolicy
     }
 
     public function acceptrequest(User $user)
-
     {
-        $TravelOrderSignatories = TravelOrderSignatory::get();
-        $Employee = Employee::where('email', '=', auth()->user()->email)->get()->first();
+        $Employee = Employee::where('email', '=', auth()->user()->email)->first();
+        if (!$Employee) return false;
 
+        // ✅ Option 2: Check if user is Section Chief, Division Chief, or PENRO
 
-        if (!empty($TravelOrderSignatories)) {
-
-            foreach ($TravelOrderSignatories as $TravelOrderSignatory) {
-                if ($TravelOrderSignatory->approver1 == $Employee->id && auth()->check()) { {
-                        return ($user);
-                    }
-                }
-                if ($TravelOrderSignatory->approver2 == $Employee->id && auth()->check()) { {
-                        return ($user);
-                    }
-                }
-                if ($TravelOrderSignatory->approver3 == $Employee->id && auth()->check()) { {
-                        return ($user);
-                    }
-                }
-            }
+        // Check if Section Chief in section_chief table
+        $isSectionChief = \App\Models\SectionChief::where('employeeid', $Employee->id)->exists();
+        if ($isSectionChief) {
+            return true;
         }
+
+        // Check if approver in any existing signatory (for Division Chiefs & PENRO)
+        $isApprover = TravelOrderSignatory::where('approver1', $Employee->id)
+            ->orWhere('approver2', $Employee->id)
+            ->orWhere('approver3', $Employee->id)
+            ->exists();
+
+        if ($isApprover) {
+            return true;
+        }
+
+        return false;
     }
 
     public function accept(User $user, TravelOrder $TravelOrder)
     {
-
         $ApproverEmployee = Employee::where('email', '=', auth()->user()->email)->get()->first();
+        if (!$ApproverEmployee) return false;
 
-        $TravelOrderofEmployee = Employee::where('id', '=', $TravelOrder->employeeid)->get()->first();
-        $SetTravelOrderSignatory = SetTravelOrderSignatory::where('sectionid', '=', $TravelOrderofEmployee->sectionid)->get()->first();
+        // ✅ Option 2: Use the TO's signatory directly
+        $TravelOrderSignatory = TravelOrderSignatory::find($TravelOrder->travelordersignatoryid);
+        if (!$TravelOrderSignatory) return false;
 
-
-        if (!empty($SetTravelOrderSignatory)) {
-            $TravelOrderSignatory = TravelOrderSignatory::where('id', '=', $SetTravelOrderSignatory->travelordersignatoryid)->get()->first();
-            if (!empty($TravelOrderSignatory)) {
-
-                if ($TravelOrderSignatory->id == $SetTravelOrderSignatory->travelordersignatoryid) {
-                    if ($TravelOrderSignatory->approver1 == $ApproverEmployee->id) {
-                        if ($TravelOrder->is_rejected1 == false && $TravelOrder->is_approve1 == false) {
-                            return ($user);
-                        }
-                    }
-                    if ($TravelOrderSignatory->approver2 == $ApproverEmployee->id) {
-                        if ($TravelOrder->is_rejected2 == false && $TravelOrder->is_rejected1 == false  && $TravelOrder->is_approve2 == false && $TravelOrder->is_approve1 == true) {
-                            return ($user);
-                        }
-                    }
-                    if ($TravelOrderSignatory->approver3 == $ApproverEmployee->id) {
-                        if ($TravelOrder->is_rejected3 == false && $TravelOrder->is_rejected2 == false && $TravelOrder->is_rejected1 == false && $TravelOrder->is_approve3 == false && $TravelOrder->is_approve2 == true && $TravelOrder->is_approve1 == true) {
-                            return ($user);
-                        }
-                    }
-                }
+        // Check if current user is approver1 (Section Chief)
+        if ($TravelOrderSignatory->approver1 == $ApproverEmployee->id) {
+            if ($TravelOrder->is_rejected1 == false && $TravelOrder->is_approve1 == false) {
+                return ($user);
             }
         }
+
+        // Check if current user is approver2 (Division Chief)
+        if ($TravelOrderSignatory->approver2 == $ApproverEmployee->id) {
+            if ($TravelOrder->is_rejected2 == false && $TravelOrder->is_rejected1 == false  && $TravelOrder->is_approve2 == false && $TravelOrder->is_approve1 == true) {
+                return ($user);
+            }
+        }
+
+        // Check if current user is approver3 (PENRO)
+        if ($TravelOrderSignatory->approver3 == $ApproverEmployee->id) {
+            if ($TravelOrder->is_rejected3 == false && $TravelOrder->is_rejected2 == false && $TravelOrder->is_rejected1 == false && $TravelOrder->is_approve3 == false && $TravelOrder->is_approve2 == true && $TravelOrder->is_approve1 == true) {
+                return ($user);
+            }
+        }
+
+        return false;
     }
 
     public function reject(User $user, TravelOrder $TravelOrder)
     {
         $ApproverEmployee = Employee::where('email', '=', auth()->user()->email)->get()->first();
+        if (!$ApproverEmployee) return false;
 
-        $TravelOrderofEmployee = Employee::where('id', '=', $TravelOrder->employeeid)->get()->first();
-        $SetTravelOrderSignatory = SetTravelOrderSignatory::where('sectionid', '=', $TravelOrderofEmployee->sectionid)->get()->first();
+        // ✅ Option 2: Use the TO's signatory directly
+        $TravelOrderSignatory = TravelOrderSignatory::find($TravelOrder->travelordersignatoryid);
+        if (!$TravelOrderSignatory) return false;
 
-
-        if (!empty($SetTravelOrderSignatory)) {
-            $TravelOrderSignatory = TravelOrderSignatory::where('id', '=', $SetTravelOrderSignatory->travelordersignatoryid)->get()->first();
-            if (!empty($TravelOrderSignatory)) {
-
-                if ($TravelOrderSignatory->id == $SetTravelOrderSignatory->travelordersignatoryid) {
-                    if ($TravelOrderSignatory->approver1 == $ApproverEmployee->id) {
-                        if ($TravelOrder->is_rejected1 == false && $TravelOrder->is_approve1 == false) {
-                            return ($user);
-                        }
-                    }
-                    if ($TravelOrderSignatory->approver2 == $ApproverEmployee->id) {
-                        if ($TravelOrder->is_rejected2 == false && $TravelOrder->is_rejected1 == false  && $TravelOrder->is_approve2 == false && $TravelOrder->is_approve1 == true) {
-                            return ($user);
-                        }
-                    }
-                    if ($TravelOrderSignatory->approver3 == $ApproverEmployee->id) {
-                        if ($TravelOrder->is_rejected3 == false && $TravelOrder->is_rejected2 == false && $TravelOrder->is_rejected1 == false && $TravelOrder->is_approve3 == false && $TravelOrder->is_approve2 == true && $TravelOrder->is_approve1 == true) {
-                            return ($user);
-                        }
-                    }
-                }
+        // Check if current user is approver1 (Section Chief)
+        if ($TravelOrderSignatory->approver1 == $ApproverEmployee->id) {
+            if ($TravelOrder->is_rejected1 == false && $TravelOrder->is_approve1 == false) {
+                return ($user);
             }
         }
+
+        // Check if current user is approver2 (Division Chief)
+        if ($TravelOrderSignatory->approver2 == $ApproverEmployee->id) {
+            if ($TravelOrder->is_rejected2 == false && $TravelOrder->is_rejected1 == false && $TravelOrder->is_approve2 == false && $TravelOrder->is_approve1 == true) {
+                return ($user);
+            }
+        }
+
+        // Check if current user is approver3 (PENRO)
+        if ($TravelOrderSignatory->approver3 == $ApproverEmployee->id) {
+            if ($TravelOrder->is_rejected3 == false && $TravelOrder->is_rejected2 == false && $TravelOrder->is_rejected1 == false && $TravelOrder->is_approve3 == false && $TravelOrder->is_approve2 == true && $TravelOrder->is_approve1 == true) {
+                return ($user);
+            }
+        }
+
+        return false;
     }
 
     public function viewTravelOrderIndex(User $user)

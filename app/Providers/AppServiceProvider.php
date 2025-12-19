@@ -9,6 +9,7 @@ use App\Models\Leave;
 use App\Models\Route;
 use App\Models\Office;
 use App\Models\Section;
+use App\Models\SectionChief;
 use App\Models\Document;
 use App\Models\Employee;
 use App\Models\FinancialManagement;
@@ -134,29 +135,34 @@ class AppServiceProvider extends ServiceProvider
             $showLeave = false;
 
             if (auth()->check()) {
-                $emp = \App\Models\Employee::where('email', auth()->user()->email)->first();
+                $emp = Employee::where('email', auth()->user()->email)->first();
 
                 if ($emp) {
                     // --- TRAVEL ORDER signatory + pending
-                    $sigA1 = \App\Models\TravelOrderSignatory::where('approver1', $emp->id)->pluck('id');
-                    $sigA2 = \App\Models\TravelOrderSignatory::where('approver2', $emp->id)->pluck('id');
-                    $sigA3 = \App\Models\TravelOrderSignatory::where('approver3', $emp->id)->pluck('id');
+                    // ✅ Option 2: Show button for Section Chiefs OR Division/PENRO with signatory records
 
-                    $showTO = $sigA1->isNotEmpty() || $sigA2->isNotEmpty() || $sigA3->isNotEmpty();
+                    // Check if user is a current Section Chief
+                    $isSectionChief = SectionChief::where('employeeid', $emp->id)->exists();
 
-                    $pendingA1 = \App\Models\TravelOrder::whereIn('travelordersignatoryid', $sigA1)
+                    // Get all signatory IDs where this employee is an approver
+                    $sigA1 = TravelOrderSignatory::where('approver1', $emp->id)->pluck('id');
+                    $sigA2 = TravelOrderSignatory::where('approver2', $emp->id)->pluck('id');
+                    $sigA3 = TravelOrderSignatory::where('approver3', $emp->id)->pluck('id');
+
+                    // Count ACTUAL pending requests for each level
+                    $pendingA1 = TravelOrder::whereIn('travelordersignatoryid', $sigA1)
                         ->where('is_approve1', false)
                         ->where('is_rejected1', false)
                         ->count();
 
-                    $pendingA2 = \App\Models\TravelOrder::whereIn('travelordersignatoryid', $sigA2)
+                    $pendingA2 = TravelOrder::whereIn('travelordersignatoryid', $sigA2)
                         ->where('is_approve1', true)
                         ->where('is_approve2', false)
                         ->where('is_rejected1', false)
                         ->where('is_rejected2', false)
                         ->count();
 
-                    $pendingA3 = \App\Models\TravelOrder::whereIn('travelordersignatoryid', $sigA3)
+                    $pendingA3 = TravelOrder::whereIn('travelordersignatoryid', $sigA3)
                         ->where('is_approve1', true)
                         ->where('is_approve2', true)
                         ->where('is_approve3', false)
@@ -166,6 +172,10 @@ class AppServiceProvider extends ServiceProvider
                         ->count();
 
                     $toPendingCount = $pendingA1 + $pendingA2 + $pendingA3;
+
+                    // Show button ALWAYS for Section Chiefs, OR if they have existing signatory records
+                    // This ensures button stays visible even when all requests are approved
+                    $showTO = $isSectionChief || $sigA1->isNotEmpty() || $sigA2->isNotEmpty() || $sigA3->isNotEmpty();
 
                     // --- LEAVE signatory + pending
                     // Note: kung may leavesignatoryid column sa Leaves, idagdag mo ang whereIn(...) sa bawat query.

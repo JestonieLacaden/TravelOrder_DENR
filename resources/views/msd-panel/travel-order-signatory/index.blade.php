@@ -8,13 +8,14 @@
         <div class="container-fluid">
             <div class="row mb-2">
                 <div class="col-sm-6">
-                    <h1 class="m-0">Travel Order Signatory</h1>
+                    <h1 class="m-0">Division Signatories</h1>
+                    <p class="text-sm text-muted">Section Chiefs are managed in "Set Section Chief" page</p>
                 </div><!-- /.col -->
                 <div class="col-sm-6">
                     <ol class="breadcrumb float-sm-right">
                         <li class="breadcrumb-item"><a href="/">Home</a></li>
                         <li class="breadcrumb-item active">MSD - Approver</li>
-                        <li class="breadcrumb-item active">Travel Order Signatory</li>
+                        <li class="breadcrumb-item active">Division Signatories</li>
                     </ol>
                 </div><!-- /.col -->
             </div><!-- /.row -->
@@ -63,7 +64,7 @@
                             @can('create', \App\Models\TravelOrderSignatory::class)
                             <button type="button" class="btn btn-default" data-toggle="modal" data-target="#new-signatory-modal-lg" data-backdrop="static" data-keyboard="false">
                                 <i class="fas fa-plus"></i>
-                                {{ __ ('Add Signatory')}}
+                                {{ __ ('Add Division Signatory')}}
                             </button>
                             @endcan
 
@@ -74,9 +75,8 @@
                                 <thead>
                                     <tr>
                                         <th class="text-center">Signatory Name</th>
-                                        <th class="text-center">Signatory 1 (First Approval)</th>
-                                        <th class="text-center">Signatory 2 (Second Approval)</th>
-                                        <th class="text-center">Signatory 3 (Final Approval - PENRO)</th>
+                                        <th class="text-center">Division Chief (Signatory 2)</th>
+                                        <th class="text-center">PENRO (Signatory 3)</th>
                                         <th class="text-center">Action</th>
                                     </tr>
                                 </thead>
@@ -86,8 +86,7 @@
 
                                     <tr>
                                         <td>{{ $TravelOrderSignatory->name}}</td>
-                                        <td>{{ $TravelOrderSignatory->Employee1->firstname . ' ' . $TravelOrderSignatory->Employee1->lastname }}</td>
-                                        <td>{{ $TravelOrderSignatory->Employee2->firstname . ' ' . $TravelOrderSignatory->Employee2->lastname }}</td>
+                                        <td>{{ $TravelOrderSignatory->Employee2 ? $TravelOrderSignatory->Employee2->firstname . ' ' . $TravelOrderSignatory->Employee2->lastname : '(Not Set)' }}</td>
                                         <td>{{ $TravelOrderSignatory->Employee3 ? $TravelOrderSignatory->Employee3->firstname . ' ' . $TravelOrderSignatory->Employee3->lastname : '(Not Set)' }}</td>
 
                                         <td class="text-center">

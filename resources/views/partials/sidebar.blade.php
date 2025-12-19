@@ -387,7 +387,7 @@
 
                                     <a href="{{ route('travel-order-signatory.index') }} " class="nav-link  {{ Request::is('msd-management/settings/travel-order-settings/travel-order-signatory') ? 'active' : '' }}">
 
-                                        <p class="ml-4 p-2">T.O. Signatory<span class="badge badge-info right"></span>
+                                        <p class="ml-4 p-2">Division Signatories<span class="badge badge-info right"></span>
                                         </p>
                                     </a>
                                 </li>
