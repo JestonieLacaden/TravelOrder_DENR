@@ -332,6 +332,10 @@ Route::group(['middleware' => 'auth'], function () {
         Route::resource('msd-management/settings/leave-settings/set-leave-signatory', App\Http\Controllers\Msd\SetLeaveSignatoryController::class);
         Route::resource('msd-management/settings/travel-order-settings/travel-order-signatory', App\Http\Controllers\Msd\TravelOrderSignatoryController::class);
         Route::resource('msd-management/settings/travel-order-settings/set-travel-order-signatory', App\Http\Controllers\Msd\SetTravelOrderSignatoryController::class);
+        Route::resource('msd-management/settings/travel-order-settings/section-chief', App\Http\Controllers\Msd\SectionChiefController::class);
+
+        // AJAX API for Section Chief (get employees by unit)
+        Route::get('api/employees-by-unit/{unitid}', [App\Http\Controllers\Msd\SectionChiefController::class, 'getEmployeesByUnit'])->name('api.employees-by-unit');
 
         Route::put('leave/{Leave}/accept', [LeaveController::class, 'accept'])->name('leave.accept');
         Route::put('leave/{Leave}/reject', [LeaveController::class, 'reject'])->name('leave.reject');

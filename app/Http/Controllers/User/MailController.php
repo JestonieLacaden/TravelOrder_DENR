@@ -263,9 +263,10 @@ class MailController extends Controller
     // current user as Employee (ito ang $UserEmployee sa blade)
     $UserEmployee = \App\Models\Employee::where('email', auth()->user()->email)->first();
 
-    // lahat ng signatory records na ako ang approver1 o approver2
+    // lahat ng signatory records na ako ang approver1, approver2, o approver3
     $mySigIds = \App\Models\TravelOrderSignatory::where('approver1', optional($UserEmployee)->id)
       ->orWhere('approver2', optional($UserEmployee)->id)
+      ->orWhere('approver3', optional($UserEmployee)->id)
       ->pluck('id');
 
     // ipakita lang ang requests na naka-assign sa signatories ko
@@ -528,9 +529,10 @@ class MailController extends Controller
     $me = \App\Models\Employee::where('email', auth()->user()->email)->first();
     if (!$me) return 0;
 
-    // alin-alin ang signatories na ikaw ang approver1 at approver2
+    // alin-alin ang signatories na ikaw ang approver1, approver2, o approver3
     $sigAsA1 = \App\Models\TravelOrderSignatory::where('approver1', $me->id)->pluck('id');
     $sigAsA2 = \App\Models\TravelOrderSignatory::where('approver2', $me->id)->pluck('id');
+    $sigAsA3 = \App\Models\TravelOrderSignatory::where('approver3', $me->id)->pluck('id');
 
     // pending na ikaw ang pwedeng umaksyon
     $pendingAsA1 = \App\Models\TravelOrder::whereIn('travelordersignatoryid', $sigAsA1)
@@ -542,7 +544,13 @@ class MailController extends Controller
       ->where('is_approve2', 0)                 // hinihintay ka (approve2)
       ->count();
 
-    return $pendingAsA1 + $pendingAsA2;
+    $pendingAsA3 = \App\Models\TravelOrder::whereIn('travelordersignatoryid', $sigAsA3)
+      ->where('is_approve1', 1)                 // tapos na si approver1
+      ->where('is_approve2', 1)                 // tapos na si approver2
+      ->where('is_approve3', 0)                 // hinihintay ka (approve3)
+      ->count();
+
+    return $pendingAsA1 + $pendingAsA2 + $pendingAsA3;
   }
 
 

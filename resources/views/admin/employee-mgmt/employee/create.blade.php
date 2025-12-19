@@ -233,6 +233,7 @@
 
                             <div class="card-footer">
                                 <button type="submit" class="btn btn-primary">Submit</button>
+                                <button type="button" class="btn btn-secondary ml-2" id="cancelBtn">Cancel</button>
                             </div>
                         </form>
                     </div>
@@ -241,6 +242,34 @@
             </div>
         </div>
     </section>
+</div>
+
+<!-- Cancel Confirmation Modal -->
+<div class="modal fade" id="cancelConfirmModal" tabindex="-1" role="dialog" aria-labelledby="cancelConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title" id="cancelConfirmModalLabel">
+                    <i class="fas fa-exclamation-triangle"></i> Confirm Cancel
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0">Are you sure you want to cancel?</p>
+                <p class="text-danger mb-0"><strong>All filled data will be lost.</strong></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fas fa-times"></i> No, Stay
+                </button>
+                <button type="button" class="btn btn-warning" id="confirmCancelBtn">
+                    <i class="fas fa-check"></i> Yes, Cancel
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
 
@@ -253,6 +282,45 @@
 <script>
     $(function() {
         bsCustomFileInput.init();
+
+        // Cancel button with smart warning
+        $('#cancelBtn').on('click', function() {
+            // Check if form has any filled data
+            let hasData = false;
+
+            // Check text inputs
+            $('input[type="text"], input[type="email"], input[type="date"], textarea, select').each(function() {
+                let val = $(this).val();
+                // Skip empty values and default "-- Choose office --"
+                if (val && val.trim() !== '' && val !== '-- Choose office --' && val !== 'PERMANENT') {
+                    hasData = true;
+                    return false; // break loop
+                }
+            });
+
+            // Check file inputs
+            if (!hasData) {
+                $('input[type="file"]').each(function() {
+                    if (this.files && this.files.length > 0) {
+                        hasData = true;
+                        return false; // break loop
+                    }
+                });
+            }
+
+            // If form has data, show modal warning
+            if (hasData) {
+                $('#cancelConfirmModal').modal('show');
+            } else {
+                // Form is empty, go back directly
+                window.location.href = '{{ route("employee.index") }}';
+            }
+        });
+
+        // Confirm cancel button in modal
+        $('#confirmCancelBtn').on('click', function() {
+            window.location.href = '{{ route("employee.index") }}';
+        });
     });
 
 </script>

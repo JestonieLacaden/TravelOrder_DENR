@@ -215,6 +215,29 @@ class EmployeeController extends Controller
     $data = $request->officesectionunit;
     list($Office, $Section, $Unit) = explode(",", $data);
 
+    // Check if employee is a Section Chief and unit is being changed
+    $sectionChiefAssignment = \App\Models\SectionChief::where('employeeid', $Employee->id)->first();
+
+    if ($sectionChiefAssignment && $sectionChiefAssignment->unitid != $Unit) {
+      // Employee is a chief and trying to change unit
+      $unitName = \App\Models\Unit::find($sectionChiefAssignment->unitid)->unit ?? 'Unknown Unit';
+
+      // Check if user confirmed the action
+      if (!$request->has('confirm_remove_chief')) {
+        return redirect()->back()
+          ->withInput()
+          ->with('warning_chief_change', [
+            'message' => "This employee is currently assigned as Section Chief of <strong>{$unitName}</strong>. Changing the unit will automatically remove them from this position.",
+            'employee_id' => $Employee->id,
+            'unit_name' => $unitName
+          ]);
+      }
+
+      // User confirmed, remove chief assignment
+      $sectionChiefAssignment->delete();
+      \Log::info("Section Chief removed: Employee {$Employee->id} removed from unit {$sectionChiefAssignment->unitid}");
+    }
+
     if ($request->hasFile('signature')) {
       $formfields['signature_path'] = $request->file('signature')->store('signatures', 'public');
     }

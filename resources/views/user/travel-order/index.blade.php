@@ -3,191 +3,194 @@
 @section('content')
 
 <div class="content-wrapper">
-  <!-- Content Header (Page header) -->
-  <div class="content-header">
-    <div class="container-fluid">
-      <div class="row mb-2">
-        <div class="col-sm-6">
-          <h1 class="m-0">Travel Order Management</h1>
-        </div><!-- /.col -->
-        <div class="col-sm-6">
-          <ol class="breadcrumb float-sm-right">
-            <li class="breadcrumb-item"><a href="/">Home</a></li>
-            <li class="breadcrumb-item active">Travel Order Management</li>
-          </ol>
-        </div><!-- /.col -->
-      </div><!-- /.row -->
-    </div><!-- /.container-fluid -->
-  </div>
-  <!-- /.content-header -->
+    <!-- Content Header (Page header) -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">Travel Order Management</h1>
+                </div><!-- /.col -->
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="/">Home</a></li>
+                        <li class="breadcrumb-item active">Travel Order Management</li>
+                    </ol>
+                </div><!-- /.col -->
+            </div><!-- /.row -->
+        </div><!-- /.container-fluid -->
+    </div>
+    <!-- /.content-header -->
 
 
-  <!-- Main content -->
-  <section class="content">
-    <div class="container-fluid">
-      <div class="row">
-        <div class="col-12">
-          @if ($errors->any())
-          <div class="alert alert-danger alert-dismissible">
-            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-            <h5><i class="icon fas fa-ban"></i> Failed to save!</h5>
-            <ul>
-              @foreach ($errors->all() as $error)
-              <li>{{ $error }}</li>
-              @endforeach
-            </ul>
-          </div>
-          @endif
-          @if(session()->has('message'))
-          <div class="alert alert-success alert-dismissible">
-            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-            <h5><i class="icon fas fa-check"></i> {{ session()->get('message') }}</h5>
+    <!-- Main content -->
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12">
+                    @if ($errors->any())
+                    <div class="alert alert-danger alert-dismissible">
+                        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                        <h5><i class="icon fas fa-ban"></i> Failed to save!</h5>
+                        <ul>
+                            @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                    @endif
+                    @if(session()->has('message'))
+                    <div class="alert alert-success alert-dismissible">
+                        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                        <h5><i class="icon fas fa-check"></i> {{ session()->get('message') }}</h5>
 
-          </div>
-          @endif
+                    </div>
+                    @endif
 
-          @if(session()->has('EventError'))
-          <div class="alert alert-danger alert-dismissible">
-            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-            <h5><i class="icon fas fa-ban"></i> Failed to save!</h5>
-            <ul>
-              <li>Error : Date has record!</li>
-            </ul>
-          </div>
-          @endif
+                    @if(session()->has('EventError'))
+                    <div class="alert alert-danger alert-dismissible">
+                        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                        <h5><i class="icon fas fa-ban"></i> Failed to save!</h5>
+                        <ul>
+                            <li>Error : Date has record!</li>
+                        </ul>
+                    </div>
+                    @endif
 
-          @if(session()->has('DateError1'))
-          <div class="alert alert-danger alert-dismissible">
-            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-            <h5><i class="icon fas fa-ban"></i> Failed to save!</h5>
-            <ul>
-              <li>Error : Date Range must be on the same year!</li>
-            </ul>
-          </div>
-          @endif
-
-
-          <div class="card">
-            <div class="card-header">
-
-              @can('AddUserTravelOrder', \App\Models\TravelOrder::class)
-              <button type="button" class="btn btn-default" data-toggle="modal" data-target="#new-travelorder-modal-lg"
-                data-backdrop="static" data-keyboard="false">
-                <i class="fas fa-plus"></i>
-                {{ __ ('Add Travel Order')}}
-              </button>
-              @endcan
-
-            </div>
-            <!-- /.card-header -->
-            <div class="card-body">
-              <table id="example1" class="table table-bordered table-striped">
-                <thead>
-                  <tr>
-                    <th class="text-center">Created At</th>
-                    <th class="text-center">Date Range</th>
-                    <th class="text-center">Destination</th>
-                    <th class="text-center">Purpose of Travel</th>
-                    <th class="text-center">Status</th>
-                    <th class="text-center">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @if(!empty($TravelOrders))
-                  @foreach($TravelOrders as $TravelOrder)
-
-                  <tr data-to-id="{{ $TravelOrder->id }}">
-                    <td> {{$TravelOrder->created_at}}</td>
-                    <td> {{$TravelOrder->daterange}}</td>
-                    <td> {{$TravelOrder->destinationoffice}}</td>
-                    <td> {{$TravelOrder->purpose}}</td>
-                    <td class="text-center">
-                        @php
-                        // Get the approved code (relation first, then optional joined column)
-                        $approvedCode = optional($TravelOrder->approved)->travelorderid
-                        ?? ($TravelOrder->approved_code ?? null);
-
-                        // Decide initial text + color (JS will update these via websockets)
-                        $statusClass = '';
-                        $statusText = '';
-
-                        if ($TravelOrder->is_rejected1) {
-                        $statusClass = 'bg-danger';
-                        $statusText = 'Rejected First Approval';
-                        } elseif (!$TravelOrder->is_approve1) {
-                        $statusClass = 'bg-warning';
-                        $statusText = 'Pending : 1st Approval';
-                        } elseif ($TravelOrder->is_rejected2) {
-                        $statusClass = 'bg-danger';
-                        $statusText = 'Rejected Final Approval';
-                        } elseif (!$TravelOrder->is_approve2) {
-                        $statusClass = 'bg-warning';
-                        $statusText = 'Pending : 2nd Approval';
-                        } else {
-                        $statusClass = 'bg-success';
-                        $statusText = $approvedCode ? "Approved ($approvedCode)" : 'Approved';
-                        }
-                        @endphp
-
-                        <span class="js-status p-2 rounded {{ $statusClass }}">{{ $statusText }}</span>
-                    </td>
+                    @if(session()->has('DateError1'))
+                    <div class="alert alert-danger alert-dismissible">
+                        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                        <h5><i class="icon fas fa-ban"></i> Failed to save!</h5>
+                        <ul>
+                            <li>Error : Date Range must be on the same year!</li>
+                        </ul>
+                    </div>
+                    @endif
 
 
+                    <div class="card">
+                        <div class="card-header">
+
+                            @can('AddUserTravelOrder', \App\Models\TravelOrder::class)
+                            <button type="button" class="btn btn-default" data-toggle="modal" data-target="#new-travelorder-modal-lg" data-backdrop="static" data-keyboard="false">
+                                <i class="fas fa-plus"></i>
+                                {{ __ ('Add Travel Order')}}
+                            </button>
+                            @endcan
+
+                        </div>
+                        <!-- /.card-header -->
+                        <div class="card-body">
+                            <table id="example1" class="table table-bordered table-striped">
+                                <thead>
+                                    <tr>
+                                        <th class="text-center">Created At</th>
+                                        <th class="text-center">Date Range</th>
+                                        <th class="text-center">Destination</th>
+                                        <th class="text-center">Purpose of Travel</th>
+                                        <th class="text-center">Status</th>
+                                        <th class="text-center">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if(!empty($TravelOrders))
+                                    @foreach($TravelOrders as $TravelOrder)
+
+                                    <tr data-to-id="{{ $TravelOrder->id }}">
+                                        <td> {{$TravelOrder->created_at}}</td>
+                                        <td> {{$TravelOrder->daterange}}</td>
+                                        <td> {{$TravelOrder->destinationoffice}}</td>
+                                        <td> {{$TravelOrder->purpose}}</td>
+                                        <td class="text-center">
+                                            @php
+                                            // Get the approved code (relation first, then optional joined column)
+                                            $approvedCode = optional($TravelOrder->approved)->travelorderid
+                                            ?? ($TravelOrder->approved_code ?? null);
+
+                                            // Decide initial text + color (JS will update these via websockets)
+                                            $statusClass = '';
+                                            $statusText = '';
+
+                                            if ($TravelOrder->is_rejected1) {
+                                            $statusClass = 'bg-danger';
+                                            $statusText = 'Rejected by Section Chief';
+                                            } elseif (!$TravelOrder->is_approve1) {
+                                            $statusClass = 'bg-warning';
+                                            $statusText = 'Pending: Section Chief Approval';
+                                            } elseif ($TravelOrder->is_rejected2) {
+                                            $statusClass = 'bg-danger';
+                                            $statusText = 'Rejected by Division Chief';
+                                            } elseif (!$TravelOrder->is_approve2) {
+                                            $statusClass = 'bg-warning';
+                                            $statusText = 'Pending: Division Chief Approval';
+                                            } elseif ($TravelOrder->is_rejected3) {
+                                            $statusClass = 'bg-danger';
+                                            $statusText = 'Rejected by PENRO';
+                                            } elseif (!$TravelOrder->is_approve3) {
+                                            $statusClass = 'bg-warning';
+                                            $statusText = 'Pending: PENRO Approval';
+                                            } else {
+                                            $statusClass = 'bg-success';
+                                            $statusText = $approvedCode ? "Approved ($approvedCode)" : 'Approved';
+                                            }
+                                            @endphp
+
+                                            <span class="js-status p-2 rounded {{ $statusClass }}">{{ $statusText }}</span>
+                                        </td>
 
 
 
 
-                    <td class="text-center">
-                      {{-- @can('update', $Leave)
+
+
+                                        <td class="text-center">
+                                            {{-- @can('update', $Leave)
                       <button type="button" class="btn btn-default" title="Delete" data-toggle="modal"
                         data-target="#edit-leave-modal-lg{{ $Leave->id }} " data-backdrop="static"
-                        data-keyboard="false">
-                        <i class="fas fa-edit"></i>
-                        {{__('Edit')}}
-                      </button> --}}
-                      {{-- @endcan --}}
-                      @can('delete', $TravelOrder)
-                      <button type="button" class="btn btn-default" title="Delete" data-toggle="modal"
-                        data-target="#delete-travelorder-modal-lg{{ $TravelOrder->id }} " data-backdrop="static"
-                        data-keyboard="false">
-                        <i class="fas fa-trash-alt"></i>
-                        {{__('Delete')}}
-                      </button>
-                      @endcan
-                      {{-- @can('print', $TravelOrder)
+                                            data-keyboard="false">
+                                            <i class="fas fa-edit"></i>
+                                            {{__('Edit')}}
+                                            </button> --}}
+                                            {{-- @endcan --}}
+                                            @can('delete', $TravelOrder)
+                                            <button type="button" class="btn btn-default" title="Delete" data-toggle="modal" data-target="#delete-travelorder-modal-lg{{ $TravelOrder->id }} " data-backdrop="static" data-keyboard="false">
+                                                <i class="fas fa-trash-alt"></i>
+                                                {{__('Delete')}}
+                                            </button>
+                                            @endcan
+                                            {{-- @can('print', $TravelOrder)
 
                       <a href="  {{ route('travelorder.print',[$TravelOrder->id]) }}"
-                        class="btn btn-default"><i class="fas fa-print"></i> Print</a>
-                      @endcan --}}
+                                            class="btn btn-default"><i class="fas fa-print"></i> Print</a>
+                                            @endcan --}}
 
 
-                      @can('print', $TravelOrder)
-                      <button type="button" class="btn btn-default" onclick="printTO('{{ route('travelorder.print', [$TravelOrder->id]) }}')">
-                          <i class="fas fa-print"></i> Print
-                      </button>
-                      @endcan
+                                            @can('print', $TravelOrder)
+                                            <button type="button" class="btn btn-default" onclick="printTO('{{ route('travelorder.print', [$TravelOrder->id]) }}')">
+                                                <i class="fas fa-print"></i> Print
+                                            </button>
+                                            @endcan
 
-                    </td>
-                  </tr>
-                  {{-- @include('msd-panel.event-panel.event.edit')
+                                        </td>
+                                    </tr>
+                                    {{-- @include('msd-panel.event-panel.event.edit')
                   @include('msd-panel.event-panel.event.delete') --}}
-                  @endforeach
-                  @endif
-                </tbody>
+                                    @endforeach
+                                    @endif
+                                </tbody>
 
-              </table>
+                            </table>
+                        </div>
+                        <!-- /.card-body -->
+                    </div>
+                    <!-- /.card -->
+                </div>
+                <!-- /.col -->
             </div>
-            <!-- /.card-body -->
-          </div>
-          <!-- /.card -->
+            <!-- /.row -->
         </div>
-        <!-- /.col -->
-      </div>
-      <!-- /.row -->
-    </div>
-    <!-- /.container-fluid -->
-  </section>
-  <!-- /.content -->
+        <!-- /.container-fluid -->
+    </section>
+    <!-- /.content -->
 </div>
 @if(!empty($TravelOrders))
 @foreach($TravelOrders as $TravelOrder)
@@ -223,26 +226,32 @@
 <script src="{{asset('plugins/bs-custom-file-input/bs-custom-file-input.min.js') }}"></script>
 
 <script>
-  $(function () {
-                bsCustomFileInput.init();
-              });
+    $(function() {
+        bsCustomFileInput.init();
+    });
+
 </script>
 <!-- Page specific script -->
 
 <script>
-  $(function () {
-              $("#example1").DataTable({
-              responsive: true, lengthChange: false, autoWidth: false,
-              order: [[0, 'desc']]
-              });
-            });
-          
+    $(function() {
+        $("#example1").DataTable({
+            responsive: true
+            , lengthChange: false
+            , autoWidth: false
+            , order: [
+                [0, 'desc']
+            ]
+        });
+    });
+
 </script>
 
 <script>
-  $(function () {
-              $('#daterange').daterangepicker()   
-            });
+    $(function() {
+        $('#daterange').daterangepicker()
+    });
+
 </script>
 
 

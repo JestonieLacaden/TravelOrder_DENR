@@ -40,7 +40,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot()
     {
 
-         //compose all the views....
+        //compose all the views....
         //  view()->composer('*', function ($view)
         //  {
         //  $IncomingCount = 0;
@@ -113,18 +113,18 @@ class AppServiceProvider extends ServiceProvider
         View::share('EmployeeCount', Employee::count());
         View::share('UserCount', User::count());
         View::share('DocumentCount', Document::count());
-        View::share('EventCount', Event::where('date','>',now())->count());
+        View::share('EventCount', Event::where('date', '>', now())->count());
         View::share('LeaveEncoderCount', Leave::where([
-            ['is_rejected1',false],
-            ['is_rejected2',false],
-            ['is_rejected3',false],
-            ['is_approve3',false],
-            ])->count());
+            ['is_rejected1', false],
+            ['is_rejected2', false],
+            ['is_rejected3', false],
+            ['is_approve3', false],
+        ])->count());
         View::share('TravelOrderEncoderCount', TravelOrder::where([
-                ['is_rejected1',false],
-                ['is_rejected2',false],
-                ['is_approve2',false],
-                ])->count());
+            ['is_rejected1', false],
+            ['is_rejected2', false],
+            ['is_approve2', false],
+        ])->count());
 
         View::composer(['partials.sidebar', 'mails.employeerequest.index'], function ($view) {
 
@@ -140,8 +140,9 @@ class AppServiceProvider extends ServiceProvider
                     // --- TRAVEL ORDER signatory + pending
                     $sigA1 = \App\Models\TravelOrderSignatory::where('approver1', $emp->id)->pluck('id');
                     $sigA2 = \App\Models\TravelOrderSignatory::where('approver2', $emp->id)->pluck('id');
+                    $sigA3 = \App\Models\TravelOrderSignatory::where('approver3', $emp->id)->pluck('id');
 
-                    $showTO = $sigA1->isNotEmpty() || $sigA2->isNotEmpty();
+                    $showTO = $sigA1->isNotEmpty() || $sigA2->isNotEmpty() || $sigA3->isNotEmpty();
 
                     $pendingA1 = \App\Models\TravelOrder::whereIn('travelordersignatoryid', $sigA1)
                         ->where('is_approve1', false)
@@ -155,7 +156,16 @@ class AppServiceProvider extends ServiceProvider
                         ->where('is_rejected2', false)
                         ->count();
 
-                    $toPendingCount = $pendingA1 + $pendingA2;
+                    $pendingA3 = \App\Models\TravelOrder::whereIn('travelordersignatoryid', $sigA3)
+                        ->where('is_approve1', true)
+                        ->where('is_approve2', true)
+                        ->where('is_approve3', false)
+                        ->where('is_rejected1', false)
+                        ->where('is_rejected2', false)
+                        ->where('is_rejected3', false)
+                        ->count();
+
+                    $toPendingCount = $pendingA1 + $pendingA2 + $pendingA3;
 
                     // --- LEAVE signatory + pending
                     // Note: kung may leavesignatoryid column sa Leaves, idagdag mo ang whereIn(...) sa bawat query.

@@ -7,25 +7,38 @@ use Illuminate\Database\Eloquent\Model;
 
 class Unit extends Model
 {
-    protected $table='unit';
+    protected $table = 'unit';
     use HasFactory;
-    protected $guarded = [];    
+    protected $guarded = [];
 
-    public function Section() {
-       return $this->belongsTo(Section::class,'sectionid');
+    public function Section()
+    {
+        return $this->belongsTo(Section::class, 'sectionid');
     }
-    
-    public function Office() {
-        return $this->belongsTo(Office::class,'officeid');
-    } 
- 
-     public function Employee() {
-        return $this->belongsTo(Employee::class,'email','email');
+
+    public function Office()
+    {
+        return $this->belongsTo(Office::class, 'officeid');
     }
-    public function Route() {
-        return $this->hasMany(Route::class,'id');
+
+    public function Employee()
+    {
+        return $this->belongsTo(Employee::class, 'email', 'email');
     }
-    public function FMRoute() {
-        return $this->hasMany(FinancialManagementRoute::class,'id');
+    public function Route()
+    {
+        return $this->hasMany(Route::class, 'id');
     }
-}   
+    public function FMRoute()
+    {
+        return $this->hasMany(FinancialManagementRoute::class, 'id');
+    }
+
+    /**
+     * Get the section chief assigned to this unit
+     */
+    public function sectionChief()
+    {
+        return $this->hasOne(SectionChief::class, 'unitid', 'id');
+    }
+}

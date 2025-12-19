@@ -28,6 +28,29 @@
 
     <section class="content">
         <div class="container-fluid">
+
+            @if(session('warning_chief_change'))
+            <!-- Warning Alert for Section Chief Change -->
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="alert alert-warning alert-dismissible">
+                        <button type="button" class="close" data-dismiss="alert">&times;</button>
+                        <h5><i class="icon fas fa-exclamation-triangle"></i> Warning: Section Chief Assignment</h5>
+                        <p>{!! session('warning_chief_change')['message'] !!}</p>
+                        <p><strong>Do you want to proceed with this change?</strong></p>
+                        <div class="mt-3">
+                            <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#confirmRemoveChiefModal">
+                                <i class="fas fa-check"></i> Yes, Proceed and Remove Chief Assignment
+                            </button>
+                            <a href="{{ route('employee.index') }}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @endif
+
             <div class="row">
                 <!-- left column -->
                 <div class="col-md m-auto">
@@ -40,7 +63,7 @@
 
                         <!-- /.card-header -->
                         <!-- form start -->
-                        <form method="POST" action="{{ route('employee.update',[ $Employee->id])}}" enctype="multipart/form-data">
+                        <form method="POST" action="{{ route('employee.update',[ $Employee->id])}}" enctype="multipart/form-data" id="employeeUpdateForm">
 
                             {{ csrf_field() }}
                             @method('PUT')
@@ -139,7 +162,13 @@
                                                 <optgroup label="- {{$Section->section }}"><strong></strong></option>
                                                     @foreach ($Units as $Unit)
                                                     @if ( $Unit->sectionid == $Section->id );
-                                                    <option value="{{$Office->id }},{{$Section->id }},{{$Unit->id}}" class="bg-light pl-4" {{ ($Employee->officeid == $Office->id && $Employee->sectionid == $Section->id && $Employee->unitid == $Unit->id) ? 'selected' : '' }}>
+                                                    @php
+                                                    $optionValue = "$Office->id,$Section->id,$Unit->id";
+                                                    $oldValue = old('officesectionunit');
+                                                    $currentValue = "$Employee->officeid,$Employee->sectionid,$Employee->unitid";
+                                                    $isSelected = $oldValue ? ($oldValue == $optionValue) : ($currentValue == $optionValue);
+                                                    @endphp
+                                                    <option value="{{$optionValue}}" class="bg-light pl-4" {{ $isSelected ? 'selected' : '' }}>
                                                         {{$Unit->unit }}
                                                     </option>
                                                     @endif
@@ -226,6 +255,7 @@
 
                             <div class="card-footer">
                                 <button type="submit" class="btn btn-primary">Submit</button>
+                                <button type="button" class="btn btn-secondary ml-2" id="cancelBtn">Cancel</button>
                             </div>
                         </form>
                     </div>
@@ -236,6 +266,58 @@
     </section>
 </div>
 
+<!-- Cancel Confirmation Modal -->
+<div class="modal fade" id="cancelConfirmModal" tabindex="-1" role="dialog" aria-labelledby="cancelConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title" id="cancelConfirmModalLabel">
+                    <i class="fas fa-exclamation-triangle"></i> Confirm Cancel
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0">Are you sure you want to cancel?</p>
+                <p class="text-danger mb-0"><strong>All changes will be lost.</strong></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fas fa-times"></i> No, Stay
+                </button>
+                <button type="button" class="btn btn-warning" id="confirmCancelBtn">
+                    <i class="fas fa-check"></i> Yes, Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div class="modal fade" id="confirmRemoveChiefModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger">
+                <h5 class="modal-title"><i class="fas fa-exclamation-triangle"></i> Confirm Section Chief Removal</h5>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p><strong>Are you absolutely sure?</strong></p>
+                <p>This employee will be automatically removed as Section Chief of <strong>{{ session('warning_chief_change')['unit_name'] ?? 'the assigned unit' }}</strong>.</p>
+                <p class="text-danger"><i class="fas fa-info-circle"></i> This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button type="button" class="btn btn-danger" id="confirmProceedBtn">
+                    <i class="fas fa-check"></i> Yes, Proceed
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 @endsection
 
@@ -245,6 +327,66 @@
 <script>
     $(function() {
         bsCustomFileInput.init();
+
+        // Store original form values
+        const originalValues = {};
+        $('input[type="text"], input[type="email"], input[type="date"], textarea, select').each(function() {
+            const name = $(this).attr('name');
+            if (name) {
+                originalValues[name] = $(this).val();
+            }
+        });
+
+        // Cancel button with smart warning
+        $('#cancelBtn').on('click', function() {
+            // Check if form has any changes from original
+            let hasChanges = false;
+
+            // Check text/email/date inputs and textareas
+            $('input[type="text"], input[type="email"], input[type="date"], textarea, select').each(function() {
+                const name = $(this).attr('name');
+                if (name && originalValues[name] !== undefined) {
+                    const currentVal = $(this).val();
+                    const originalVal = originalValues[name];
+                    // Compare trimmed values
+                    if (currentVal.trim() !== originalVal.trim()) {
+                        hasChanges = true;
+                        return false; // break loop
+                    }
+                }
+            });
+
+            // Check file inputs
+            if (!hasChanges) {
+                $('input[type="file"]').each(function() {
+                    if (this.files && this.files.length > 0) {
+                        hasChanges = true;
+                        return false; // break loop
+                    }
+                });
+            }
+
+            // If form has changes, show modal warning
+            if (hasChanges) {
+                $('#cancelConfirmModal').modal('show');
+            } else {
+                // No changes, go back directly
+                window.location.href = '{{ route("employee.index") }}';
+            }
+        });
+
+        // Confirm cancel button in modal
+        $('#confirmCancelBtn').on('click', function() {
+            window.location.href = '{{ route("employee.index") }}';
+        });
+
+        // Handle confirmation button click
+        $('#confirmProceedBtn').click(function() {
+            // Add hidden input to confirm chief removal
+            $('#employeeUpdateForm').append('<input type="hidden" name="confirm_remove_chief" value="1">');
+            // Submit the form
+            $('#employeeUpdateForm').submit();
+        });
     });
 
 </script>

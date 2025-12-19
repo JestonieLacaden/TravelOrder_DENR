@@ -51,16 +51,16 @@
         }
 
         .header img {
-        display: block;
-        margin: auto;
+            display: block;
+            margin: auto;
         }
 
-        .header .logoLeft{
+        .header .logoLeft {
             max-width: 85px;
             max-height: 85px;
         }
 
-        .header .logoRight{
+        .header .logoRight {
             max-width: 110px;
         }
 
@@ -103,7 +103,7 @@
             padding: 12px 0;
         }
 
-        .section .title{
+        .section .title {
             text-align: center
         }
 
@@ -177,23 +177,28 @@
         }
 
         /* signature */
-        .sig-block{
-        display:flex;
-        align-items:center;
-        justify-content: center
-        gap:2px
+        .sig-block {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
         }
-        .sig-img{
-        max-height:60px
+
+        .sig-img {
+            max-height: 60px;
         }
-        .sig-meta{
-        font-size:12px;
-        line-height:1.15;
-        color:#333;
-        text-align: left;
+
+        .sig-meta {
+            font-size: 12px;
+            line-height: 1.15;
+            color: #333;
+            text-align: left;
         }
+
         @media print {
-        .sig-meta{color:#000}
+            .sig-meta {
+                color: #000
+            }
         }
 
 
@@ -300,8 +305,8 @@
             <div class="title">Certification</div>
             <div class="justify">
                 <i>
-                This is to certify that the travel is necessary and is connected with the functions of the
-                official/employee of the Div/Sec/Unit.
+                    This is to certify that the travel is necessary and is connected with the functions of the
+                    official/employee of the Div/Sec/Unit.
                 </i>
             </div>
 
@@ -319,34 +324,21 @@
 
             $sigUrl1 = $makeSigUrl($approver1Emp);
             $sigUrl2 = $makeSigUrl($approver2Emp);
+            $sigUrl3 = $makeSigUrl($approver3Emp ?? null);
 
             $ap1 = $TravelOrder->approve1_at ? \Carbon\Carbon::parse($TravelOrder->approve1_at)->timezone($tz) : null;
             $ap2 = $TravelOrder->approve2_at ? \Carbon\Carbon::parse($TravelOrder->approve2_at)->timezone($tz) : null;
+            $ap3 = $TravelOrder->approve3_at ? \Carbon\Carbon::parse($TravelOrder->approve3_at)->timezone($tz) : null;
 
-            // gawing “+08'00'” ang offset para kahawig ng sample (-04'00')
+            // gawing "+08'00'" ang offset para kahawig ng sample (-04'00')
             $off1 = $ap1 ? str_replace(':', "'", $ap1->format('P')) : null;
             $off2 = $ap2 ? str_replace(':', "'", $ap2->format('P')) : null;
+            $off3 = $ap3 ? str_replace(':', "'", $ap3->format('P')) : null;
             @endphp
 
 
 
             <div class="sign-row">
-                <div class="sign-box">
-                    <div class="sig-block">
-                        <img src="{{ $sigUrl1 ?? asset('images/dummySign.png') }}" class="sig-img" draggable="false" oncontextmenu="return false;" onmousedown="return false;" onselectstart="return false;">
-                        <div class="sig-meta">
-                            <div><strong>Digitally signed</strong> by</div>
-                            <div>{{ $approver1Name }}</div>
-                            @if($ap1)
-                            <div>Date: {{ $ap1->format('Y.m.d') }}</div>
-                            <div>{{ $ap1->format('H:i:s') }} {{ $off1 }}</div>
-                            @endif
-                        </div>
-                    </div>
-
-                    <div class="sign-name"><u>{{ $approver1Name }}</u></div>
-                    <div class="sign-role">{{ $approver1Pos }}</div>
-                </div>
                 <div class="sign-box">
                     <div class="sig-block">
                         <img src="{{ $sigUrl2 ?? asset('images/dummySign.png') }}" class="sig-img" draggable="false" oncontextmenu="return false;" onmousedown="return false;" onselectstart="return false;">
@@ -359,8 +351,39 @@
                             @endif
                         </div>
                     </div>
+
                     <div class="sign-name"><u>{{ $approver2Name }}</u></div>
                     <div class="sign-role">{{ $approver2Pos }}</div>
+                </div>
+                <div class="sign-box">
+                    <div class="sig-block">
+                        <img src="{{ $sigUrl3 ?? asset('images/dummySign.png') }}" class="sig-img" draggable="false" oncontextmenu="return false;" onmousedown="return false;" onselectstart="return false;">
+                        <div class="sig-meta">
+                            <div><strong>Digitally signed</strong> by</div>
+                            <div>{{ $approver3Name ?? '' }}</div>
+                            @if($ap3)
+                            <div>Date: {{ $ap3->format('Y.m.d') }}</div>
+                            <div>{{ $ap3->format('H:i:s') }} {{ $off3 }}</div>
+                            @endif
+                        </div>
+                    </div>
+                    <div class="sign-name"><u>{{ $approver3Name ?? '' }}</u></div>
+                    <div class="sign-role">{{ $approver3Pos ?? '' }}</div>
+                </div>
+            </div>
+
+            <!-- Middle Signer (Section Chief) - between Certification and Authorization -->
+            <div style="margin-top: 20px; text-align: center;">
+                <div class="sig-block" style="display: inline-flex; align-items: flex-start; gap: 8px; max-width: 300px; margin: 0 auto;">
+                    <img src="{{ $sigUrl1 ?? asset('images/dummySign.png') }}" style="max-width: 60px; height: auto;" draggable="false" oncontextmenu="return false;" onmousedown="return false;" onselectstart="return false;">
+                    <div style="font-size: 9px; color: #555; text-align: left;">
+                        <div><strong>Digitally signed</strong> by</div>
+                        <div>{{ $approver1Name }}</div>
+                        @if($ap1)
+                        <div>Date: {{ $ap1->format('Y.m.d') }}</div>
+                        <div>{{ $ap1->format('H:i:s') }} {{ $off1 }}</div>
+                        @endif
+                    </div>
                 </div>
             </div>
         </div>
@@ -387,7 +410,7 @@
 
         <!-- Footer -->
         <div class="footer">
-             So. Pag-asa, Brgy. Payompon, Mamburao, Occidental Mindoro {{--· Email: tsdocomin04@gmail.com --}}
+            So. Pag-asa, Brgy. Payompon, Mamburao, Occidental Mindoro {{--· Email: tsdocomin04@gmail.com --}}
 
         </div>
 

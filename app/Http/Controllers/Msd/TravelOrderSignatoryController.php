@@ -11,15 +11,15 @@ use Illuminate\Support\Facades\Storage;
 
 class TravelOrderSignatoryController extends Controller
 {
-    public function index() 
+    public function index()
     {
 
         $this->authorize('viewAny', \App\Models\TravelOrderSignatory::class);
 
-    
-        $Employees = Employee::orderby('lastname','asc')->get();
-        $Signatories = TravelOrderSignatory::with('Employee1','Employee2')->get();
-        return view('msd-panel.travel-order-signatory.index',compact('Employees', 'Signatories'));
+
+        $Employees = Employee::orderby('lastname', 'asc')->get();
+        $Signatories = TravelOrderSignatory::with('Employee1', 'Employee2', 'Employee3')->get();
+        return view('msd-panel.travel-order-signatory.index', compact('Employees', 'Signatories'));
     }
 
     public function store(Request $request)
@@ -30,8 +30,10 @@ class TravelOrderSignatoryController extends Controller
             'name'                => ['required', 'string', 'max:255'],
             'approver1'           => ['required', 'exists:employee,id'],
             'approver2'           => ['required', 'exists:employee,id'],
+            'approver3'           => ['required', 'exists:employee,id'],
             'approver1_signature' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:2048'],
             'approver2_signature' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:2048'],
+            'approver3_signature' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:2048'],
         ]);
 
         // Prevent duplicate signatory name
@@ -43,11 +45,13 @@ class TravelOrderSignatoryController extends Controller
             'name'      => $data['name'],
             'approver1' => $data['approver1'],
             'approver2' => $data['approver2'],
+            'approver3' => $data['approver3'],
         ]);
 
         // Upload signatures to employees
         $this->saveSignatureForEmployee($request->file('approver1_signature'), (int) $data['approver1']);
         $this->saveSignatureForEmployee($request->file('approver2_signature'), (int) $data['approver2']);
+        $this->saveSignatureForEmployee($request->file('approver3_signature'), (int) $data['approver3']);
 
         return back()->with('message', 'Signatory Saved Successfully!');
     }
@@ -61,10 +65,13 @@ class TravelOrderSignatoryController extends Controller
             'name'                => ['required', 'string', 'max:255'],
             'approver1'           => ['required', 'exists:employee,id'],
             'approver2'           => ['required', 'exists:employee,id'],
+            'approver3'           => ['required', 'exists:employee,id'],
             'approver1_signature' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:2048'],
             'approver2_signature' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:2048'],
+            'approver3_signature' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:2048'],
             'clear_approver1_signature'  => ['sometimes', 'boolean'],
             'clear_approver2_signature'  => ['sometimes', 'boolean'],
+            'clear_approver3_signature'  => ['sometimes', 'boolean'],
         ]);
 
         // Unique name check except current row
@@ -80,6 +87,7 @@ class TravelOrderSignatoryController extends Controller
             'name'      => $data['name'],
             'approver1' => $data['approver1'],
             'approver2' => $data['approver2'],
+            'approver3' => $data['approver3'],
         ]);
 
         // Clear toggles (kahit walang bagong upload)
@@ -89,10 +97,14 @@ class TravelOrderSignatoryController extends Controller
         if ($request->boolean('clear_approver2_signature')) {
             $this->clearSignatureForEmployee((int) $data['approver2']);
         }
+        if ($request->boolean('clear_approver3_signature')) {
+            $this->clearSignatureForEmployee((int) $data['approver3']);
+        }
 
         // Upload/replace signatures (optional per file)
         $this->saveSignatureForEmployee($request->file('approver1_signature'), (int) $data['approver1']);
         $this->saveSignatureForEmployee($request->file('approver2_signature'), (int) $data['approver2']);
+        $this->saveSignatureForEmployee($request->file('approver3_signature'), (int) $data['approver3']);
 
         return back()->with('message', 'Signatory Updated Successfully!');
     }
@@ -123,7 +135,7 @@ class TravelOrderSignatoryController extends Controller
         $emp->signature_path = null;
         $emp->save();
     }
-    
+
     // public function store(Request $request)
     // {
     //     $this->authorize('create', \App\Models\TravelOrderSignatory::class);
@@ -132,11 +144,11 @@ class TravelOrderSignatoryController extends Controller
     //         'name' => 'required',
     //         'approver1' => 'required',
     //         'approver2' => 'required',
-            
+
     //     ]);
 
     //     $check = TravelOrderSignatory::where('name', '=', $request->name)->get()->first();
-      
+
     //     if ($check) {
     //       return back()->with('SignatoryError', 'Error!');
     //     }
@@ -174,16 +186,15 @@ class TravelOrderSignatoryController extends Controller
     //     }
     // }
 
-    public function destroy($TravelOrderSignatory) {
- 
-        $TravelOrderSignatory = TravelOrderSignatory::where('id','=',$TravelOrderSignatory)->get()->first();
+    public function destroy($TravelOrderSignatory)
+    {
+
+        $TravelOrderSignatory = TravelOrderSignatory::where('id', '=', $TravelOrderSignatory)->get()->first();
         $this->authorize('delete', $TravelOrderSignatory);
 
-     
-        $TravelOrderSignatory->delete();
-        
-        return back()->with('message', "Signatory Deleted Successfully!");
 
+        $TravelOrderSignatory->delete();
+
+        return back()->with('message', "Signatory Deleted Successfully!");
     }
-    
 }

@@ -40,18 +40,24 @@
     {{-- (Optional) debug AFTER libs are in place --}}
     <script>
         if (window.jQuery) {
-      console.log('jQuery Version:', $.fn.jquery);
-    } else {
-      console.warn('jQuery not found — check partials.javascript');
-    }
+            console.log('jQuery Version:', $.fn.jquery);
+        } else {
+            console.warn('jQuery not found — check partials.javascript');
+        }
+
     </script>
 
     {{-- Page-specific scripts (e.g., your edit modal init) --}}
     @stack('scripts')
-    
+
 
     <script>
-      window.employeeId = {{ optional(auth()->user()->Employee)->id ?? 'null' }};
+        window.employeeId = {
+            {
+                optional(auth() - > user() - > Employee) - > id ?? 'null'
+            }
+        };
+
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/pusher-js@7/dist/web/pusher.min.js"></script>
@@ -122,21 +128,52 @@
             refreshBadges();
             setInterval(refreshBadges, 15000);
 
-            // auto-reload kapag nasa list page at nagbago ang bilang
+            // Show notification when NEW requests arrive (count increases)
             var path = window.location.pathname;
-            var lastTO = Number(@json(($toPendingCount ?? 0)));
-            var lastLeave = Number(@json(($leavePendingCount ?? 0)));
+            var lastTO = Number(@json($toPendingCount ?? 0));
+            var lastLeave = Number(@json($leavePendingCount ?? 0));
 
-            function watchAndReload() {
+            function checkForUpdates() {
                 $.getJSON(endpoint).done(function(d) {
                     var to = Number(d && d.to || 0);
                     var leave = Number(d && d.leave || 0);
 
-                    if (path.indexOf('/mail/travel-order-request') !== -1 && to !== lastTO) {
-                        location.reload();
+                    // Check if on TO Request page and count INCREASED (new request sent)
+                    if (path.indexOf('/mail/travel-order-request') !== -1 && to > lastTO) {
+                        var diff = to - lastTO;
+                        var message = diff === 1 
+                            ? 'A new Travel Order request has been submitted. Please refresh to view.' 
+                            : diff + ' new Travel Order requests have been submitted. Please refresh to view.';
+                        
+                        toastr.info(message, 'New Request', {
+                            closeButton: true,
+                            progressBar: true,
+                            timeOut: 0,
+                            extendedTimeOut: 0,
+                            positionClass: 'toast-top-right',
+                            onclick: function() {
+                                location.reload();
+                            }
+                        });
                     }
-                    if (path.indexOf('/mail/leave-request') !== -1 && leave !== lastLeave) {
-                        location.reload();
+
+                    // Check if on Leave Request page and count INCREASED (new request sent)
+                    if (path.indexOf('/mail/leave-request') !== -1 && leave > lastLeave) {
+                        var diff = leave - lastLeave;
+                        var message = diff === 1 
+                            ? 'A new Leave request has been submitted. Please refresh to view.' 
+                            : diff + ' new Leave requests have been submitted. Please refresh to view.';
+                        
+                        toastr.info(message, 'New Request', {
+                            closeButton: true,
+                            progressBar: true,
+                            timeOut: 0,
+                            extendedTimeOut: 0,
+                            positionClass: 'toast-top-right',
+                            onclick: function() {
+                                location.reload();
+                            }
+                        });
                     }
 
                     lastTO = to;
@@ -144,10 +181,10 @@
                 });
             }
 
-            // kung nasa alinman sa dalawang pages, i-watch din
+            // Watch for changes only if on request pages
             if (path.indexOf('/mail/travel-order-request') !== -1 ||
                 path.indexOf('/mail/leave-request') !== -1) {
-                setInterval(watchAndReload, 15000);
+                setInterval(checkForUpdates, 15000);
             }
         })();
 

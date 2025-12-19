@@ -20,6 +20,10 @@ class TravelOrderSignatory extends Model
     {
         return $this->belongsTo(Employee::class, 'approver2', 'id');
     }
+    public function Employee3()
+    {
+        return $this->belongsTo(Employee::class, 'approver3', 'id');
+    }
 
     public function SetTravelOrderSignatory()
     {
