@@ -159,7 +159,8 @@
             const $form = $(this).find('#editTOForm');
             const $dr = $(DATE_INPUT);
             if ($dr.data('daterangepicker')) $dr.data('daterangepicker').remove();
-            $form[0] ? .reset();
+            // Reset form safely
+            if ($form[0]) $form[0].reset();
             $form.find('.js-update-penro').prop('disabled', true);
             $('#to-employee,#to-destination,#to-purpose').val('');
             $dr.val('');

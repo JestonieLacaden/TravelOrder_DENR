@@ -1,57 +1,56 @@
-
 <!-- /.modal -->
 
-<div class="modal fade" id="new-travelorder-modal-lg" >
+<div class="modal fade" id="new-travelorder-modal-lg">
     <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h4 class="modal-title">Add Travel Order</h4>
-          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-            <span aria-hidden="true">&times;</span>
-          </button>
-        </div>
-          <div class="modal-body">
-        
-        
-        <!-- Main content -->
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Add Travel Order</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
 
-        <section class="content">
-          <div class="container-fluid">
-            <div class="row">
-              <!-- left column -->
-              <div class="col-md-12">
-                <!-- general form elements -->
-                <div class="card card-primary">
-                  <div class="card-header">
-                    <h3 class="card-title">Travel Order Information</h3>
-                
-                  </div>
-                  
-                  <!-- /.card-header -->
-                  <!-- form start -->
-               
-                  <form method="POST" action="{{ route('userTravelOrder.storeUserTravelOrder') }}" enctype="multipart/form-data">
 
-                    {{ csrf_field() }}
-                  <div class="card-body">
+                <!-- Main content -->
 
-                    <div class="card-body">
-                    
+                <section class="content">
+                    <div class="container-fluid">
+                        <div class="row">
+                            <!-- left column -->
+                            <div class="col-md-12">
+                                <!-- general form elements -->
+                                <div class="card card-primary">
+                                    <div class="card-header">
+                                        <h3 class="card-title">Travel Order Information</h3>
 
-                    <div class="form-group row">
-                      <label class="col-sm-3" for="daterange">Date Range : <span class="text-danger">*</span></label>
-                        <div class="input-group col-sm-9">
-                            <div class="input-group-prepend">
-                                <span class="input-group-text">
-                                <i class="far fa-calendar-alt"></i>
-                                </span>
-                            </div>
-                            <input type="text"  name="daterange" id="daterange" class="form-control float-right" oninput="this.value = this.value.toUpperCase()">
-                            </div>
-                            <!-- /.input group -->
-                        </div>
+                                    </div>
 
-                        {{-- <div class="form-group row">
+                                    <!-- /.card-header -->
+                                    <!-- form start -->
+
+                                    <form method="POST" action="{{ route('userTravelOrder.storeUserTravelOrder') }}" enctype="multipart/form-data" id="travel-order-form">
+
+                                        {{ csrf_field() }}
+                                        <div class="card-body">
+
+                                            <div class="card-body">
+
+
+                                                <div class="form-group row">
+                                                    <label class="col-sm-3" for="daterange">Date Range : <span class="text-danger">*</span></label>
+                                                    <div class="input-group col-sm-9">
+                                                        <div class="input-group-prepend">
+                                                            <span class="input-group-text">
+                                                                <i class="far fa-calendar-alt"></i>
+                                                            </span>
+                                                        </div>
+                                                        <input type="text" name="daterange" id="daterange" class="form-control float-right" oninput="this.value = this.value.toUpperCase()">
+                                                    </div>
+                                                    <!-- /.input group -->
+                                                </div>
+
+                                                {{-- <div class="form-group row">
                           <label class="col-sm-3" for="travelordersignatoryid">
                             Signatory: <span class="text-danger">*</span>
                           </label>
@@ -60,85 +59,130 @@
                               <option value="" disabled selected>-- Choose Signatory --</option>
                               @foreach($SignatoryOptions as $opt)
                               <option value="{{ $opt->travelordersignatoryid }}">
-                                {{ $opt->TravelOrderSignatory->name }}
-                              </option>
-                              @endforeach
-                            </select>
-                            @error('travelordersignatoryid')
-                            <p class="text-danger text-xs mt-1">{{$message}}</p>
-                            @enderror
-                          </div>
-                        </div> --}}
+                                                {{ $opt->TravelOrderSignatory->name }}
+                                                </option>
+                                                @endforeach
+                                                </select>
+                                                @error('travelordersignatoryid')
+                                                <p class="text-danger text-xs mt-1">{{$message}}</p>
+                                                @enderror
+                                            </div>
+                                        </div> --}}
 
-                        <div class="form-group row">
-                            <label class="col-sm-3" for="destinationoffice">Destination : <span class="text-danger">*</span></label>
-                            <div class=" col-sm-9">
-                                <input name="destinationoffice" id="destinationoffice" class="form-control" type="text"  placeholder="Enter Destination" oninput="this.value = this.value.toUpperCase()">
-                                @error('destination')
-                                <p class="text-danger text-xs mt-1">{{$message}}</p>
-                                @enderror
+                                        <div class="form-group row">
+                                            <label class="col-sm-3" for="destinationoffice">Destination : <span class="text-danger">*</span></label>
+                                            <div class=" col-sm-9">
+                                                <input name="destinationoffice" id="destinationoffice" class="form-control" type="text" placeholder="Enter Destination" oninput="this.value = this.value.toUpperCase()">
+                                                @error('destination')
+                                                <p class="text-danger text-xs mt-1">{{$message}}</p>
+                                                @enderror
+                                            </div>
+                                        </div>
+                                        <div class="form-group row">
+                                            <label class="col-sm-3" for="purpose">Purpose of travel : <span class="text-danger">*</span></label>
+                                            <div class=" col-sm-9">
+                                                <input name="purpose" id="purpose" class="form-control" type="text" placeholder="Enter Purpose of Travel" oninput="this.value = this.value.toUpperCase()">
+                                                @error('purpose')
+                                                <p class="text-danger text-xs mt-1">{{$message}}</p>
+                                                @enderror
+                                            </div>
+                                        </div>
+                                        <div class="form-group row">
+                                            <label class="col-sm-3" for="perdime">Per Dime : <span class="text-danger">*</span></label>
+                                            <div class=" col-sm-9">
+                                                <input name="perdime" id="perdime" class="form-control" type="number" placeholder="Enter Per Dime" oninput="this.value = this.value.toUpperCase()">
+                                                @error('perdime')
+                                                <p class="text-danger text-xs mt-1">{{$message}}</p>
+                                                @enderror
+                                            </div>
+                                        </div>
+                                        <div class="form-group row">
+                                            <label class="col-sm-3" for="appropriation">Appropriation : <span class="text-danger">*</span></label>
+                                            <div class=" col-sm-9">
+                                                <input name="appropriation" id="appropriation" class="form-control" type="text" placeholder="Enter Appropriation" oninput="this.value = this.value.toUpperCase()">
+                                                @error('appropriation')
+                                                <p class="text-danger text-xs mt-1">{{$message}}</p>
+                                                @enderror
+                                            </div>
+                                        </div>
+                                        <div class="form-group row">
+                                            <label class="col-sm-3" for="remarks">Remarks : <span class="text-danger">*</span></label>
+                                            <div class=" col-sm-9">
+                                                <input name="remarks" id="remarks" class="form-control" type="text" placeholder="Enter Remarks" oninput="this.value = this.value.toUpperCase()" value="SUBMIT REPORT UPON COMPLETION OF TRAVEL">
+                                                @error('remarks')
+                                                <p class="text-danger text-xs mt-1">{{$message}}</p>
+                                                @enderror
+                                            </div>
+                                        </div>
+                                </div>
                             </div>
-                          </div>   
-                        <div class="form-group row">
-                            <label class="col-sm-3" for="purpose">Purpose of travel : <span class="text-danger">*</span></label>
-                            <div class=" col-sm-9">
-                                <input name="purpose" id="purpose" class="form-control" type="text"  placeholder="Enter Purpose of Travel" oninput="this.value = this.value.toUpperCase()">
-                                @error('purpose')
-                                <p class="text-danger text-xs mt-1">{{$message}}</p>
-                                @enderror
+                            <!-- /.card-body -->
+                            <div class="card-footer">
+                                @can('AddUserTravelOrder', \App\Models\TravelOrder::class)
+                                <button type="submit" id="to-submit-btn" class="btn btn-primary">
+                                    <span class="btn-text">Submit</span>
+                                    <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                                    <span class="loading-text d-none">Submitting...</span>
+                                </button>
+                                @endcan
                             </div>
-                        </div> 
-                        <div class="form-group row">
-                            <label class="col-sm-3" for="perdime">Per Dime : <span class="text-danger">*</span></label>
-                            <div class=" col-sm-9">
-                                <input name="perdime" id="perdime" class="form-control" type="number"  placeholder="Enter Per Dime" oninput="this.value = this.value.toUpperCase()">
-                                @error('perdime')
-                                <p class="text-danger text-xs mt-1">{{$message}}</p>
-                                @enderror
-                            </div>
-                        </div> 
-                        <div class="form-group row">
-                            <label class="col-sm-3" for="appropriation">Appropriation : <span class="text-danger">*</span></label>
-                            <div class=" col-sm-9">
-                                <input name="appropriation" id="appropriation" class="form-control" type="text"  placeholder="Enter Appropriation" oninput="this.value = this.value.toUpperCase()">
-                                @error('appropriation')
-                                <p class="text-danger text-xs mt-1">{{$message}}</p>
-                                @enderror
-                            </div>
-                        </div> 
-                        <div class="form-group row">
-                            <label class="col-sm-3" for="remarks">Remarks : <span class="text-danger">*</span></label>
-                            <div class=" col-sm-9">
-                                <input name="remarks" id="remarks" class="form-control" type="text"  placeholder="Enter Remarks" oninput="this.value = this.value.toUpperCase()" value="SUBMIT REPORT UPON COMPLETION OF TRAVEL">
-                                @error('remarks')
-                                <p class="text-danger text-xs mt-1">{{$message}}</p>
-                                @enderror
-                            </div>
-                        </div> 
+
+                            </form>
+                        </div>
+                        <!-- /.card -->
                     </div>
-                  </div>
-                    <!-- /.card-body -->
-                     <div class="card-footer">
-                    @can('AddUserTravelOrder', \App\Models\TravelOrder::class)
-                      <button type="submit"  class="btn btn-primary">Submit</button>
-                    @endcan
-                    </div>
-                
-                  </form>
-                </div>
-                <!-- /.card -->
-              </div>
             </div>
-          </div>
-        </section>
         </div>
-        {{-- <div class="modal-footer justify-content-between">
+        </section>
+    </div>
+    {{-- <div class="modal-footer justify-content-between">
           <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
           <button type="button" class="btn btn-primary">Save changes</button>
         </div> --}}
-      </div>
-      <!-- /.modal-content -->
-    </div>
-    <!-- /.modal-dialog -->
-  </div>
-  <!-- /.modal -->
+</div>
+<!-- /.modal-content -->
+</div>
+<!-- /.modal-dialog -->
+</div>
+<!-- /.modal -->
+
+<script>
+    $(document).ready(function() {
+        // Prevent double submission with loading animation
+        $('#travel-order-form').on('submit', function(e) {
+            var submitBtn = $('#to-submit-btn');
+
+            // Check if already submitting
+            if (submitBtn.prop('disabled')) {
+                e.preventDefault();
+                return false;
+            }
+
+            // Disable button
+            submitBtn.prop('disabled', true);
+
+            // Show loading state
+            submitBtn.find('.btn-text').addClass('d-none');
+            submitBtn.find('.spinner-border').removeClass('d-none');
+            submitBtn.find('.loading-text').removeClass('d-none');
+
+            // Optional: Re-enable after timeout (fallback in case of error)
+            setTimeout(function() {
+                submitBtn.prop('disabled', false);
+                submitBtn.find('.btn-text').removeClass('d-none');
+                submitBtn.find('.spinner-border').addClass('d-none');
+                submitBtn.find('.loading-text').addClass('d-none');
+            }, 10000); // 10 seconds timeout
+        });
+
+        // Reset form when modal closes
+        $('#new-travelorder-modal-lg').on('hidden.bs.modal', function() {
+            var submitBtn = $('#to-submit-btn');
+            submitBtn.prop('disabled', false);
+            submitBtn.find('.btn-text').removeClass('d-none');
+            submitBtn.find('.spinner-border').addClass('d-none');
+            submitBtn.find('.loading-text').addClass('d-none');
+        });
+    });
+
+</script>

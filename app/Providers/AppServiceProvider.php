@@ -173,9 +173,23 @@ class AppServiceProvider extends ServiceProvider
 
                     $toPendingCount = $pendingA1 + $pendingA2 + $pendingA3;
 
-                    // Show button ALWAYS for Section Chiefs, OR if they have existing signatory records
-                    // This ensures button stays visible even when all requests are approved
-                    $showTO = $isSectionChief || $sigA1->isNotEmpty() || $sigA2->isNotEmpty() || $sigA3->isNotEmpty();
+                    // FIXED: Smart button visibility logic
+                    // Show button if:
+                    // 1. Currently assigned as Section Chief (show immediately), OR
+                    // 2. Has pending requests as former Section Chief (must finish approving), OR
+                    // 3. Is current Division Chief or PENRO (Approver 2/3)
+                    if ($isSectionChief) {
+                        // Currently assigned Section Chief → Always show
+                        $showTO = true;
+                    } else {
+                        // Not current Section Chief → Show only if:
+                        // - Has pending TOs to approve (finish old responsibilities), OR
+                        // - Is Division Chief/PENRO (Approver 2 or 3 with signatory records)
+                        $hasPendingAsApprover1 = $pendingA1 > 0;
+                        $isDivisionOrPENRO = $sigA2->isNotEmpty() || $sigA3->isNotEmpty();
+
+                        $showTO = $hasPendingAsApprover1 || $isDivisionOrPENRO;
+                    }
 
                     // --- LEAVE signatory + pending
                     // Note: kung may leavesignatoryid column sa Leaves, idagdag mo ang whereIn(...) sa bawat query.

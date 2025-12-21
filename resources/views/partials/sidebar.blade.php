@@ -93,7 +93,10 @@
 
 
                 @can('acceptemployee', \App\Models\Leave::class)
+                {{-- Only show "My Mail" header if user has Leave or TO Request access --}}
+                @if((!empty($showLeave) && $showLeave) || (!empty($showTO) && $showTO))
                 <li class="nav-header">My Mail </li>
+                @endif
 
                 @if(!empty($showLeave) && $showLeave)
                 <li class="nav-item   {{ request()->routeIs('mail.leaverequest') ? 'active' : '' }}">
@@ -391,202 +394,204 @@
                                         </p>
                                     </a>
                                 </li>
+                                {{-- HIDDEN: Option 1 - Deprecated in favor of Option 2 (Set Section Chief)
                                 <li class="nav-item">
 
-                                    <a href="{{ route('set-travel-order-signatory.index') }}" class="nav-link  {{ Request::is('msd-management/settings/travel-order-settings/set-travel-order-signatory') ? 'active' : '' }}">
+                                    <a href="{{ route('set-travel-order-signatory.index') }}" class="nav-link {{ Request::is('msd-management/settings/travel-order-settings/set-travel-order-signatory') ? 'active' : '' }}">
 
-                                        <p class="ml-4 p-2">Set Signatory<span class="badge badge-info right"></span>
-                                        </p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-
-                                    <a href="{{ route('section-chief.index') }}" class="nav-link  {{ Request::is('msd-management/settings/travel-order-settings/section-chief') ? 'active' : '' }}">
-
-                                        <p class="ml-4 p-2"><i class="fas fa-user-tie"></i> Set Section Chief<span class="badge badge-success right">NEW</span>
-                                        </p>
-                                    </a>
-                                </li>
-                            </ul>
+                                <p class="ml-4 p-2">Set Signatory<span class="badge badge-info right"></span>
+                                </p>
+                                </a>
                         </li>
-                    </ul>
-
-
-
-                </li>
-                @endcan
-
-                @can('viewany', \App\Models\User::class)
-                <li class="nav-header">Administrator</li>
-                <li class="nav-item">
-                    <a href="#" class="nav-link  {{ Request::is('data-management/*') ? 'active' : '' }}">
-                        <p>
-                            Data Management
-                            <i class="right fas fa-angle-left"></i>
-                        </p>
-                    </a>
-                    <ul class="nav nav-treeview">
+                        --}}
                         <li class="nav-item">
-                            <a href="" class="nav-link {{ Request::is('data-management/user/*') ? 'active' : '' }}">
-                                <i class="far fas fa-users nav-icon"></i>
-                                <p>
-                                    Users
-                                    <i class="right fas fa-angle-left"></i>
+
+                            <a href="{{ route('section-chief.index') }}" class="nav-link  {{ Request::is('msd-management/settings/travel-order-settings/section-chief') ? 'active' : '' }}">
+
+                                <p class="ml-4 p-2"><i class="fas fa-user-tie"></i> Set Section Chief<span class="badge badge-success right">NEW</span>
                                 </p>
                             </a>
-                            <ul class="nav nav-treeview">
-                                <li class="nav-item">
-                                    <a href="{{ route('user.index') }}" class="nav-link  {{ Request::is('data-management/user/user') ? 'active' : '' }}">
-
-                                        <p class="ml-4 p-2">User<span class="badge badge-info right">{{ $UserCount
-                                                }}</span>
-                                        </p>
-                                    </a>
-                                </li>
-                            </ul>
-                            <ul class="nav nav-treeview">
-                                <li class="nav-item">
-                                    <a href="{{ route('role.index') }}" class="nav-link  {{ Request::is('data-management/user/role') ? 'active' : '' }}">
-                                        <p class="ml-4 p-2">Roles</p>
-                                    </a>
-                                </li>
-                            </ul>
-                        </li>
-                    </ul>
-
-                    <ul class="nav nav-treeview">
-                        <li class="nav-item">
-                            <a href="#" class="nav-link {{ Request::is('data-management/employee/*') ? 'active' : '' }}">
-                                <i class="far fas fa-address-book nav-icon"></i>
-                                <p>
-                                    Employees
-                                    <i class="right fas fa-angle-left"></i>
-                                </p>
-                            </a>
-                            <ul class="nav nav-treeview">
-                                <li class="nav-item">
-
-                                    <a href="{{ route('office.index') }}" class="nav-link {{ Request::is('data-management/employee/office') ? 'active' : '' }}">
-                                        <p class="ml-4 p-2">Office<span class="badge badge-info right">{{ $OfficeCount
-                                                }}</span></p>
-                                        </p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ route('section.index') }}" class="nav-link {{ Request::is('data-management/employee/section') ? 'active' : '' }}">
-                                        <p class="ml-4 p-2">Section<span class="badge badge-info right">{{ $SectionCount
-                                                }}</span></p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ route('unit.index') }}" class="nav-link {{ Request::is('data-management/employee/unit') ? 'active' : '' }}">
-                                        <p class="ml-4 p-2">Unit <span class="badge badge-info right">{{ $UnitCount
-                                                }}</span></p>
-                                    </a>
-                                </li>
-                            </ul>
                         </li>
                     </ul>
                 </li>
-                @endcan
+            </ul>
 
-                {{-- @can('viewany', \App\Models\FinancialManagement::class)
-                <li class="nav-header">Financial Management </li>
-                <li class="nav-item ">
-                    <a href="{{ route('financial-management.index') }}"
-                class="nav-link {{ 'financial-management' == request()->path() ? 'active' : ''}}">
-                <i class="nav-icon fas fa-coins"></i>
-                <p>
-                    Financial Management
-                    @if ($FinancialManagementCount != 0)
-                    @if ($FinancialManagementCount > 999)
-                    <span class="badge badge-success right">999+</span>
-                    @else
-                    <span class="badge badge-info right">{{ $FinancialManagementCount }}</span>
-                    @endif
-                    @endif
-                </p>
+
+
+            </li>
+            @endcan
+
+            @can('viewany', \App\Models\User::class)
+            <li class="nav-header">Administrator</li>
+            <li class="nav-item">
+                <a href="#" class="nav-link  {{ Request::is('data-management/*') ? 'active' : '' }}">
+                    <p>
+                        Data Management
+                        <i class="right fas fa-angle-left"></i>
+                    </p>
                 </a>
-                </li>
-                @endcan --}}
-
-
-                {{-- @can('viewany', \App\Models\FinancialManagement::class)
-                <li class="nav-item">
-                    <a href="#"
-                        class="nav-link  {{ Request::is('financial-management/allocation*') ? 'active' : '' }} {{ Request::is('financial-management/financial_tracking') ? 'active' : '' }} {{ Request::is('financial-management/realignment_report') ? 'active' : '' }}">
-                <p>
-                    Report
-                    <i class="right fas fa-angle-left"></i>
-                </p>
-                </a>
-                @can('viewany', \App\Models\FinancialManagement::class)
                 <ul class="nav nav-treeview">
                     <li class="nav-item">
-                        <a href="" class="nav-link {{ Request::is('financial-management/allocation*') ? 'active' : '' }}">
-                            <i class="far fas fa-file nav-icon"></i>
+                        <a href="" class="nav-link {{ Request::is('data-management/user/*') ? 'active' : '' }}">
+                            <i class="far fas fa-users nav-icon"></i>
                             <p>
-                                GAA
+                                Users
                                 <i class="right fas fa-angle-left"></i>
                             </p>
                         </a>
                         <ul class="nav nav-treeview">
                             <li class="nav-item">
-                                <a href="{{ route('financial-management.AllocationPayeereport') }}" class="nav-link {{ 'financial-management/allocation-payee-report' == request()->path() ? 'active' : ''}}">
-                                    <i class="nav-icon fas fa-file"></i>
-                                    <p>
-                                        Per Payee Report
+                                <a href="{{ route('user.index') }}" class="nav-link  {{ Request::is('data-management/user/user') ? 'active' : '' }}">
+
+                                    <p class="ml-4 p-2">User<span class="badge badge-info right">{{ $UserCount
+                                                }}</span>
                                     </p>
                                 </a>
                             </li>
                         </ul>
                         <ul class="nav nav-treeview">
                             <li class="nav-item">
-                                <a href="{{ route('financial-management.Allocationreport') }}" class="nav-link {{ 'financial-management/allocation-report' == request()->path() ? 'active' : ''}}">
-                                    <i class="nav-icon fas fa-file"></i>
-                                    <p>
-                                        Per Activity Report
-                                    </p>
+                                <a href="{{ route('role.index') }}" class="nav-link  {{ Request::is('data-management/user/role') ? 'active' : '' }}">
+                                    <p class="ml-4 p-2">Roles</p>
                                 </a>
                             </li>
                         </ul>
-                        <ul class="nav nav-treeview">
-                            <li class="nav-item">
-                                <a href="{{ route('financial-management.AllocationUACSreport') }}" class="nav-link {{ 'financial-management/allocation-uacs-report' == request()->path() ? 'active' : ''}}">
-                                    <i class="nav-icon fas fa-file"></i>
-                                    <p>
-                                        Per UACS Report
-                                    </p>
-                                </a>
-                            </li>
-                        </ul>
-
-                        <ul class="nav nav-treeview">
-                            <li class="nav-item">
-                                <a href="{{ route('financial-management.AllocationPAPreport') }}" class="nav-link {{ 'financial-management/allocation-pap-report' == request()->path() ? 'active' : ''}}">
-                                    <i class="nav-icon fas fa-file"></i>
-                                    <p>
-                                        Per PAP Report
-                                    </p>
-                                </a>
-                            </li>
-                        </ul>
-
-
-
                     </li>
                 </ul>
-                @endcan --}}
-                {{-- <ul class="nav nav-treeview">
+
+                <ul class="nav nav-treeview">
+                    <li class="nav-item">
+                        <a href="#" class="nav-link {{ Request::is('data-management/employee/*') ? 'active' : '' }}">
+                            <i class="far fas fa-address-book nav-icon"></i>
+                            <p>
+                                Employees
+                                <i class="right fas fa-angle-left"></i>
+                            </p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+
+                                <a href="{{ route('office.index') }}" class="nav-link {{ Request::is('data-management/employee/office') ? 'active' : '' }}">
+                                    <p class="ml-4 p-2">Office<span class="badge badge-info right">{{ $OfficeCount
+                                                }}</span></p>
+                                    </p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('section.index') }}" class="nav-link {{ Request::is('data-management/employee/section') ? 'active' : '' }}">
+                                    <p class="ml-4 p-2">Section<span class="badge badge-info right">{{ $SectionCount
+                                                }}</span></p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('unit.index') }}" class="nav-link {{ Request::is('data-management/employee/unit') ? 'active' : '' }}">
+                                    <p class="ml-4 p-2">Unit <span class="badge badge-info right">{{ $UnitCount
+                                                }}</span></p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </li>
+            @endcan
+
+            {{-- @can('viewany', \App\Models\FinancialManagement::class)
+                <li class="nav-header">Financial Management </li>
+                <li class="nav-item ">
+                    <a href="{{ route('financial-management.index') }}"
+            class="nav-link {{ 'financial-management' == request()->path() ? 'active' : ''}}">
+            <i class="nav-icon fas fa-coins"></i>
+            <p>
+                Financial Management
+                @if ($FinancialManagementCount != 0)
+                @if ($FinancialManagementCount > 999)
+                <span class="badge badge-success right">999+</span>
+                @else
+                <span class="badge badge-info right">{{ $FinancialManagementCount }}</span>
+                @endif
+                @endif
+            </p>
+            </a>
+            </li>
+            @endcan --}}
+
+
+            {{-- @can('viewany', \App\Models\FinancialManagement::class)
+                <li class="nav-item">
+                    <a href="#"
+                        class="nav-link  {{ Request::is('financial-management/allocation*') ? 'active' : '' }} {{ Request::is('financial-management/financial_tracking') ? 'active' : '' }} {{ Request::is('financial-management/realignment_report') ? 'active' : '' }}">
+            <p>
+                Report
+                <i class="right fas fa-angle-left"></i>
+            </p>
+            </a>
+            @can('viewany', \App\Models\FinancialManagement::class)
+            <ul class="nav nav-treeview">
+                <li class="nav-item">
+                    <a href="" class="nav-link {{ Request::is('financial-management/allocation*') ? 'active' : '' }}">
+                        <i class="far fas fa-file nav-icon"></i>
+                        <p>
+                            GAA
+                            <i class="right fas fa-angle-left"></i>
+                        </p>
+                    </a>
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="{{ route('financial-management.AllocationPayeereport') }}" class="nav-link {{ 'financial-management/allocation-payee-report' == request()->path() ? 'active' : ''}}">
+                                <i class="nav-icon fas fa-file"></i>
+                                <p>
+                                    Per Payee Report
+                                </p>
+                            </a>
+                        </li>
+                    </ul>
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="{{ route('financial-management.Allocationreport') }}" class="nav-link {{ 'financial-management/allocation-report' == request()->path() ? 'active' : ''}}">
+                                <i class="nav-icon fas fa-file"></i>
+                                <p>
+                                    Per Activity Report
+                                </p>
+                            </a>
+                        </li>
+                    </ul>
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="{{ route('financial-management.AllocationUACSreport') }}" class="nav-link {{ 'financial-management/allocation-uacs-report' == request()->path() ? 'active' : ''}}">
+                                <i class="nav-icon fas fa-file"></i>
+                                <p>
+                                    Per UACS Report
+                                </p>
+                            </a>
+                        </li>
+                    </ul>
+
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="{{ route('financial-management.AllocationPAPreport') }}" class="nav-link {{ 'financial-management/allocation-pap-report' == request()->path() ? 'active' : ''}}">
+                                <i class="nav-icon fas fa-file"></i>
+                                <p>
+                                    Per PAP Report
+                                </p>
+                            </a>
+                        </li>
+                    </ul>
+
+
+
+                </li>
+            </ul>
+            @endcan --}}
+            {{-- <ul class="nav nav-treeview">
                         <li class="nav-item ">
                             <a href="{{ route('financial-management.FinancialTracking') }}"
-                class="nav-link {{ 'financial-management/financial_tracking' == request()->path() ? 'active' : ''}}">
-                <i class="nav-icon fas fa-file"></i>
-                <p>
-                    Financial Tracking Report
-                </p>
-                </a>
-                </li>
+            class="nav-link {{ 'financial-management/financial_tracking' == request()->path() ? 'active' : ''}}">
+            <i class="nav-icon fas fa-file"></i>
+            <p>
+                Financial Tracking Report
+            </p>
+            </a>
+            </li>
             </ul>
 
             <ul class="nav nav-treeview">

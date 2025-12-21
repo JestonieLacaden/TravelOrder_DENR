@@ -640,12 +640,27 @@ class TravelOrderController extends Controller
             return back()->with('SignatoryError', 'PENRO not found in system!');
         }
 
+        // Auto-generate signatory name based on section
+        $signatoryName = '';
+        if ($employee->sectionid == 2) {
+            $signatoryName = 'MSD Signatories';
+        } elseif ($employee->sectionid == 3) {
+            $signatoryName = 'TSD Signatories';
+        } else {
+            $signatoryName = 'DENR Signatories';  // Default for other sections
+        }
+
         // Create or get signatory record with these 3 approvers
-        $signatory = TravelOrderSignatory::firstOrCreate([
-            'approver1' => $approver1,
-            'approver2' => $approver2,
-            'approver3' => $approver3,
-        ]);
+        $signatory = TravelOrderSignatory::firstOrCreate(
+            [
+                'approver1' => $approver1,
+                'approver2' => $approver2,
+                'approver3' => $approver3,
+            ],
+            [
+                'name' => $signatoryName,  // Auto-set descriptive name on creation
+            ]
+        );
 
         $formfields['userid']                  = auth()->id();
         $formfields['employeeid']              = $employee->id;

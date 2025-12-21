@@ -20,7 +20,6 @@
                         <td class="text-center">Employee Name</td>
                         <td class="text-center">Destination Office</td>
                         <td class="text-center">Purpose</td>
-                        <th class="text-center">Leave Year</th>
                         <th class="text-center">Action</th>
                     </tr>
                 </thead>
@@ -40,7 +39,6 @@
                         <td>{{ $TravelOrder->employee->firstname . ' ' . $TravelOrder->employee->lastname}}</td>
                         <td> {{$TravelOrder->destinationoffice}}</td>
                         <td> {{$TravelOrder->purpose}}</td>
-                        <td> {{$TravelOrder->created_at->diffForHumans() }}</td>
                         <td>
                             @can('accept', $TravelOrder)
                             <button type="button" title="Approve Travel Order" class="btn btn-success accept-to-btn" data-to-id="{{ $TravelOrder->id }}" data-employee-name="{{ $TravelOrder->employee->firstname }} {{ $TravelOrder->employee->lastname }}">
@@ -67,7 +65,6 @@
                         <td>{{ $TravelOrder->employee->firstname . ' ' . $TravelOrder->employee->lastname}}</td>
                         <td> {{$TravelOrder->destinationoffice}}</td>
                         <td> {{$TravelOrder->purpose}}</td>
-                        <td> {{$TravelOrder->created_at->diffForHumans() }}</td>
                         <td>
                             @can('accept', $TravelOrder)
                             <button type="button" title="Approve Travel Order" class="btn btn-success accept-to-btn" data-to-id="{{ $TravelOrder->id }}" data-employee-name="{{ $TravelOrder->employee->firstname }} {{ $TravelOrder->employee->lastname }}">
@@ -93,7 +90,6 @@
                         <td>{{ $TravelOrder->employee->firstname . ' ' . $TravelOrder->employee->lastname}}</td>
                         <td> {{$TravelOrder->destinationoffice}}</td>
                         <td> {{$TravelOrder->purpose}}</td>
-                        <td> {{$TravelOrder->created_at ? $TravelOrder->created_at->diffForHumans() : 'N/A' }}</td>
                         <td>
                             @can('accept', $TravelOrder)
                             <button type="button" title="Approve Travel Order" class="btn btn-success accept-to-btn" data-to-id="{{ $TravelOrder->id }}" data-employee-name="{{ $TravelOrder->employee->firstname }} {{ $TravelOrder->employee->lastname }}">

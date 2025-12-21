@@ -46,39 +46,90 @@ class LeaveController extends Controller
 
     $this->authorize('create', \App\Models\Leave::class);
 
-    $formfields = $request->validate([
-
-      'employeeid' => 'required',
-      'leaveid' => 'required',
+    $base = $request->validate([
+      'employeeid' => 'required|exists:employee,id',
+      'leaveid' => 'required|exists:leave_type,id',
       'daterange' => 'required',
-
     ]);
 
-    $data = $request->daterange;
+    $leaveType = Leave_Type::findOrFail($base['leaveid']);
+    $typeText  = Str::lower(trim($leaveType->leave_type ?? ''));
+
+    $data = $base['daterange'];
     list($startDate, $endDate) = explode(" -", $data);
     $date1 = Carbon::createFromDate($startDate)->format('Y');
     $date2 = Carbon::createFromDate($endDate)->format('Y');
-    $formfields['userid'] = auth()->user()->id;
-    if ($date1 == $date2) {
-      $formfields['yearapplied'] = $date1;
 
-      $Employee = Employee::where('id', '=', $request->employeeid)->get()->first();
-      $SetLeaveSignatory = SetLeaveSignatory::where('sectionid', '=', $Employee->sectionid)->get()->first();
-
-      if (!empty($SetLeaveSignatory)) {
-        $formfields['userid'] = auth()->user()->id;
-        Leave::create($formfields);
-
-        return back()->with('message', 'Travel Order Added Successfully');
-      } else {
-        return back()->with('SignatoryError', 'Error!');
-      }
-
-      //
-
-    } else {
+    if ($date1 != $date2) {
       return back()->with('DateError1', 'Error');
     }
+
+    $Employee = Employee::where('id', '=', $base['employeeid'])->get()->first();
+    $SetLeaveSignatory = SetLeaveSignatory::where('sectionid', '=', $Employee->sectionid)->get()->first();
+
+    if (empty($SetLeaveSignatory)) {
+      return back()->with('SignatoryError', 'Error!');
+    }
+
+    // Prepare payload with 6.B Details fields
+    $payload = [
+      'leaveid'               => $base['leaveid'],
+      'employeeid'            => $base['employeeid'],
+      'daterange'             => $base['daterange'],
+      'yearapplied'           => $date1,
+      'userid'                => auth()->id(),
+      'location_within_ph'    => null,
+      'location_abroad'       => null,
+      'hospital_specify'      => null,
+      'outpatient_specify'    => null,
+      'study_masters_degree'  => 0,
+      'study_bar_board'       => 0,
+      'other_monetization'    => 0,
+      'other_terminal_leave'  => 0,
+      'commutation'           => 'not_requested',
+    ];
+
+    // Conditional validation + assignment per leave type
+    if (Str::contains($typeText, ['vacation', 'mandatory', 'forced', 'special privilege'])) {
+      $extra = $request->validate([
+        'location_choice'     => 'required|in:within_ph,abroad',
+        'location_within_ph'  => 'required_if:location_choice,within_ph|nullable|string',
+        'location_abroad'     => 'required_if:location_choice,abroad|nullable|string',
+      ]);
+      if ($extra['location_choice'] === 'within_ph') {
+        $payload['location_within_ph'] = $extra['location_within_ph'];
+      } else {
+        $payload['location_abroad'] = $extra['location_abroad'];
+      }
+    } elseif (Str::contains($typeText, 'sick')) {
+      $extra = $request->validate([
+        'sick_choice'        => 'required|in:hospital,outpatient',
+        'hospital_specify'   => 'required_if:sick_choice,hospital|nullable|string',
+        'outpatient_specify' => 'required_if:sick_choice,outpatient|nullable|string',
+      ]);
+      if ($extra['sick_choice'] === 'hospital') {
+        $payload['hospital_specify'] = $extra['hospital_specify'];
+      } else {
+        $payload['outpatient_specify'] = $extra['outpatient_specify'];
+      }
+    } elseif (Str::contains($typeText, 'study')) {
+      $extra = $request->validate([
+        'study_choice' => 'required|in:masters,bar_board',
+      ]);
+      $payload['study_masters_degree'] = $extra['study_choice'] === 'masters' ? 1 : 0;
+      $payload['study_bar_board']      = $extra['study_choice'] === 'bar_board' ? 1 : 0;
+    } elseif (Str::contains($typeText, ['others', 'other'])) {
+      $extra = $request->validate([
+        'others_choice' => 'required|in:monetization,terminal',
+      ]);
+      $payload['other_monetization']   = $extra['others_choice'] === 'monetization' ? 1 : 0;
+      $payload['other_terminal_leave'] = $extra['others_choice'] === 'terminal' ? 1 : 0;
+      $payload['commutation']          = 'requested';
+    }
+
+    Leave::create($payload);
+
+    return back()->with('message', 'Leave Added Successfully');
   }
 
   public function destroy(Request $request, $Leave)

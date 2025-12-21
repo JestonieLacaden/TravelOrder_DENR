@@ -52,7 +52,7 @@
                         <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
                         <h5><i class="icon fas fa-ban"></i> Failed to save!</h5>
                         <ul>
-                            <li>Error : Duplicate Signatory Name!</li>
+                            <li>{{ session()->get('SignatoryError') }}</li>
                         </ul>
                     </div>
                     @endif

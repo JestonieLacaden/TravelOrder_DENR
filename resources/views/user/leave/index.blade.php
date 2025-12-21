@@ -156,9 +156,9 @@
 
                                                 <i class="fas fa-print"></i> Print
                                             </button>
-                                            <a href="{{ route('leave.print', ['Leave' => $Leave->id, 'preview' => 1]) }}" target="_blank">
+                                            {{-- <a href="{{ route('leave.print', ['Leave' => $Leave->id, 'preview' => 1]) }}" target="_blank">
                                             Open print view
-                                            </a>
+                                            </a> --}}
                                             @endcan
 
 

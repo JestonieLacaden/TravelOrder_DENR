@@ -32,24 +32,33 @@
                      <!-- Add the bg color to the header using any of the bg-* classes -->
                      <div class="widget-user-header bg-success">
                          <h6 class="widget-user-username">{{ auth()->user()->username }}</h6>
-                         {{-- <h5 class="widget-user-desc">Founder & CEO</h5> --}}
+                         @php
+                         $employee = \App\Models\Employee::where('email', auth()->user()->email)->first();
+                         @endphp
+                         @if($employee)
+                         <h6 class="widget-user-desc">{{ $employee->position }}</h6>
+                         <p class="widget-user-desc text-sm">{{ $employee->Unit ? $employee->Unit->unit : '' }}</p>
+                         @endif
                      </div>
-                     <div class="widget-user-image">
+                     {{-- <div class="widget-user-image">
                          <img class="img-circle elevation-2" src="{{ asset('images/logo.png') }}" alt="User Avatar">
 
+                 </div> --}}
+                 <div class="card-footer">
+                     <div class="col-sm-12">
+                         <div class="dropdown-divider"></div>
+                         <a href="{{ route('changepassword.index') }}" class="dropdown-item dropdown-footer text-primary">
+                             <i class="fas fa-key mr-2"></i> Change Password
+                         </a>
                      </div>
-                     <div class="card-footer">
-                         <div class="col-sm-12">
-                             <div class="dropdown-divider"></div>
-                             <a href="{{ route('changepassword.index') }}" class="dropdown-item dropdown-footer">Change
-                                 Password</a>
-                         </div>
-                         <div class="col-sm-12">
-                             <div class="dropdown-divider"></div>
-                             <a href="{{ route('logout') }}" class="dropdown-item dropdown-footer">Log Out</a>
-                         </div>
+                     <div class="col-sm-12">
+                         <div class="dropdown-divider"></div>
+                         <a href="{{ route('logout') }}" class="dropdown-item dropdown-footer text-danger">
+                             <i class="fas fa-sign-out-alt mr-2"></i> Log Out
+                         </a>
                      </div>
                  </div>
+             </div>
              </div>
          </li>
      </ul>

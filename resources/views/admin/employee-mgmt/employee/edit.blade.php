@@ -109,7 +109,10 @@
                                 <div class="form-group row mb-4">
                                     <label class="col-sm-2 col-form-label" for="birthdate">Birth Date :<span class="text-danger">*</span></label>
                                     <div class="col-sm-10">
-                                        <input name="birthdate" class="form-control" min="1930-01-01" type="date" value={{ $Employee->birthdate }}>
+                                        <input name="birthdate" class="form-control" min="1930-01-01" type="date" value="{{ $Employee->birthdate && $Employee->birthdate != '0000-00-00' ? $Employee->birthdate : '' }}">
+                                        @if($Employee->birthdate == '0000-00-00' || !$Employee->birthdate)
+                                        <small class="text-warning"><i class="fas fa-exclamation-triangle"></i> Invalid or missing birth date - please update</small>
+                                        @endif
                                         @error('birthdate')
                                         <p class="text-danger text-xs mt-1">{{$message}}</p>
                                         @enderror
@@ -119,7 +122,7 @@
                                 <div class="form-group row mb-4">
                                     <label class="col-sm-2 col-form-label" for="email">Email :<span class="text-danger">*</span></label>
                                     <div class="col-sm-10">
-                                        <input name="email" class="form-control" type="text" placeholder="Enter Email Address" value="{{ $Employee->email }} ">
+                                        <input name="email" class="form-control" type="text" placeholder="Enter Email Address" value="{{ $Employee->email }}">
                                         @error('email')
                                         <p class="text-danger text-xs mt-1">{{$message}}</p>
                                         @enderror
@@ -140,7 +143,10 @@
                                 <div class="form-group row mb-4">
                                     <label class="col-sm-2 col-form-label" for="address">Address :<span class="text-danger">*</span></label>
                                     <div class="col-sm-10">
-                                        <textarea name="address" class="form-control" rows="2" placeholder="Enter Address" oninput="this.value = this.value.toUpperCase()"> {{ $Employee->address }} </textarea>
+                                        <textarea name="address" class="form-control" rows="2" placeholder="Enter Address" oninput="this.value = this.value.toUpperCase()">{{ $Employee->address ?? '' }}</textarea>
+                                        @if(!$Employee->address)
+                                        <small class="text-warning"><i class="fas fa-exclamation-triangle"></i> Address is missing - please update</small>
+                                        @endif
                                         @error('address')
                                         <p class="text-danger text-xs mt-1">{{$message}}</p>
                                         @enderror
@@ -200,7 +206,10 @@
                                 <div class="form-group row mb-4">
                                     <label class="col-sm-2 col-form-label" for="datehired">Date Hired :<span class="text-danger">*</span></label>
                                     <div class="col-sm-10">
-                                        <input name="datehired" class="form-control" type="date" value={{ $Employee->datehired }}>
+                                        <input name="datehired" class="form-control" type="date" value="{{ $Employee->datehired && $Employee->datehired != '0000-00-00' ? $Employee->datehired : '' }}">
+                                        @if($Employee->datehired == '0000-00-00' || !$Employee->datehired)
+                                        <small class="text-warning"><i class="fas fa-exclamation-triangle"></i> Invalid or missing date hired - please update</small>
+                                        @endif
                                         @error('datehired')
                                         <p class="text-danger text-xs mt-1">{{$message}}</p>
                                         @enderror
