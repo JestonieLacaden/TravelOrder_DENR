@@ -9,7 +9,7 @@ use Illuminate\Support\Str;
 
 class Employee extends Model
 {
-    protected $table='employee';
+    protected $table = 'employee';
 
     use HasFactory;
 
@@ -21,51 +21,64 @@ class Employee extends Model
         'lastname',
         'middlename',
         'suffix',
+        'birthdate',        // ✅ ADDED
         'email',
         'position',
         'unitid',
         'sectionid',
         'officeid',
         'contactnumber',
+        'address',          // ✅ ADDED
+        'datehired',        // ✅ ADDED
+        'empstatus',        // ✅ ADDED
         'picture',
         'signature_path',
+        'has_account',
     ];
 
-    
-    
+
+
 
     // public function Section() {
     //     return $this->hasOne(Section::class,'id','sectionid');
     // }
-    public function Unit() {
-        return $this->hasOne(Unit::class,'id','unitid');
+    public function Unit()
+    {
+        return $this->hasOne(Unit::class, 'id', 'unitid');
     }
     // public function Office() {
     //     return $this->hasOne(Office::class,'id','officeid');
     // }
 
-    public function DtrSignatory() {
-        return $this->hasOne(DtrSignatory::class,'employeeid','employeeid');
+    public function DtrSignatory()
+    {
+        return $this->hasOne(DtrSignatory::class, 'employeeid', 'employeeid');
     }
 
-    public function User() {
-        return $this->hasOne(User::class,'email', 'email');
+    public function User()
+    {
+        return $this->hasOne(User::class, 'email', 'email');
     }
-    public function Dtr_History() {
-        return $this->hasMany(dtr_history::class,'employeeid', 'id');
+    public function Dtr_History()
+    {
+        return $this->hasMany(dtr_history::class, 'employeeid', 'id');
     }
-    public function Leave() {
+    public function Leave()
+    {
         return $this->hasMany(Leave::class, 'id');
     }
 
-    public function LeaveSignatory1() {
-        return $this->hasMany(LeaveSignatory::class,'approver1', 'id');
+    public function LeaveSignatory1()
+    {
+        return $this->hasMany(LeaveSignatory::class, 'approver1', 'id');
     }
-    public function LeaveSignatory2() {
-        return $this->hasMany(LeaveSignatory::class,'approver2', 'id');
+    public function LeaveSignatory2()
+    {
+        return $this->hasMany(LeaveSignatory::class, 'approver2', 'id');
     }
-    public function LeaveSignatory3() {
-        return $this->hasMany(LeaveSignatory::class,'approver3', 'id');
+    public function LeaveSignatory3()
+    {
+        return $this->hasMany(LeaveSignatory::class, 'approver3', 'id');
     }
 
     // public function TravelOrderSignatory1() {
@@ -77,7 +90,8 @@ class Employee extends Model
     // public function TravelOrder() {
     //     return $this->hasMany(TravelOrder::class, 'id');
     // }
-    public function TravelOrderApproved() {
+    public function TravelOrderApproved()
+    {
         return $this->hasMany(TravelOrderApproved::class, 'id');
     }
 
@@ -118,5 +132,4 @@ class Employee extends Model
 
         return null; // fallback handled sa Blade
     }
-    
 }

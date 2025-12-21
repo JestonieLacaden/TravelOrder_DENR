@@ -36,10 +36,9 @@ class TravelOrderSignatoryController extends Controller
             'approver3_signature' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:2048'],
         ]);
 
-        // Prevent duplicate signatory name
-        if (TravelOrderSignatory::where('name', $data['name'])->exists()) {
-            return back()->with('SignatoryError', 'Error! (Duplicate signatory name)');
-        }
+        // Note: Division Signatories page allows duplicate approver combinations
+        // This is for manual configuration - multiple sections can share same Division Chief/PENRO
+        // Auto-creation in storeUserTravelOrder() uses firstOrCreate() to handle duplicates
 
         $signatory = TravelOrderSignatory::create([
             'name'      => $data['name'],
@@ -74,14 +73,7 @@ class TravelOrderSignatoryController extends Controller
             'clear_approver3_signature'  => ['sometimes', 'boolean'],
         ]);
 
-        // Unique name check except current row
-        if (
-            TravelOrderSignatory::where('name', $data['name'])
-            ->where('id', '!=', $signatory->id)
-            ->exists()
-        ) {
-            return back()->with('SignatoryError', 'Error! (Duplicate signatory name)');
-        }
+        // Note: Allow duplicate combinations for manual configuration flexibility
 
         $signatory->update([
             'name'      => $data['name'],

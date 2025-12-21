@@ -25,7 +25,7 @@
 
                                     <!-- /.card-header -->
                                     <!-- form start -->
-                                    <form method="POST" action="  {{ route('userleave.storeUserLeave') }}" enctype="multipart/form-data">
+                                    <form method="POST" action="  {{ route('userleave.storeUserLeave') }}" enctype="multipart/form-data" id="leave-form">
 
                                         {{ csrf_field() }}
                                         <div class="card-body">
@@ -141,7 +141,12 @@
                                 </div>
                                 <!-- /.card-body -->
                                 <div class="card-footer">
-                                    <button type="submit" class="btn btn-primary">Submit</button>
+                                    <button type="submit" class="btn btn-primary" id="submit-leave-btn">
+                                        <span id="submit-text">Submit</span>
+                                        <span id="submit-spinner" style="display: none;">
+                                            <i class="fas fa-spinner fa-spin"></i> Submitting...
+                                        </span>
+                                    </button>
                                 </div>
 
                                 </form>
@@ -471,7 +476,29 @@
                     resetAll();
                 });
             }
+            // Prevent duplicate submission with loading state
+            const leaveForm = document.getElementById('leave-form');
+            const submitBtn = document.getElementById('submit-leave-btn');
+            const submitText = document.getElementById('submit-text');
+            const submitSpinner = document.getElementById('submit-spinner');
 
+            if (leaveForm && submitBtn) {
+                leaveForm.addEventListener('submit', function(e) {
+                    // Disable button and show loading
+                    submitBtn.disabled = true;
+                    submitText.style.display = 'none';
+                    submitSpinner.style.display = 'inline';
+
+                    // Note: Form will submit normally, button stays disabled to prevent duplicates
+                });
+
+                // Reset button state when modal is opened
+                $('#new-leave-modal-lg').on('shown.bs.modal', function() {
+                    submitBtn.disabled = false;
+                    submitText.style.display = 'inline';
+                    submitSpinner.style.display = 'none';
+                });
+            }
         });
     })();
 

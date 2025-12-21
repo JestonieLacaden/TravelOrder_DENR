@@ -99,14 +99,14 @@ class TravelOrderController extends Controller
         $this->authorize('MsdCreate', \App\Models\TravelOrder::class);
 
         $Employees = Employee::orderby('lastname', 'asc')->get();
-        $TravelOrders = TravelOrder::orderby('created_at', 'asc')->where('is_approve1', '=', false)->where('is_approve2', '=', false)->with('user')->get();
+        // Show ALL Travel Orders (pending and approved) ordered by newest first
+        $TravelOrders = TravelOrder::orderby('created_at', 'desc')->with('user')->get();
+        $ApprovedTravelOrders = TravelOrderApproved::get();
         // $Sections = Section::with('office')->get();
         // $SetLeaveSignatories = SetLeaveSignatory::with('section','Office')->get();
         // $Offices = Office::with('section')->get();
         // $LeaveSignatories = LeaveSignatory::get();
-        // $ApprovedTravelOrders = TravelOrderApproved::get();
-        // return view('msd-panel.travel-order.index',compact('Employees','TravelOrders','ApprovedTravelOrders'));
-        return view('msd-panel.travel-order.index', compact('Employees', 'TravelOrders'));
+        return view('msd-panel.travel-order.index', compact('Employees', 'TravelOrders', 'ApprovedTravelOrders'));
     }
 
     public function store(Request $request)
@@ -621,15 +621,50 @@ class TravelOrderController extends Controller
 
         $employee = \App\Models\Employee::where('email', auth()->user()->email)->first();
 
-        // find the mapped signatory for the requester’s section
-        $set = \App\Models\SetTravelOrderSignatory::where('sectionid', $employee->sectionid)->first();
-        if (!$set) {
-            return back()->with('SignatoryError', 'No signatory mapping for your section.');
+        // ✅ OPTION 2: Lookup approvers based on employee's unit and section
+
+        // Get Section Chief from section_chief table (based on unitid)
+        $approver1 = $this->getSectionChiefId($employee->unitid);
+
+        // Get Division Chief based on section
+        $approver2 = $this->getDivisionChiefId($employee->sectionid);
+
+        // Get PENRO (always the same)
+        $approver3 = $this->getPENROId();
+
+        // Validate required approvers
+        if (!$approver1) {
+            return back()->with('SignatoryError', 'No Section Chief assigned for ' . $employee->Unit->unit . '!');
         }
+        if (!$approver3) {
+            return back()->with('SignatoryError', 'PENRO not found in system!');
+        }
+
+        // Auto-generate signatory name based on section
+        $signatoryName = '';
+        if ($employee->sectionid == 2) {
+            $signatoryName = 'MSD Signatories';
+        } elseif ($employee->sectionid == 3) {
+            $signatoryName = 'TSD Signatories';
+        } else {
+            $signatoryName = 'DENR Signatories';  // Default for other sections
+        }
+
+        // Create or get signatory record with these 3 approvers
+        $signatory = TravelOrderSignatory::firstOrCreate(
+            [
+                'approver1' => $approver1,
+                'approver2' => $approver2,
+                'approver3' => $approver3,
+            ],
+            [
+                'name' => $signatoryName,  // Auto-set descriptive name on creation
+            ]
+        );
 
         $formfields['userid']                  = auth()->id();
         $formfields['employeeid']              = $employee->id;
-        $formfields['travelordersignatoryid']  = $set->travelordersignatoryid;
+        $formfields['travelordersignatoryid']  = $signatory->id;
 
         \App\Models\TravelOrder::create($formfields);
 
