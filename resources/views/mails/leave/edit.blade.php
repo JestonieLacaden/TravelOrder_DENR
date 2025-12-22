@@ -1,4 +1,17 @@
 <!-- Approver1 Edit Modal for Leave Credits -->
+<style>
+    /* Remove spinner arrows from number inputs */
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    input[type="number"] {
+        -moz-appearance: textfield;
+    }
+
+</style>
 <div class="modal fade" id="edit-leave-modal-lg{{ $Leave->id }}" data-backdrop="static" data-keyboard="false">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
@@ -60,31 +73,54 @@
                                 </tr>
                             </thead>
                             <tbody>
+                                @php
+                                // Calculate days from daterange
+                                $dayCount = 0;
+                                $daterange = $Leave->daterange ?? '';
+                                if (!empty($daterange)) {
+                                $dates = explode(' - ', $daterange);
+                                if (count($dates) == 2) {
+                                try {
+                                $startDate = \Carbon\Carbon::createFromFormat('m/d/Y', trim($dates[0]));
+                                $endDate = \Carbon\Carbon::createFromFormat('m/d/Y', trim($dates[1]));
+                                $dayCount = $endDate->diffInDays($startDate) + 1;
+                                } catch (\Exception $e) {
+                                $dayCount = 0;
+                                }
+                                }
+                                }
+
+                                // Check leave type
+                                $leaveTypeName = strtolower(optional($Leave->leave_type)->leave_type ?? '');
+                                $isVacationLeave = strpos($leaveTypeName, 'vacation') !== false;
+                                $isSickLeave = strpos($leaveTypeName, 'sick') !== false;
+                                @endphp
+
                                 <tr>
                                     <td><strong>Total Earned</strong></td>
                                     <td class="text-center">
-                                        <input type="number" name="vacation_earned" min="0" class="form-control form-control-sm text-center" value="{{ $Leave->vacation_earned ?? 0 }}" placeholder="0">
+                                        <input type="number" name="vacation_earned" min="0" step="0.01" class="form-control form-control-sm text-center vacation-earned" value="{{ $Leave->vacation_earned && $Leave->vacation_earned > 0 ? $Leave->vacation_earned : '' }}" placeholder="0" {{ !$isVacationLeave ? 'disabled' : '' }}>
                                     </td>
                                     <td class="text-center">
-                                        <input type="number" name="sick_earned" min="0" class="form-control form-control-sm text-center" value="{{ $Leave->sick_earned ?? 0 }}" placeholder="0">
+                                        <input type="number" name="sick_earned" min="0" step="0.01" class="form-control form-control-sm text-center sick-earned" value="{{ $Leave->sick_earned && $Leave->sick_earned > 0 ? $Leave->sick_earned : '' }}" placeholder="0" {{ !$isSickLeave ? 'disabled' : '' }}>
                                     </td>
                                 </tr>
                                 <tr>
                                     <td><strong>Less this Application</strong></td>
                                     <td class="text-center">
-                                        <input type="number" name="vacation_this_app" min="0" class="form-control form-control-sm text-center" value="{{ $Leave->vacation_this_app ?? 0 }}" placeholder="0">
+                                        <input type="number" name="vacation_this_app" min="0" step="0.5" class="form-control form-control-sm text-center vacation-this-app" value="{{ $isVacationLeave ? $dayCount : 0 }}" placeholder="0" disabled readonly>
                                     </td>
                                     <td class="text-center">
-                                        <input type="number" name="sick_this_app" min="0" class="form-control form-control-sm text-center" value="{{ $Leave->sick_this_app ?? 0 }}" placeholder="0">
+                                        <input type="number" name="sick_this_app" min="0" step="0.5" class="form-control form-control-sm text-center sick-this-app" value="{{ $isSickLeave ? $dayCount : 0 }}" placeholder="0" disabled readonly>
                                     </td>
                                 </tr>
                                 <tr class="bg-light">
                                     <td><strong>Balance</strong></td>
                                     <td class="text-center">
-                                        <input type="number" name="vacation_balance" min="0" class="form-control form-control-sm text-center" value="{{ $Leave->vacation_balance ?? 0 }}" placeholder="0">
+                                        <input type="number" name="vacation_balance" min="0" step="0.5" class="form-control form-control-sm text-center vacation-balance" value="{{ $Leave->vacation_balance ?? 0 }}" placeholder="0" disabled readonly>
                                     </td>
                                     <td class="text-center">
-                                        <input type="number" name="sick_balance" min="0" class="form-control form-control-sm text-center" value="{{ $Leave->sick_balance ?? 0 }}" placeholder="0">
+                                        <input type="number" name="sick_balance" min="0" step="0.5" class="form-control form-control-sm text-center sick-balance" value="{{ $Leave->sick_balance ?? 0 }}" placeholder="0" disabled readonly>
                                     </td>
                                 </tr>
                             </tbody>
@@ -160,6 +196,39 @@
         let isSubmitting = false;
         let pendingHide = false;
 
+        // Auto-compute balance when Total Earned changes
+        function computeBalance() {
+            // Vacation Leave Balance (2 decimals max, no trailing .0)
+            const vacationEarned = parseFloat(modal.find('.vacation-earned').val()) || 0;
+            const vacationThisApp = parseFloat(modal.find('.vacation-this-app').val()) || 0;
+            let vacationBalance = Math.max(0, vacationEarned - vacationThisApp);
+            // Round to 2 decimals and remove trailing zeros
+            vacationBalance = Math.round(vacationBalance * 100) / 100;
+            modal.find('.vacation-balance').val(vacationBalance);
+
+            // Sick Leave Balance (2 decimals max, no trailing .0)
+            const sickEarned = parseFloat(modal.find('.sick-earned').val()) || 0;
+            const sickThisApp = parseFloat(modal.find('.sick-this-app').val()) || 0;
+            let sickBalance = Math.max(0, sickEarned - sickThisApp);
+            // Round to 2 decimals and remove trailing zeros
+            sickBalance = Math.round(sickBalance * 100) / 100;
+            modal.find('.sick-balance').val(sickBalance);
+        }
+
+        // Attach change event to Total Earned fields
+        modal.find('.vacation-earned, .sick-earned').on('input change', function() {
+            computeBalance();
+        });
+
+        // Compute balance on modal show
+        modal.on('show.bs.modal', function() {
+            computeBalance();
+            resetToOriginal();
+            hasChanges = false;
+            isSubmitting = false;
+            pendingHide = false;
+        });
+
         function captureOriginalValues() {
             originalData = {};
             form.find('input, textarea').each(function() {
@@ -173,16 +242,10 @@
                     $(this).val(originalData[this.name]);
                 }
             });
+            computeBalance();
         }
 
         captureOriginalValues();
-
-        modal.on('show.bs.modal', function() {
-            resetToOriginal();
-            hasChanges = false;
-            isSubmitting = false;
-            pendingHide = false;
-        });
 
         form.on('input change', 'input, textarea', function() {
             hasChanges = false;

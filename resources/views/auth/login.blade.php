@@ -13,6 +13,7 @@
                 </div>
                 <div>
                     PENRO OCCIDENTAL MINDORO
+                    <h5 style="margin: 0"><strong>Travel and Leave</strong></h5>
                     <h5><strong> Information System </strong> </h5>
                 </div>
             </div>
@@ -26,7 +27,7 @@
                 {{ csrf_field() }}
                 <div class="form-group mb-3">
                     <label for="email">Username or Email</label>
-                    <input type="text" id="email" name="email" class="form-control" placeholder="Enter Username or Email Address" value="{{ old('email') }}" required>
+                    <input type="text" id="email" name="email" class="form-control" placeholder="Enter Username or Email Address" value="{{ old('email') }}" required autofocus>
                     @error('email')
                     <p class="text-danger text-xs mt-1">{{$message}}</p>
                     @enderror
@@ -78,6 +79,20 @@
             passwordInput.type = 'password';
             toggleIcon.classList.remove('fa-eye-slash');
             toggleIcon.classList.add('fa-eye');
+        }
+    });
+
+    // Autofocus and highlight (select) the Username/Email field on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        var emailInput = document.getElementById('email');
+        if (emailInput) {
+            try {
+                emailInput.focus();
+                // Select the contents so it's highlighted for quick overwrite
+                emailInput.select();
+            } catch (e) {
+                // ignore
+            }
         }
     });
 
