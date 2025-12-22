@@ -495,6 +495,17 @@
             </li>
             @endcan
 
+            @can('viewany', \App\Models\User::class)
+            <li class="nav-item">
+                <a href="{{ route('leave-credits.index') }}" class="nav-link {{ Request::is('leave-management/import-credits*') ? 'active' : '' }}">
+                    <i class="nav-icon fas fa-file-excel"></i>
+                    <p>
+                        Import Leave Credits
+                    </p>
+                </a>
+            </li>
+            @endcan
+
             {{-- @can('viewany', \App\Models\FinancialManagement::class)
                 <li class="nav-header">Financial Management </li>
                 <li class="nav-item ">

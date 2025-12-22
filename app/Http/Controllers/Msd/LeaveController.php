@@ -279,16 +279,34 @@ class LeaveController extends Controller
 
       // Approver1 can only edit: 7.A (Leave Credits) and 7.C (Approved For)
       $validated = $request->validate([
-        'vacation_earned'     => 'required|integer|min:0',
-        'vacation_this_app'   => 'required|integer|min:0',
-        'vacation_balance'    => 'required|integer|min:0',
-        'sick_earned'         => 'required|integer|min:0',
-        'sick_this_app'       => 'required|integer|min:0',
-        'sick_balance'        => 'required|integer|min:0',
-        'days_with_pay'       => 'nullable|integer|min:0',
-        'days_without_pay'    => 'nullable|integer|min:0',
+        'vacation_earned'     => 'nullable|numeric|min:0',
+        'vacation_this_app'   => 'nullable|numeric|min:0',
+        'vacation_balance'    => 'nullable|numeric|min:0',
+        'sick_earned'         => 'nullable|numeric|min:0',
+        'sick_this_app'       => 'nullable|numeric|min:0',
+        'sick_balance'        => 'nullable|numeric|min:0',
+        'days_with_pay'       => 'nullable|numeric|min:0',
+        'days_without_pay'    => 'nullable|numeric|min:0',
         'approved_others'     => 'nullable|string|max:255',
       ]);
+
+      // Convert empty strings to null for numeric fields
+      foreach (
+        [
+          'vacation_earned',
+          'vacation_this_app',
+          'vacation_balance',
+          'sick_earned',
+          'sick_this_app',
+          'sick_balance',
+          'days_with_pay',
+          'days_without_pay'
+        ] as $field
+      ) {
+        if (isset($validated[$field]) && ($validated[$field] === '' || $validated[$field] === null)) {
+          $validated[$field] = null;
+        }
+      }
 
       // Store edited values in the Leave record
       $Leave->update($validated);
@@ -310,6 +328,11 @@ class LeaveController extends Controller
         'recommendation'      => 'nullable|in:for_approval,for_disapproval',
         'recommendation_notes' => 'nullable|string',
       ]);
+
+      // Set default to 'for_approval' if no recommendation is selected
+      if (empty($validated['recommendation'])) {
+        $validated['recommendation'] = 'for_approval';
+      }
 
       $Leave->update($validated);
 

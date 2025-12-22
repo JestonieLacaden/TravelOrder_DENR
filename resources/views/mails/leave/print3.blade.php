@@ -223,8 +223,8 @@
                         <div class="recommendation">
                             <strong>7.B RECOMMENDATION</strong>
                             <div class="checks" style="margin-top:2mm">
-                                <label><input type="checkbox" /> For Approval</label>
-                                <label><input type="checkbox" /> For disapproval due to</label>
+                                <label><input type="checkbox" {{ ($Leave->recommendation === 'for_approval' || !$Leave->recommendation) ? 'checked' : '' }} /> For Approval</label>
+                                <label><input type="checkbox" {{ ($Leave->recommendation === 'for_disapproval') ? 'checked' : '' }} /> For disapproval due to</label>
                             </div>
                             <div style="height:17mm;border:1px solid #000;border-style:dashed;margin:2mm 0 6mm 0"></div>
                         </div>
@@ -292,4 +292,3 @@
 </body>
 
 </html>
-

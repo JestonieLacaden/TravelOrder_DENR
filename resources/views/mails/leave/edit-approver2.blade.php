@@ -29,13 +29,16 @@
 
                     <h6><strong>7.B Recommendation</strong></h6>
 
+                    <!-- Hidden input to track recommendation state -->
+                    <input type="hidden" name="recommendation" id="recommendation_value_{{ $Leave->id }}" value="{{ $Leave->recommendation ?? 'for_approval' }}">
+
                     <div class="form-check">
-                        <input type="checkbox" class="form-check-input rec-check-{{ $Leave->id }}" id="rec_app_{{ $Leave->id }}" name="recommendation" value="for_approval" {{ (is_string($Leave->recommendation ?? null) && $Leave->recommendation === 'for_approval') ? 'checked' : '' }}>
+                        <input type="checkbox" class="form-check-input" id="rec_app_{{ $Leave->id }}" {{ (!$Leave->recommendation || $Leave->recommendation === 'for_approval') ? 'checked' : '' }}>
                         <label class="form-check-label" for="rec_app_{{ $Leave->id }}">For Approval</label>
                     </div>
 
                     <div class="form-check">
-                        <input type="checkbox" class="form-check-input rec-check-{{ $Leave->id }}" id="rec_dis_{{ $Leave->id }}" name="recommendation" value="for_disapproval" {{ (is_string($Leave->recommendation ?? null) && $Leave->recommendation === 'for_disapproval') ? 'checked' : '' }}>
+                        <input type="checkbox" class="form-check-input" id="rec_dis_{{ $Leave->id }}" {{ ($Leave->recommendation === 'for_disapproval') ? 'checked' : '' }}>
                         <label class="form-check-label" for="rec_dis_{{ $Leave->id }}">For Disapproval</label>
                     </div>
 
@@ -85,12 +88,41 @@
         const form = modal.find('form');
         if (!form.length) return;
 
-        // Checkbox mutual exclusion
-        const checkboxes = $('.rec-check-{{ $Leave->id }}');
-        checkboxes.on('change', function() {
+        // Handle checkboxes - mutual exclusivity
+        const approvalCheckbox = $('#rec_app_{{ $Leave->id }}');
+        const disapprovalCheckbox = $('#rec_dis_{{ $Leave->id }}');
+        const hiddenInput = $('#recommendation_value_{{ $Leave->id }}');
+
+        console.log('Script loaded for Leave ID: {{ $Leave->id }}');
+
+        approvalCheckbox.on('change', function() {
+            console.log('For Approval clicked, checked:', this.checked);
             if (this.checked) {
-                checkboxes.not(this).prop('checked', false);
+                disapprovalCheckbox.prop('checked', false);
+                hiddenInput.val('for_approval');
+                console.log('Set to for_approval');
+            } else {
+                // If unchecking For Approval, check For Disapproval
+                disapprovalCheckbox.prop('checked', true);
+                hiddenInput.val('for_disapproval');
+                console.log('Set to for_disapproval');
             }
+            console.log('Hidden input value:', hiddenInput.val());
+        });
+
+        disapprovalCheckbox.on('change', function() {
+            console.log('For Disapproval clicked, checked:', this.checked);
+            if (this.checked) {
+                approvalCheckbox.prop('checked', false);
+                hiddenInput.val('for_disapproval');
+                console.log('Set to for_disapproval');
+            } else {
+                // If unchecking For Disapproval, check For Approval
+                approvalCheckbox.prop('checked', true);
+                hiddenInput.val('for_approval');
+                console.log('Set to for_approval');
+            }
+            console.log('Hidden input value:', hiddenInput.val());
         });
 
         let originalData = {};
@@ -103,7 +135,7 @@
             originalData = {};
             form.find('input, textarea').each(function() {
                 if (this.type === 'checkbox') {
-                    originalData[this.name + '_' + this.value] = this.checked;
+                    originalData[this.id] = this.checked;
                 } else {
                     originalData[this.name] = $(this).val();
                 }
@@ -114,7 +146,7 @@
         function resetToOriginal() {
             form.find('input, textarea').each(function() {
                 if (this.type === 'checkbox') {
-                    this.checked = originalData[this.name + '_' + this.value] || false;
+                    this.checked = originalData[this.id] || false;
                 } else if (originalData.hasOwnProperty(this.name)) {
                     $(this).val(originalData[this.name]);
                 }
@@ -128,13 +160,18 @@
             hasChanges = false;
             isSubmitting = false;
             pendingHide = false;
+            console.log('Modal opened, initial values:', {
+                approval: approvalCheckbox.prop('checked')
+                , disapproval: disapprovalCheckbox.prop('checked')
+                , hidden: hiddenInput.val()
+            });
         });
 
         form.on('input change', 'input, textarea', function() {
             hasChanges = false;
             form.find('input, textarea').each(function() {
                 if (this.type === 'checkbox') {
-                    if (originalData[this.name + '_' + this.value] !== this.checked) {
+                    if (originalData[this.id] !== this.checked) {
                         hasChanges = true;
                         return false;
                     }
