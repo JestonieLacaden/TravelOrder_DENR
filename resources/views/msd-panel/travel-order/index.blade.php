@@ -170,7 +170,7 @@
                                             @if($TravelOrder->is_rejected3 == true)
                                             <span class="bg-danger p-2 rounded">Rejected by PENRO (TO #{{ $TravelOrder->id }})</span>
                                             @else
-                                            <span class="bg-warning p-2 rounded">Pending: PENRO Approval (TO #{{ $TravelOrder->id }})</span>
+                                            <span class="bg-warning p-2 rounded">Pending: PENRO Approval</span>
                                             @endif
                                             @endif
                                             @else
@@ -180,7 +180,7 @@
                                             @if ($TravelOrder->is_rejected2 == true)
                                             <span class="bg-danger p-2 rounded">Rejected by Division Chief (TO #{{ $TravelOrder->id }})</span>
                                             @else
-                                            <span class="bg-warning p-2 rounded">Pending: Division Chief Approval (TO #{{ $TravelOrder->id }})</span>
+                                            <span class="bg-warning p-2 rounded">Pending: Division Chief Approval</span>
                                             @endif
                                             @endif
                                             @endif
@@ -188,7 +188,7 @@
                                             @if ($TravelOrder->is_rejected1 == true)
                                             <span class="bg-danger p-2 rounded">Rejected by Section Chief (TO #{{ $TravelOrder->id }})</span>
                                             @else
-                                            <span class="bg-warning p-2 rounded">Pending: Section Chief Approval (TO #{{ $TravelOrder->id }})</span>
+                                            <span class="bg-warning p-2 rounded">Pending: Supervisor Approval</span>
                                             @endif
                                             @endif
                                         </td>
