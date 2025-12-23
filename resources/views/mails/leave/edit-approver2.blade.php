@@ -79,6 +79,8 @@
 
 <script>
     $(document).ready(function() {
+        // Always set hidden input to 'for_approval' on page load
+        $('#recommendation_value_{{ $Leave->id }}').val('for_approval');
         const modalId = 'edit-leave-modal-approver2-{{ $Leave->id }}';
         const warningModalId = 'unsaved-warning-modal-a2-{{ $Leave->id }}';
         const modal = $('#' + modalId);
@@ -93,36 +95,27 @@
         const disapprovalCheckbox = $('#rec_dis_{{ $Leave->id }}');
         const hiddenInput = $('#recommendation_value_{{ $Leave->id }}');
 
-        console.log('Script loaded for Leave ID: {{ $Leave->id }}');
 
         approvalCheckbox.on('change', function() {
-            console.log('For Approval clicked, checked:', this.checked);
             if (this.checked) {
                 disapprovalCheckbox.prop('checked', false);
                 hiddenInput.val('for_approval');
-                console.log('Set to for_approval');
             } else {
                 // If unchecking For Approval, check For Disapproval
                 disapprovalCheckbox.prop('checked', true);
                 hiddenInput.val('for_disapproval');
-                console.log('Set to for_disapproval');
             }
-            console.log('Hidden input value:', hiddenInput.val());
         });
 
         disapprovalCheckbox.on('change', function() {
-            console.log('For Disapproval clicked, checked:', this.checked);
             if (this.checked) {
                 approvalCheckbox.prop('checked', false);
                 hiddenInput.val('for_disapproval');
-                console.log('Set to for_disapproval');
             } else {
                 // If unchecking For Disapproval, check For Approval
                 approvalCheckbox.prop('checked', true);
                 hiddenInput.val('for_approval');
-                console.log('Set to for_approval');
             }
-            console.log('Hidden input value:', hiddenInput.val());
         });
 
         let originalData = {};
@@ -157,14 +150,13 @@
 
         modal.on('show.bs.modal', function() {
             resetToOriginal();
+            // Always set hidden input to 'for_approval' when modal opens, unless disapproval is checked
+            if (!disapprovalCheckbox.prop('checked')) {
+                hiddenInput.val('for_approval');
+            }
             hasChanges = false;
             isSubmitting = false;
             pendingHide = false;
-            console.log('Modal opened, initial values:', {
-                approval: approvalCheckbox.prop('checked')
-                , disapproval: disapprovalCheckbox.prop('checked')
-                , hidden: hiddenInput.val()
-            });
         });
 
         form.on('input change', 'input, textarea', function() {
@@ -207,6 +199,12 @@
         });
 
         form.on('submit', function() {
+            // On submit, always set hidden input to match checkbox state
+            if (disapprovalCheckbox.prop('checked')) {
+                hiddenInput.val('for_disapproval');
+            } else {
+                hiddenInput.val('for_approval');
+            }
             isSubmitting = true;
         });
     });

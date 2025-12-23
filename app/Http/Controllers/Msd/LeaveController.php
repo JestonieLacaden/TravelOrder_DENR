@@ -200,7 +200,12 @@ class LeaveController extends Controller
         $Leave->update(['is_approve1' => true]);
       } elseif ($signatory->approver2 == $approver->id && $Leave->is_approve1 && !$Leave->is_approve2 && !$Leave->is_rejected2) {
         $step = 2;
-        $Leave->update(['is_approve2' => true]);
+        $updateFields = ['is_approve2' => true];
+        // If recommendation is not 'for_disapproval', set to 'for_approval'
+        if ($Leave->recommendation !== 'for_disapproval') {
+          $updateFields['recommendation'] = 'for_approval';
+        }
+        $Leave->update($updateFields);
       } elseif ($signatory->approver3 == $approver->id && $Leave->is_approve1 && $Leave->is_approve2 && !$Leave->is_approve3 && !$Leave->is_rejected3) {
         $step = 3;
         $Leave->update(['is_approve3' => true]);
@@ -329,8 +334,8 @@ class LeaveController extends Controller
         'recommendation_notes' => 'nullable|string',
       ]);
 
-      // Set default to 'for_approval' if no recommendation is selected
-      if (empty($validated['recommendation'])) {
+      // Always set to 'for_approval' unless 'for_disapproval' is explicitly selected
+      if (empty($validated['recommendation']) || $validated['recommendation'] !== 'for_disapproval') {
         $validated['recommendation'] = 'for_approval';
       }
 
