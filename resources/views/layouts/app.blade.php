@@ -52,11 +52,8 @@
 
 
     <script>
-        window.employeeId = {
-            {
-                optional(auth() - > user() - > Employee) - > id ?? 'null'
-            }
-        };
+        // Current logged-in employee ID (or null)
+        window.employeeId = @json(optional(auth()->user()->Employee) -> id ?? null);
 
     </script>
 
@@ -141,17 +138,17 @@
                     // Check if on TO Request page and count INCREASED (new request sent)
                     if (path.indexOf('/mail/travel-order-request') !== -1 && to > lastTO) {
                         var diff = to - lastTO;
-                        var message = diff === 1 
-                            ? 'A new Travel Order request has been submitted. Please refresh to view.' 
-                            : diff + ' new Travel Order requests have been submitted. Please refresh to view.';
-                        
+                        var message = diff === 1 ?
+                            'A new Travel Order request has been submitted. Please refresh to view.' :
+                            diff + ' new Travel Order requests have been submitted. Please refresh to view.';
+
                         toastr.info(message, 'New Request', {
-                            closeButton: true,
-                            progressBar: true,
-                            timeOut: 0,
-                            extendedTimeOut: 0,
-                            positionClass: 'toast-top-right',
-                            onclick: function() {
+                            closeButton: true
+                            , progressBar: true
+                            , timeOut: 0
+                            , extendedTimeOut: 0
+                            , positionClass: 'toast-top-right'
+                            , onclick: function() {
                                 location.reload();
                             }
                         });
@@ -160,17 +157,17 @@
                     // Check if on Leave Request page and count INCREASED (new request sent)
                     if (path.indexOf('/mail/leave-request') !== -1 && leave > lastLeave) {
                         var diff = leave - lastLeave;
-                        var message = diff === 1 
-                            ? 'A new Leave request has been submitted. Please refresh to view.' 
-                            : diff + ' new Leave requests have been submitted. Please refresh to view.';
-                        
+                        var message = diff === 1 ?
+                            'A new Leave request has been submitted. Please refresh to view.' :
+                            diff + ' new Leave requests have been submitted. Please refresh to view.';
+
                         toastr.info(message, 'New Request', {
-                            closeButton: true,
-                            progressBar: true,
-                            timeOut: 0,
-                            extendedTimeOut: 0,
-                            positionClass: 'toast-top-right',
-                            onclick: function() {
+                            closeButton: true
+                            , progressBar: true
+                            , timeOut: 0
+                            , extendedTimeOut: 0
+                            , positionClass: 'toast-top-right'
+                            , onclick: function() {
                                 location.reload();
                             }
                         });

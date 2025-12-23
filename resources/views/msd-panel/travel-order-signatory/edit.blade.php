@@ -42,17 +42,29 @@
                                         @method('PUT')
                                         <div class="card-body">
                                             <div class="form-group  row">
-                                                <label class="col-sm-3" for="name">Signatory Name : <span class="text-danger">*</span></label>
+                                                <label class="col-sm-3" for="unit-section-{{ $TravelOrderSignatory->id }}">Unit/Section : <span class="text-danger">*</span></label>
                                                 <div class="col-sm-9">
-                                                    <input name="name" id="name" class="form-control" type="text" placeholder="Enter Signatory Name" value="{{ $TravelOrderSignatory->name }}">
+                                                    <select name="name" id="unit-section-{{ $TravelOrderSignatory->id }}" class="form-control required-field">
+                                                        <option value="">-- Piliin ang Unit/Section --</option>
+                                                        @foreach($UnitsWithChief as $unit)
+                                                        <option value="{{ $unit->unit }}" @if($TravelOrderSignatory->name == $unit->unit) selected @endif
+                                                            >
+                                                            {{ $unit->unit }}
+                                                            @if($unit->Section)
+                                                            ({{ $unit->Section->section ?? '' }})
+                                                            @endif
+                                                            - Chief: {{ optional($unit->sectionChief->employee)->lastname }}, {{ optional($unit->sectionChief->employee)->firstname }}
+                                                        </option>
+                                                        @endforeach
+                                                    </select>
                                                     @error('name')
                                                     <p class="text-danger text-xs mt-1">{{$message}}</p>
                                                     @enderror
                                                 </div>
                                             </div>
 
-                                            {{-- Approver 1 (Section Chief) hidden - managed in Set Section Chief page --}}
-                                            <input type="hidden" name="approver1" value="{{ $TravelOrderSignatory->approver1 }}">
+                                            {{-- Approver 1 (Section Chief) hidden - dynamically set based on selected Unit/Section --}}
+                                            <input type="hidden" name="approver1" id="approver1-{{ $TravelOrderSignatory->id }}" value="{{ $TravelOrderSignatory->approver1 }}">
 
                                             <div class="form-group  row">
                                                 <label class="col-sm-3" for="approver2">Division Chief (Signatory 2) : <span class="text-danger">*</span></label>
@@ -137,7 +149,8 @@
                                         </div>
                                         <!-- /.card-body -->
                                         <div class="card-footer">
-                                            <button type="submit" class="btn btn-primary">Submit</button>
+                                            <button type="submit" id="signatory-update-btn-{{ $TravelOrderSignatory->id }}" class="btn btn-primary">Update</button>
+                                            <small class="text-muted ml-2">Please fill all required fields</small>
                                         </div>
 
                                     </form>
@@ -154,3 +167,60 @@
     <!-- /.modal-dialog -->
 </div>
 <!-- /.modal -->
+
+<script>
+    // Enable/Disable Update button based on required fields for this edit modal
+    $(document).ready(function() {
+        var modalId = '#edit-signatory-modal-lg{{ $TravelOrderSignatory->id }}';
+        var unitSelector = modalId + ' #unit-section-{{ $TravelOrderSignatory->id }}';
+        var approver2Selector = modalId + ' #approver2';
+        var approver3Selector = modalId + ' #approver3';
+        var updateBtn = modalId + ' #signatory-update-btn-{{ $TravelOrderSignatory->id }}';
+
+        function checkRequiredFields() {
+            var unitSection = $(unitSelector).val();
+            var approver2 = $(approver2Selector).val();
+            var approver3 = $(approver3Selector).val();
+
+            if (unitSection && approver2 && approver3) {
+                $(updateBtn).prop('disabled', false);
+                $(updateBtn).siblings('small').hide();
+            } else {
+                $(updateBtn).prop('disabled', true);
+                $(updateBtn).siblings('small').show();
+            }
+        }
+
+        // Map of unit/section to Section Chief employee ID
+        var unitChiefMap = {};
+        @foreach($UnitsWithChief as $unit)
+        unitChiefMap['{{ $unit->unit }}'] = '{{ optional($unit->sectionChief->employee)->id ?? '
+        ' }}';
+        @endforeach
+
+        // Set approver1 hidden input when unit/section changes
+        $(unitSelector).on('change', function() {
+            var selected = $(this).val();
+            var chiefId = unitChiefMap[selected] || '';
+            $(modalId).find('#approver1-{{ $TravelOrderSignatory->id }}').val(chiefId);
+            checkRequiredFields();
+        });
+
+        // also bind to approver selects (support select2 events as well)
+        $(approver2Selector).on('change select2:select', checkRequiredFields);
+        $(approver3Selector).on('change select2:select', checkRequiredFields);
+
+        // initial check
+        checkRequiredFields();
+
+        // Reset behaviour when modal closes
+        $(modalId).on('hidden.bs.modal', function() {
+            $(this).find('form')[0].reset();
+            $(unitSelector).val('').trigger('change');
+            $(approver2Selector).val('').trigger('change');
+            $(approver3Selector).val('').trigger('change');
+            checkRequiredFields();
+        });
+    });
+
+</script>

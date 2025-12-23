@@ -19,7 +19,11 @@ class TravelOrderSignatoryController extends Controller
 
         $Employees = Employee::orderby('lastname', 'asc')->get();
         $Signatories = TravelOrderSignatory::with('Employee1', 'Employee2', 'Employee3')->get();
-        return view('msd-panel.travel-order-signatory.index', compact('Employees', 'Signatories'));
+        // Kunin lahat ng units na may active Section Chief
+        $UnitsWithChief = \App\Models\Unit::whereHas('sectionChief', function ($q) {
+            $q->whereNotNull('employeeid');
+        })->with(['sectionChief.employee', 'Section'])->orderBy('unit', 'asc')->get();
+        return view('msd-panel.travel-order-signatory.index', compact('Employees', 'Signatories', 'UnitsWithChief'));
     }
 
     public function store(Request $request)
