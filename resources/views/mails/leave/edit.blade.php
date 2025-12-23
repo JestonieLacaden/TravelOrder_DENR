@@ -108,19 +108,19 @@
                                 <tr>
                                     <td><strong>Less this Application</strong></td>
                                     <td class="text-center">
-                                        <input type="number" name="vacation_this_app" min="0" step="0.5" class="form-control form-control-sm text-center vacation-this-app" value="{{ $isVacationLeave ? $dayCount : 0 }}" placeholder="0" disabled readonly>
+                                        <input type="number" name="vacation_this_app" min="0" step="0.5" class="form-control form-control-sm text-center vacation-this-app" value="{{ $isVacationLeave ? $dayCount : 0 }}" placeholder="0" readonly>
                                     </td>
                                     <td class="text-center">
-                                        <input type="number" name="sick_this_app" min="0" step="0.5" class="form-control form-control-sm text-center sick-this-app" value="{{ $isSickLeave ? $dayCount : 0 }}" placeholder="0" disabled readonly>
+                                        <input type="number" name="sick_this_app" min="0" step="0.5" class="form-control form-control-sm text-center sick-this-app" value="{{ $isSickLeave ? $dayCount : 0 }}" placeholder="0" readonly>
                                     </td>
                                 </tr>
                                 <tr class="bg-light">
                                     <td><strong>Balance</strong></td>
                                     <td class="text-center">
-                                        <input type="number" name="vacation_balance" min="0" step="0.5" class="form-control form-control-sm text-center vacation-balance" value="{{ $Leave->vacation_balance ?? 0 }}" placeholder="0" disabled readonly>
+                                        <input type="number" name="vacation_balance" min="0" step="0.5" class="form-control form-control-sm text-center vacation-balance" value="{{ $Leave->vacation_balance ?? 0 }}" placeholder="0" readonly>
                                     </td>
                                     <td class="text-center">
-                                        <input type="number" name="sick_balance" min="0" step="0.5" class="form-control form-control-sm text-center sick-balance" value="{{ $Leave->sick_balance ?? 0 }}" placeholder="0" disabled readonly>
+                                        <input type="number" name="sick_balance" min="0" step="0.5" class="form-control form-control-sm text-center sick-balance" value="{{ $Leave->sick_balance ?? 0 }}" placeholder="0" readonly>
                                     </td>
                                 </tr>
                             </tbody>
@@ -134,11 +134,11 @@
                     <div class="row">
                         <div class="col-md-4">
                             <label class="text-sm">Days with Pay:</label>
-                            <input type="number" name="days_with_pay" min="0" class="form-control form-control-sm" value="{{ $Leave->days_with_pay ?? 0 }}" placeholder="0">
+                            <input type="number" name="days_with_pay" min="0" class="form-control form-control-sm" value="{{ $Leave->days_with_pay && $Leave->days_with_pay > 0 ? $Leave->days_with_pay : '' }}" placeholder="0">
                         </div>
                         <div class="col-md-4">
                             <label class="text-sm">Days without Pay:</label>
-                            <input type="number" name="days_without_pay" min="0" class="form-control form-control-sm" value="{{ $Leave->days_without_pay ?? 0 }}" placeholder="0">
+                            <input type="number" name="days_without_pay" min="0" class="form-control form-control-sm" value="{{ $Leave->days_without_pay && $Leave->days_without_pay > 0 ? $Leave->days_without_pay : '' }}" placeholder="0">
                         </div>
                         <div class="col-md-4">
                             <label class="text-sm">Others (Specify):</label>

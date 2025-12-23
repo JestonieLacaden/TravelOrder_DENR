@@ -314,6 +314,13 @@ Route::group(['middleware' => 'auth'], function () {
         Route::resource('data-management/user/user', App\Http\Controllers\Auth\UserController::class);
         Route::resource('data-management/user/role', RolesController::class);
 
+        // Leave Credits Import Routes
+        Route::get('leave-management/import-credits', [App\Http\Controllers\LeaveCreditsController::class, 'index'])->name('leave-credits.index');
+        Route::post('leave-management/upload-excel', [App\Http\Controllers\LeaveCreditsController::class, 'upload'])->name('leave-credits.upload');
+        Route::post('leave-management/import-data', [App\Http\Controllers\LeaveCreditsController::class, 'import'])->name('leave-credits.import');
+        Route::post('leave-management/cancel-import', [App\Http\Controllers\LeaveCreditsController::class, 'cancelUpload'])->name('leave-credits.cancel');
+        Route::get('leave-management/employee-credits/{employeeId}', [App\Http\Controllers\LeaveCreditsController::class, 'getEmployeeCredits'])->name('leave-credits.employee');
+
         Route::resource('msd-management/encoder/daily-time-record', DtrController::class);
         Route::resource('msd-management/event', EventController::class);
 

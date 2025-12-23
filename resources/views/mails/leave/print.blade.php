@@ -382,11 +382,11 @@ $displayCredits = [
                 7.B. RECOMMENDATION
             </div>
             <div class="icheck-primary text-sm pt-2">
-                <input type="checkbox" value="" id="check1" {{ ($Leave->recommendation ?? '') === 'for_approval' ? 'checked' : '' }}>
+                <input type="checkbox" value="" id="check1" {{ ($Leave->recommendation === 'for_approval') ? 'checked' : '' }}>
                 <label for="check1"> For Approval</label>
             </div>
             <div class="icheck-primary text-sm">
-                <input type="checkbox" value="" id="check1" {{ ($Leave->recommendation ?? '') === 'for_disapproval' ? 'checked' : '' }}>
+                <input type="checkbox" value="" id="check1" {{ ($Leave->recommendation === 'for_disapproval') ? 'checked' : '' }}>
                 <label for="check1"> For Disapproval</label>
             </div>
             <div>

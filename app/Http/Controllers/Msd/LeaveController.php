@@ -200,7 +200,12 @@ class LeaveController extends Controller
         $Leave->update(['is_approve1' => true]);
       } elseif ($signatory->approver2 == $approver->id && $Leave->is_approve1 && !$Leave->is_approve2 && !$Leave->is_rejected2) {
         $step = 2;
-        $Leave->update(['is_approve2' => true]);
+        $updateFields = ['is_approve2' => true];
+        // If recommendation is not 'for_disapproval', set to 'for_approval'
+        if ($Leave->recommendation !== 'for_disapproval') {
+          $updateFields['recommendation'] = 'for_approval';
+        }
+        $Leave->update($updateFields);
       } elseif ($signatory->approver3 == $approver->id && $Leave->is_approve1 && $Leave->is_approve2 && !$Leave->is_approve3 && !$Leave->is_rejected3) {
         $step = 3;
         $Leave->update(['is_approve3' => true]);
@@ -279,16 +284,34 @@ class LeaveController extends Controller
 
       // Approver1 can only edit: 7.A (Leave Credits) and 7.C (Approved For)
       $validated = $request->validate([
-        'vacation_earned'     => 'required|integer|min:0',
-        'vacation_this_app'   => 'required|integer|min:0',
-        'vacation_balance'    => 'required|integer|min:0',
-        'sick_earned'         => 'required|integer|min:0',
-        'sick_this_app'       => 'required|integer|min:0',
-        'sick_balance'        => 'required|integer|min:0',
-        'days_with_pay'       => 'nullable|integer|min:0',
-        'days_without_pay'    => 'nullable|integer|min:0',
+        'vacation_earned'     => 'nullable|numeric|min:0',
+        'vacation_this_app'   => 'nullable|numeric|min:0',
+        'vacation_balance'    => 'nullable|numeric|min:0',
+        'sick_earned'         => 'nullable|numeric|min:0',
+        'sick_this_app'       => 'nullable|numeric|min:0',
+        'sick_balance'        => 'nullable|numeric|min:0',
+        'days_with_pay'       => 'nullable|numeric|min:0',
+        'days_without_pay'    => 'nullable|numeric|min:0',
         'approved_others'     => 'nullable|string|max:255',
       ]);
+
+      // Convert empty strings to null for numeric fields
+      foreach (
+        [
+          'vacation_earned',
+          'vacation_this_app',
+          'vacation_balance',
+          'sick_earned',
+          'sick_this_app',
+          'sick_balance',
+          'days_with_pay',
+          'days_without_pay'
+        ] as $field
+      ) {
+        if (isset($validated[$field]) && ($validated[$field] === '' || $validated[$field] === null)) {
+          $validated[$field] = null;
+        }
+      }
 
       // Store edited values in the Leave record
       $Leave->update($validated);
@@ -310,6 +333,11 @@ class LeaveController extends Controller
         'recommendation'      => 'nullable|in:for_approval,for_disapproval',
         'recommendation_notes' => 'nullable|string',
       ]);
+
+      // Always set to 'for_approval' unless 'for_disapproval' is explicitly selected
+      if (empty($validated['recommendation']) || $validated['recommendation'] !== 'for_disapproval') {
+        $validated['recommendation'] = 'for_approval';
+      }
 
       $Leave->update($validated);
 

@@ -34,19 +34,29 @@
                                         {{ csrf_field() }}
                                         <div class="card-body">
                                             <div class="form-group  row">
-                                                <label class="col-sm-3" for="signatory-name">Signatory Name : <span class="text-danger">*</span></label>
+                                                <label class="col-sm-3" for="unit-section">Unit/Section : <span class="text-danger">*</span></label>
                                                 <div class="col-sm-9">
-                                                    <input name="name" id="signatory-name" class="form-control required-field" type="text" placeholder="Enter Signatory Name" required>
-                                                    <span class="text-danger text-xs" style="display:none;">The name field is required.</span>
+                                                    <select name="name" id="unit-section" class="form-control required-field" required>
+                                                        <option value="">-- Piliin ang Unit/Section --</option>
+                                                        @foreach($UnitsWithChief as $unit)
+                                                        <option value="{{ $unit->unit }}">
+                                                            {{ $unit->unit }}
+                                                            @if($unit->Section)
+                                                            ({{ $unit->Section->section ?? '' }})
+                                                            @endif
+                                                            - Chief: {{ optional($unit->sectionChief->employee)->lastname }}, {{ optional($unit->sectionChief->employee)->firstname }}
+                                                        </option>
+                                                        @endforeach
+                                                    </select>
+                                                    <span class="text-danger text-xs" style="display:none;">The unit/section field is required.</span>
                                                     @error('name')
                                                     <p class="text-danger text-xs mt-1">{{$message}}</p>
                                                     @enderror
                                                 </div>
                                             </div>
 
-                                            {{-- Approver 1 (Section Chief) hidden - managed in Set Section Chief page --}}
-                                            {{-- Set to 1 (dummy value) since validation requires it but it's not used in Option 2 --}}
-                                            <input type="hidden" name="approver1" value="1">
+                                            {{-- Approver 1 (Section Chief) hidden - dynamically set based on selected Unit/Section --}}
+                                            <input type="hidden" name="approver1" id="approver1" value="">
 
                                             <div class="form-group  row">
                                                 <label class="col-sm-3" for="signatory-approver2">Division Chief (Signatory 2) : <span class="text-danger">*</span></label>
@@ -125,12 +135,12 @@
     // Enable/Disable Submit button based on required fields
     $(document).ready(function() {
         function checkRequiredFields() {
-            var name = $('#signatory-name').val().trim();
+            var unitSection = $('#unit-section').val();
             var approver2 = $('#signatory-approver2').val();
             var approver3 = $('#signatory-approver3').val();
 
             // Enable button only if all required fields are filled
-            if (name && approver2 && approver3) {
+            if (unitSection && approver2 && approver3) {
                 $('#signatory-submit-btn').prop('disabled', false);
                 $('#signatory-submit-btn').next('small').hide();
             } else {
@@ -140,7 +150,7 @@
         }
 
         // Check on input/change
-        $('#signatory-name').on('input', checkRequiredFields);
+        $('#unit-section').on('change', checkRequiredFields);
         $('#signatory-approver2').on('change', checkRequiredFields);
         $('#signatory-approver3').on('change', checkRequiredFields);
 
@@ -150,10 +160,27 @@
         // Reset form when modal closes
         $('#new-signatory-modal-lg').on('hidden.bs.modal', function() {
             $(this).find('form')[0].reset();
+            $('#unit-section').val('').trigger('change');
             $('#signatory-approver2').val('').trigger('change');
             $('#signatory-approver3').val('').trigger('change');
             checkRequiredFields();
         });
+
+        // Map of unit/section to Section Chief employee ID
+        var unitChiefMap = {};
+        @foreach($UnitsWithChief as $unit)
+        unitChiefMap['{{ $unit->unit }}'] = '{{ optional($unit->sectionChief->employee)->id ?? '
+        ' }}';
+        @endforeach
+
+        // Set approver1 hidden input when unit/section changes
+        $('#unit-section').on('change', function() {
+            var selected = $(this).val();
+            var chiefId = unitChiefMap[selected] || '';
+            $('#approver1').val(chiefId);
+        });
+        // Set initial value if editing
+        $('#unit-section').trigger('change');
     });
 
 </script>

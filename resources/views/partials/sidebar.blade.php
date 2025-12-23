@@ -61,7 +61,7 @@
                     <a href="{{ route('userleave.index') }}" class="nav-link {{ Request::is('leave-management/*') ? 'active' : ''}} {{ Request::is('leave-management') ? 'active' : ''}}">
                         <i class="nav-icon fas fa-calendar"></i>
                         <p>
-                            Leave Management
+                            Leave
                         </p>
                     </a>
                 </li>
@@ -292,7 +292,7 @@
                         @can('MSDaddLeave',\App\Models\Leave::class)
                         <li class="nav-item">
                             <a href="{{ route('leave-management.index') }}" class="nav-link  {{ Request::is('msd-management/encoder/leave-management') ? 'active' : '' }}">
-                                <p class="ml-4 p-2">Leave Management
+                                <p class="ml-4 p-2">Leave
                                     @if ($LeaveEncoderCount !=0)
                                     <span class="badge badge-warning right">{{ $LeaveEncoderCount }}</span>
                                     @endif
@@ -492,6 +492,17 @@
                         </ul>
                     </li>
                 </ul>
+            </li>
+            @endcan
+
+            @can('viewany', \App\Models\User::class)
+            <li class="nav-item">
+                <a href="{{ route('leave-credits.index') }}" class="nav-link {{ Request::is('leave-management/import-credits*') ? 'active' : '' }}">
+                    <i class="nav-icon fas fa-file-excel"></i>
+                    <p>
+                        Import Leave Credits
+                    </p>
+                </a>
             </li>
             @endcan
 

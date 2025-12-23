@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Msd;
 
+use Illuminate\Support\Facades\Log;
 use Throwable;
 use App\Models\Employee;
 use App\Models\TravelOrder;
@@ -111,6 +112,7 @@ class TravelOrderController extends Controller
 
     public function store(Request $request)
     {
+        Log::info('TO SUBMIT: employeeid=' . $request->employeeid);
         $this->authorize('create', \App\Models\TravelOrder::class);
 
         $formfields = $request->validate([
@@ -125,6 +127,9 @@ class TravelOrderController extends Controller
 
         $employee = Employee::findOrFail($request->employeeid);
 
+        // Debug info
+        $debugMsg = '';
+
         // Determine signatory based on employee position
         $approver1 = null;
         $approver2 = null;
@@ -135,18 +140,24 @@ class TravelOrderController extends Controller
             $approver1 = null;
             $approver2 = null;
             $approver3 = $employee->id; // Self-sign
+            $debugMsg = 'PENRO self-create flow.';
+            Log::info('TO FLOW: PENRO self-create', ['approver1' => $approver1, 'approver2' => $approver2, 'approver3' => $approver3]);
         }
         // Division Chief (MSD/TSD) creates own TO - skip to PENRO
         elseif ($this->isDivisionChief($employee)) {
             $approver1 = null;
             $approver2 = null;
             $approver3 = $this->getPENROId();
+            $debugMsg = 'Division Chief flow.';
+            Log::info('TO FLOW: Division Chief', ['approver1' => $approver1, 'approver2' => $approver2, 'approver3' => $approver3]);
         }
         // Section Chief creates own TO - skip section chief level
         elseif ($this->isSectionChief($employee)) {
             $approver1 = null;
             $approver2 = $this->getDivisionChiefId($employee->sectionid);
             $approver3 = $this->getPENROId();
+            $debugMsg = 'Section Chief flow.';
+            Log::info('TO FLOW: Section Chief', ['approver1' => $approver1, 'approver2' => $approver2, 'approver3' => $approver3]);
         }
         // Regular Employee - full 3-level approval
         else {
@@ -156,18 +167,23 @@ class TravelOrderController extends Controller
 
             // Validate Section Chief is assigned
             if (!$approver1) {
-                return back()->with('SignatoryError', 'No Section Chief assigned for ' . $employee->Unit->unit . '!');
+                Log::warning('TO ERROR: Walang Section Chief', ['unit' => $employee->Unit->unit ?? 'Unknown', 'employeeid' => $employee->id]);
+                return back()->with('SignatoryError', 'Walang Section Chief na naka-assign para sa unit na ito: ' . ($employee->Unit->unit ?? 'Unknown') . '.\n[Debug: No Section Chief]');
             }
+            $debugMsg = 'Regular employee flow.';
+            Log::info('TO FLOW: Regular employee', ['approver1' => $approver1, 'approver2' => $approver2, 'approver3' => $approver3]);
         }
 
         // Validate required approvers exist
         if (!$approver3) {
-            return back()->with('SignatoryError', 'PENRO not found in system!');
+            Log::warning('TO ERROR: Walang PENRO', ['employeeid' => $employee->id]);
+            return back()->with('SignatoryError', 'Walang PENRO na naka-set sa system! [Debug: No PENRO]');
         }
 
         if ($approver2 && !$this->isPENRO($employee) && !$this->isDivisionChief($employee)) {
             if (!Employee::find($approver2)) {
-                return back()->with('SignatoryError', 'Division Chief not found!');
+                Log::warning('TO ERROR: Walang Division Chief', ['employeeid' => $employee->id, 'approver2' => $approver2]);
+                return back()->with('SignatoryError', 'Walang Division Chief na nahanap! [Debug: No Division Chief]');
             }
         }
 
@@ -177,9 +193,11 @@ class TravelOrderController extends Controller
             'approver2' => $approver2,
             'approver3' => $approver3,
         ]);
+        Log::info('TO SIGNATORY: created or fetched', ['signatory_id' => $signatory->id, 'approver1' => $approver1, 'approver2' => $approver2, 'approver3' => $approver3]);
 
         $formfields['userid'] = auth()->user()->id;
         $formfields['travelordersignatoryid'] = $signatory->id;
+        Log::info('TO FINAL FIELDS', $formfields);
 
         // If PENRO self-creates, auto-approve
         if ($this->isPENRO($employee) && $employee->id == $approver3) {
@@ -190,16 +208,23 @@ class TravelOrderController extends Controller
             $formfields['approve3_at'] = now();
 
             $travelOrder = TravelOrder::create($formfields);
+            Log::info('TO CREATED: PENRO auto-approve', ['travelorder_id' => $travelOrder->id]);
 
             // Generate TO Number immediately
             $this->generateTONumber($travelOrder);
 
-            return back()->with('message', 'Travel Order Created and Auto-Approved (PENRO)!');
+            return back()->with('message', 'Travel Order Created and Auto-Approved (PENRO)! [Debug: ' . $debugMsg . ']');
         }
 
-        TravelOrder::create($formfields);
+        $created = TravelOrder::create($formfields);
+        Log::info('TO CREATED: regular', ['created' => $created ? true : false]);
 
-        return back()->with('message', 'Travel Order Added Successfully');
+        if ($created) {
+            return back()->with('message', 'Travel Order Added Successfully! [Debug: ' . $debugMsg . ']');
+        } else {
+            Log::error('TO ERROR: Hindi naisave ang Travel Order', $formfields);
+            return back()->with('SignatoryError', 'Hindi naisave ang Travel Order. [Debug: DB insert failed]');
+        }
     }
 
     /**
@@ -621,54 +646,52 @@ class TravelOrderController extends Controller
 
         $employee = \App\Models\Employee::where('email', auth()->user()->email)->first();
 
-        // ✅ OPTION 2: Lookup approvers based on employee's unit and section
+        Log::info('User TO submit (storeUserTravelOrder) by employee', ['employee_id' => optional($employee)->id, 'email' => auth()->user()->email, 'payload' => $formfields]);
 
-        // Get Section Chief from section_chief table (based on unitid)
+        // Hanapin ang Section Chief (Approver 1) ng unit ng employee
         $approver1 = $this->getSectionChiefId($employee->unitid);
-
-        // Get Division Chief based on section
-        $approver2 = $this->getDivisionChiefId($employee->sectionid);
-
-        // Get PENRO (always the same)
-        $approver3 = $this->getPENROId();
-
-        // Validate required approvers
         if (!$approver1) {
-            return back()->with('SignatoryError', 'No Section Chief assigned for ' . $employee->Unit->unit . '!');
-        }
-        if (!$approver3) {
-            return back()->with('SignatoryError', 'PENRO not found in system!');
+            Log::warning('User TO submit failed: no section chief', ['employee_id' => $employee->id ?? null, 'unit' => $employee->Unit->unit ?? null]);
+            return back()->with('error', 'Walang Section Chief na naka-assign para sa ' . ($employee->Unit->unit ?? 'Unknown') . '!');
         }
 
-        // Auto-generate signatory name based on section
-        $signatoryName = '';
-        if ($employee->sectionid == 2) {
-            $signatoryName = 'MSD Signatories';
-        } elseif ($employee->sectionid == 3) {
-            $signatoryName = 'TSD Signatories';
-        } else {
-            $signatoryName = 'DENR Signatories';  // Default for other sections
+        // Hanapin ang Unit/Section name (gamitin ang format na ginagamit sa Division Signatory)
+        $unitSectionName = $employee->Unit->unit;
+        if ($employee->Unit->Section) {
+            $unitSectionName .= ' (' . $employee->Unit->Section->section . ')';
+        }
+        $unitSectionName .= ' - Chief: ' . optional($employee->Unit->sectionChief->employee)->lastname . ', ' . optional($employee->Unit->sectionChief->employee)->firstname;
+
+        // Hanapin ang Division Signatory record.
+        // Use robust matching: exact name OR partial match on unit name, scoped to approver1.
+        $signatory = \App\Models\TravelOrderSignatory::where('approver1', $approver1)
+            ->where(function ($q) use ($unitSectionName, $employee) {
+                $q->where('name', $unitSectionName)
+                    ->orWhere('name', 'like', '%' . ($employee->Unit->unit ?? '') . '%');
+            })
+            ->first();
+
+        // If still not found, log available signatories for this approver for debugging
+        if (!$signatory) {
+            $available = \App\Models\TravelOrderSignatory::where('approver1', $approver1)->get()->map(function ($s) {
+                return $s->name;
+            })->toArray();
+            Log::warning('User TO submit failed: no division signatory (after partial match)', ['employee_id' => $employee->id ?? null, 'unitSectionName' => $unitSectionName, 'available_for_approver1' => $available]);
+            return back()->with('error', 'Walang Division Signatory na naka-assign para sa unit/section na ito. Pakisabihan ang admin.');
         }
 
-        // Create or get signatory record with these 3 approvers
-        $signatory = TravelOrderSignatory::firstOrCreate(
-            [
-                'approver1' => $approver1,
-                'approver2' => $approver2,
-                'approver3' => $approver3,
-            ],
-            [
-                'name' => $signatoryName,  // Auto-set descriptive name on creation
-            ]
-        );
-
+        // Gamitin ang approver2 at approver3 mula sa Division Signatory record
         $formfields['userid']                  = auth()->id();
         $formfields['employeeid']              = $employee->id;
         $formfields['travelordersignatoryid']  = $signatory->id;
 
-        \App\Models\TravelOrder::create($formfields);
-
-        return back()->with('message', 'Travel Order Added Successfully');
+        $created = \App\Models\TravelOrder::create($formfields);
+        if ($created) {
+            Log::info('User TO created', ['travelorder_id' => $created->id, 'employee_id' => $employee->id]);
+            return back()->with('success', 'Travel Order Added Successfully');
+        }
+        Log::error('User TO create failed', ['payload' => $formfields]);
+        return back()->with('error', 'Hindi naisave ang Travel Order.');
     }
 
 
