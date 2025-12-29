@@ -112,22 +112,23 @@
 
                                             if ($TravelOrder->is_rejected1) {
                                             $statusClass = 'bg-danger';
-                                            $statusText = 'Rejected by Section Chief';
+                                            $statusText = 'Rejected by Immediate Supervisor';
                                             } elseif (!$TravelOrder->is_approve1) {
                                             $statusClass = 'bg-warning';
-                                            $statusText = 'Pending: Section Chief Approval';
+                                            $statusText = 'For Immediate Supervisor Approval';
                                             } elseif ($TravelOrder->is_rejected2) {
                                             $statusClass = 'bg-danger';
-                                            $statusText = 'Rejected by Division Chief';
+                                            $statusText = 'Rejected by Recommending Approval';
                                             } elseif (!$TravelOrder->is_approve2) {
                                             $statusClass = 'bg-warning';
-                                            $statusText = 'Pending: Division Chief Approval';
+                                            $statusText = 'For Recommending Approval';
                                             } elseif ($TravelOrder->is_rejected3) {
                                             $statusClass = 'bg-danger';
                                             $statusText = 'Rejected by PENRO';
                                             } elseif (!$TravelOrder->is_approve3) {
                                             $statusClass = 'bg-warning';
-                                            $statusText = 'Pending: PENRO Approval';
+                                            $statusText = 'For PENRO Approval';
+
                                             } else {
                                             $statusClass = 'bg-success';
                                             $statusText = $approvedCode ? "Approved ($approvedCode)" : 'Approved';
@@ -135,6 +136,47 @@
                                             @endphp
 
                                             <span class="js-status p-2 rounded {{ $statusClass }}">{{ $statusText }}</span>
+
+                                            @php
+                                            // compute display datetime and label for current stage
+                                            $displayDt = null;
+                                            $displayLabel = '';
+                                            $displayName = null;
+
+                                            if (! $TravelOrder->is_approve1) {
+                                            // Created stage: show the creator's name (created_by_name preferred)
+                                            $displayDt = $TravelOrder->created_at;
+                                            $displayLabel = 'CREATED BY';
+                                            $displayName = $TravelOrder->created_by_name
+                                            ?? optional($TravelOrder->employeeid)->firstname
+                                            ?? optional($TravelOrder->employee)->firstname
+                                            ?? null;
+                                            } elseif (! $TravelOrder->is_approve2) {
+                                            $displayDt = $TravelOrder->approve1_at ?? $TravelOrder->created_at;
+                                            $displayLabel = 'APPROVED BY IMMEDIATE SUPERVISOR';
+                                            $displayName = $TravelOrder->approve1_by_name ?? null;
+                                            } elseif (! $TravelOrder->is_approve3) {
+                                            $displayDt = $TravelOrder->approve2_at ?? $TravelOrder->approve1_at ?? $TravelOrder->created_at;
+                                            $displayLabel = 'APPROVED BY RECOMMENDING APPROVER';
+                                            $displayName = $TravelOrder->approve2_by_name ?? $TravelOrder->approve1_by_name ?? null;
+                                            } else {
+                                            $displayDt = $TravelOrder->approve3_at ?? $TravelOrder->approve2_at ?? $TravelOrder->approve1_at ?? $TravelOrder->created_at;
+                                            $displayLabel = 'APPROVED BY PENRO';
+                                            $displayName = $TravelOrder->approve3_by_name ?? $TravelOrder->approve2_by_name ?? $TravelOrder->approve1_by_name ?? null;
+                                            }
+                                            @endphp
+
+                                            @if($displayDt)
+                                            <div style="font-size:0.9em;font-style:italic;opacity:0.8;text-align:center;margin-top:4px;">
+                                                {{ $displayLabel }}
+                                                @if(!empty($displayName))
+                                                {{ $displayName }} 
+                                                @endif
+                                                <br>
+                                                {{ \Carbon\Carbon::parse($displayDt)->format('m/d/Y') }} -
+                                                {{ \Carbon\Carbon::parse($displayDt)->format('g:ia') }}
+                                            </div>
+                                            @endif
                                         </td>
 
 
@@ -165,9 +207,14 @@
 
 
                                             @can('print', $TravelOrder)
-                                            <button type="button" class="btn btn-default" onclick="printTO('{{ route('travelorder.print', [$TravelOrder->id]) }}')">
-                                                <i class="fas fa-print"></i> Print
-                                            </button>
+                                            <div style="display:inline-block">
+                                                <button type="button" class="btn btn-default" onclick="printTO('{{ route('travelorder.print', [$TravelOrder->id]) }}')">
+                                                    <i class="fas fa-print"></i> Print
+                                                </button>
+                                                {{-- <a href="{{ route('travelorder.print', [$TravelOrder->id]) }}?preview=1" target="_blank" class="btn btn-default" title="View Print">
+                                                    <i class="fas fa-eye"></i> View
+                                                </a> --}}
+                                            </div>
                                             @endcan
 
                                         </td>

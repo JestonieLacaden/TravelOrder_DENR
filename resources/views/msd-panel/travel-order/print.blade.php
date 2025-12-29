@@ -64,7 +64,8 @@
             max-width: 110px;
         }
 
-        .hdr-text {
+        .hdr-text, .hdr-travel-order {
+
             text-align: center;
         }
 
@@ -79,7 +80,9 @@
         }
 
         .hdr-text h3,
-        .hdr-text h2 {
+        .hdr-text h2, 
+        .hdr-travel-order {
+
             margin: 0;
             line-height: 1.2;
             font-weight: 100;
@@ -87,13 +90,13 @@
         }
 
 
-        .hdr-text h2 {
+        .hdr-travel-order {
             margin-top: 6px;
             font-weight: 600
         }
 
         .travel-no {
-            text-align: right;
+            text-align: center;
             font-size: 14px;
             margin-top: 6px;
         }
@@ -115,11 +118,11 @@
         }
 
         .label {
-            font-weight: bold;
             font-size: 18px
         }
 
         .field {
+            font-weight: bold;
             border-bottom: 1px solid #000;
             min-height: 22px;
             padding: 2px 4px;
@@ -134,7 +137,10 @@
         }
 
         .mono {
-            font-family: "Courier New", monospace;
+            font-family: "Times New Roman", monospace;
+            font-size: 1rem;
+            font-weight: bold;
+
         }
 
         /* Certification & Authorization */
@@ -146,6 +152,12 @@
 
         .justify {
             text-align: justify;
+        }
+
+        /* Indent first paragraph inside .justify */
+        .justify p.indent {
+            text-indent: 36px;
+            margin: 0 0 0.8em 0;
         }
 
         /* Signatures */
@@ -243,14 +255,16 @@
                 <h3 class="office">{{ $officeHeader }}</h3>
                 @endif
                 <h3>Mamburao, Occidental Mindoro</h3>
-                <h2>TRAVEL ORDER</h2>
+                
             </div>
 
             <!-- Bagong Pilipinas Logo -->
             <img src="{{ asset('images/bagongPilipinasLogo.png') }}" class="logoRight" alt="Bagong Pilipinas Logo">
         </div>
+        <h2 class="hdr-travel-order">TRAVEL ORDER</h2>
+        <div class="travel-no"><span class="label">No.: </span><u><span class="mono">{{ $TravelOrdernumber->travelorderid }}</span></u></div>
 
-        <div class="travel-no"><span class="label">No.:</span> <span class="mono">{{ $TravelOrdernumber->travelorderid }}</span></div>
+
 
         <!-- Info grid -->
         <div class="section grid">
@@ -304,10 +318,10 @@
         <div class="section">
             <div class="title">Certification</div>
             <div class="justify">
-                <i>
+                <p class="indent">
                     This is to certify that the travel is necessary and is connected with the functions of the
                     official/employee of the Div/Sec/Unit.
-                </i>
+                </p>
             </div>
 
             @php
@@ -392,18 +406,16 @@
         <div class="section">
             <div class="title">Authorization</div>
             <div class="justify">
-                I hereby authorize the Accountant to deduct the corresponding amount of the unliquidated
-                cash advance from my succeeding salary for my failure to liquidate this travel within the
-                prescribed thirty-day period upon return to my permanent official station pursuant to item
-                5.1.3 Circular 97-002 dated February 10, 1997 and sec. 16 EO No. 248 dated May 29, 1995.
+                <p class="indent">I hereby authorize the Accountant to deduct the corresponding amount of the unliquidated
+                    cash advance from my succeeding salary for my failure to liquidate this travel within the
+                    prescribed thirty-day period upon return to my permanent official station pursuant to item
+                    5.1.3 Circular 97-002 dated February 10, 1997 and sec. 16 EO No. 248 dated May 29, 1995.</p>
             </div>
 
-            <div class="sign-row" style="grid-template-columns: 1fr;">
-                <div class="sign-box" style="max-width: 320px; margin: 0 auto;">
-                    <div class="sign-name"><u>{{$Employee->firstname .' '. $Employee->middlename .' '.
-                    $Employee->lastname }}</u></div>
-
-                    <div class="sign-role">Official/Employee</div>
+            <div class="sign-row" style="grid-template-columns: 1fr; justify-items: end;">
+                <div class="sign-box" style="max-width: 320px; margin: 0;">
+                    <div class="sign-name" style="text-align: right;"><u>{{ $Employee->firstname .' '. $Employee->middlename .' '. $Employee->lastname }}</u></div>
+                    <div class="sign-role" style="text-align: center;">Official/Employee</div>
                 </div>
             </div>
         </div>
@@ -443,8 +455,10 @@
             const params = new URLSearchParams(location.search);
             const embedded = params.has('embed');
 
-            // auto-open print dialog
-            window.addEventListener('load', () => window.print());
+            // auto-open print dialog unless `preview` is present in the URL
+            if (!params.has('preview')) {
+                window.addEventListener('load', () => window.print());
+            }
 
             // kung HINDI embedded (i.e., direct visit), bumalik sa list pagkatapos
             if (!embedded) {
