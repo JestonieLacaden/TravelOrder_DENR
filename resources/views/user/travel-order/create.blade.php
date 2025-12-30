@@ -88,9 +88,9 @@
                                             </div>
                                         </div>
                                         <div class="form-group row">
-                                            <label class="col-sm-3" for="perdime">Per Dime : <span class="text-danger">*</span></label>
+                                            <label class="col-sm-3" for="perdime">Per Diem : <span class="text-danger">*</span></label>
                                             <div class=" col-sm-9">
-                                                <input name="perdime" id="perdime" class="form-control" type="number" placeholder="Enter Per Dime" oninput="this.value = this.value.toUpperCase()">
+                                                <input name="perdime" id="perdime" class="form-control" type="number" placeholder="Enter Per Diem" oninput="this.value = this.value.toUpperCase()">
                                                 @error('perdime')
                                                 <p class="text-danger text-xs mt-1">{{$message}}</p>
                                                 @enderror
