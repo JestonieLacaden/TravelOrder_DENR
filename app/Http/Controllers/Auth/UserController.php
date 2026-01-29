@@ -17,7 +17,15 @@ class UserController extends Controller
     $this->authorize('viewany', User::class);
 
     $Users = User::with('Role')->orderBy('id')->get();
-    $Emails = Employee::where('has_account', false)->orderBy('email')->get();
+    // Get emails that don't have accounts yet (excluding emails already in users table)
+    $existingUserEmails = User::pluck('email')->toArray();
+    $Emails = Employee::where(function($query) {
+        $query->where('has_account', false)
+              ->orWhereNull('has_account');
+    })
+    ->whereNotIn('email', $existingUserEmails)
+    ->orderBy('email')
+    ->get();
     $Roles = Role::orderBy('rolename')->get();
     //    $Offices = Office::orderby('office')->get();
 
@@ -58,6 +66,13 @@ class UserController extends Controller
 
     user::create($formfields);
 
+    // Mark employee as having an account
+    $employee = Employee::where('email', trim($formfields['email']))->first();
+    if ($employee) {
+      $employee->has_account = true;
+      $employee->save();
+    }
+
     return redirect()->route('user.index')->with('success', 'User Added Succesfully!');
   }
 
@@ -67,19 +82,18 @@ class UserController extends Controller
 
     $this->authorize('update', $User);
 
-
-
     $formfields = $request->validate([
       'username' => ['required', 'min:3'],
       'email' => 'required',
-      'password' => ['required', 'min:6'],
-
-
+      'password' => ['nullable', 'min:6'],
     ]);
 
-
-    $formfields['password'] = bcrypt($formfields['password']);
-
+    // Only update password if provided
+    if (!empty($formfields['password'])) {
+      $formfields['password'] = bcrypt($formfields['password']);
+    } else {
+      unset($formfields['password']);
+    }
 
     $User->update($formfields);
 
@@ -94,14 +108,15 @@ class UserController extends Controller
       abort(403);
     }
 
-    $Employeeid = Employee::where('email', '=', $User->email)->get()->first();
-    $has_account['has_account'] = false;
-    Employee::where('id', '=', $Employeeid->id)->update($has_account);
+    $Employeeid = Employee::where('email', '=', $User->email)->first();
 
+    // Only update employee if found
+    if ($Employeeid) {
+      $has_account['has_account'] = false;
+      Employee::where('id', '=', $Employeeid->id)->update($has_account);
+    }
 
     $User->delete();
-
-
 
     return redirect()->route('user.index')->with('success', 'User Deleted Successfully!');
   }

@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\UserController;
 
 use App\Http\Controllers\User\MailController;
 use App\Http\Controllers\User\DtrController as UserDtrController;
+use App\Http\Controllers\User\UserProfileController;
 
 use App\Http\Controllers\DocumentTracking\DocumentController;
 use App\Http\Controllers\DocumentTracking\AttachmentController;
@@ -19,6 +20,7 @@ use App\Http\Controllers\Msd\DtrSignatoryController;
 use App\Http\Controllers\Msd\EventController;
 use App\Http\Controllers\Msd\LeaveController;
 use App\Http\Controllers\Msd\TravelOrderController;
+use App\Http\Controllers\MemorandumController;
 
 use App\Http\Controllers\Admin\RolesController;
 // Optional: kung ginagamit mo ito sa ibang lugar
@@ -38,6 +40,15 @@ Route::get('login', [AuthController::class, 'index'])->name('login');
 Route::get('logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
 
 Route::group(['middleware' => 'auth'], function () {
+
+    /*
+    |----------------------------------------------------------------------
+    | User Profile Routes
+    |----------------------------------------------------------------------
+    */
+    Route::get('profile', [UserProfileController::class, 'index'])->name('user.profile');
+    Route::post('profile/update-info', [UserProfileController::class, 'updateInfo'])->name('user.profile.update-info');
+    Route::post('profile/update-signature', [UserProfileController::class, 'updateSignature'])->name('user.profile.update-signature');
 
     /*
     |----------------------------------------------------------------------
@@ -341,11 +352,15 @@ Route::group(['middleware' => 'auth'], function () {
         Route::resource('msd-management/settings/travel-order-settings/set-travel-order-signatory', App\Http\Controllers\Msd\SetTravelOrderSignatoryController::class);
         Route::resource('msd-management/settings/travel-order-settings/section-chief', App\Http\Controllers\Msd\SectionChiefController::class);
 
+        // Eligible Signatories Management
+        Route::resource('msd-management/settings/eligible-signatories', App\Http\Controllers\Msd\EligibleSignatoryController::class);
+
         // AJAX API for Section Chief (get employees by unit)
         Route::get('api/employees-by-unit/{unitid}', [App\Http\Controllers\Msd\SectionChiefController::class, 'getEmployeesByUnit'])->name('api.employees-by-unit');
 
         Route::put('leave/{Leave}/accept', [LeaveController::class, 'accept'])->name('leave.accept');
         Route::put('leave/{Leave}/reject', [LeaveController::class, 'reject'])->name('leave.reject');
+        Route::put('leave/{Leave}/return', [LeaveController::class, 'returnToUser'])->name('leave.return');
         Route::put('leave/{Leave}/credits-save', [LeaveController::class, 'saveCredits'])->name('leave.credits.save');
         Route::put('leave/{Leave}/approver2-save', [LeaveController::class, 'saveApprover2'])->name('leave.approver2.save');
         Route::put('leave/{Leave}/approver3-save', [LeaveController::class, 'saveApprover3'])->name('leave.approver3.save');
@@ -354,13 +369,16 @@ Route::group(['middleware' => 'auth'], function () {
         Route::get('leave-management', [LeaveController::class, 'userindex'])->name('userleave.index');
         Route::get('leave-management/check-updates', [LeaveController::class, 'checkUpdates'])->name('leave.checkUpdates');
         Route::post('leave-management/create', [LeaveController::class, 'storeUserLeave'])->name('userleave.storeUserLeave');
+        Route::put('leave-management/{Leave}/update', [LeaveController::class, 'updateUserLeave'])->name('userleave.update');
         Route::get('leave-management/summary', [LeaveController::class, 'summary'])->name('leave.summary');
         Route::get('leave-management/summary/filtered', [LeaveController::class, 'summaryfilter'])->name('leave.summaryfilter');
 
         Route::put('travel-order/{TravelOrder}/accept', [TravelOrderController::class, 'accept'])->name('travel-order.accept');
         Route::put('travel-order/{TravelOrder}/reject', [TravelOrderController::class, 'reject'])->name('travel-order.reject');
+        Route::put('travel-order/{TravelOrder}/return', [TravelOrderController::class, 'returnToUser'])->name('travel-order.return');
         Route::get('travel-order-management', [TravelOrderController::class, 'userindex'])->name('usertravelorder.index');
         Route::post('travel-order-management/create', [TravelOrderController::class, 'storeUserTravelOrder'])->name('userTravelOrder.storeUserTravelOrder');
+        Route::put('travel-order-management/{TravelOrder}/update', [TravelOrderController::class, 'updateUserTravelOrder'])->name('userTravelOrder.update');
         Route::get('travel-order/{TravelOrder}/print', [TravelOrderController::class, 'print'])->name('travelorder.print');
 
         Route::post('msd-management/travel-order/advance/', [TravelOrderController::class, 'advance'])->name('travel-order.advance');
@@ -418,6 +436,7 @@ Route::group(['middleware' => 'auth'], function () {
 
         Route::put('travel-order/{TravelOrder}/accept', [TravelOrderController::class, 'accept'])->name('travel-order.accept');
         Route::put('travel-order/{TravelOrder}/reject', [TravelOrderController::class, 'reject'])->name('travel-order.reject');
+        Route::put('travel-order/{TravelOrder}/return', [TravelOrderController::class, 'returnToUser'])->name('travel-order.return');
         Route::get('travel-order-management', [TravelOrderController::class, 'userindex'])->name('usertravelorder.index');
         Route::post('travel-order-management/create', [TravelOrderController::class, 'storeUserTravelOrder'])->name('userTravelOrder.storeUserTravelOrder');
 
@@ -441,4 +460,65 @@ Route::group(['middleware' => 'auth'], function () {
         'msd-management/encoder/travel-order/{travel_order}/update-approve2',
         [TravelOrderController::class, 'updateApprove2']
     )->name('travel-order.update-approve2');
+
+    /*
+    |----------------------------------------------------------------------
+    | Memorandum Routes
+    |----------------------------------------------------------------------
+    */
+    Route::prefix('memorandums')->name('memorandums.')->group(function () {
+        Route::get('/', [App\Http\Controllers\MemorandumController::class, 'index'])->name('index');
+        Route::get('/inbox', [App\Http\Controllers\MemorandumController::class, 'inbox'])->name('inbox');
+        Route::get('/create', [App\Http\Controllers\MemorandumController::class, 'create'])->name('create');
+        Route::post('/', [App\Http\Controllers\MemorandumController::class, 'store'])->name('store');
+
+        // AJAX - Must be before /{id} routes
+        Route::post('/suggest-subjects', [App\Http\Controllers\MemorandumController::class, 'suggestSubjects'])->name('suggest-subjects');
+
+        Route::get('/{id}', [App\Http\Controllers\MemorandumController::class, 'show'])->name('show');
+        Route::get('/{id}/edit', [App\Http\Controllers\MemorandumController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [App\Http\Controllers\MemorandumController::class, 'update'])->name('update');
+        Route::delete('/{id}', [App\Http\Controllers\MemorandumController::class, 'destroy'])->name('destroy');
+
+        // Preview and Generate
+        Route::get('/{id}/preview', [App\Http\Controllers\MemorandumController::class, 'preview'])->name('preview');
+        Route::get('/{id}/export-pdf', [App\Http\Controllers\MemorandumController::class, 'exportPdf'])->name('export-pdf');
+
+        // Forward
+        Route::post('/{id}/forward', [App\Http\Controllers\MemorandumController::class, 'forward'])->name('forward');
+
+        // Downloads
+        Route::get('/{id}/download-docx', [App\Http\Controllers\MemorandumController::class, 'downloadDOCX'])->name('download-docx');
+        Route::get('/{id}/download-pdf', [App\Http\Controllers\MemorandumController::class, 'downloadPDF'])->name('download-pdf');
+
+        // Workflow Actions
+        Route::post('/{id}/submit-for-review', [App\Http\Controllers\MemorandumController::class, 'submitForReview'])->name('submit-for-review');
+        Route::post('/{id}/return-with-comments', [App\Http\Controllers\MemorandumController::class, 'returnWithComments'])->name('return-with-comments');
+        Route::post('/{id}/approve-and-forward', [App\Http\Controllers\MemorandumController::class, 'approveAndForward'])->name('approve-and-forward');
+        Route::post('/{id}/revise-after-return', [App\Http\Controllers\MemorandumController::class, 'reviseAfterReturn'])->name('revise-after-return');
+        Route::post('/{id}/add-comment', [App\Http\Controllers\MemorandumController::class, 'addComment'])->name('add-comment');
+        Route::post('/{id}/update-edit-permissions', [App\Http\Controllers\MemorandumController::class, 'updateEditPermissions'])->name('update-edit-permissions');
+        Route::post('/{id}/edit-as-reviewer', [App\Http\Controllers\MemorandumController::class, 'editAsReviewer'])->name('edit-as-reviewer');
+
+        // Attachments
+        Route::post('/{id}/attachments/upload', [App\Http\Controllers\MemorandumController::class, 'uploadAttachment'])->name('attachments.upload');
+        Route::delete('/{memorandumId}/attachments/{attachmentId}', [App\Http\Controllers\MemorandumController::class, 'deleteAttachment'])->name('attachments.delete');
+        Route::get('/{memorandumId}/attachments/{attachmentId}/download', [App\Http\Controllers\MemorandumController::class, 'downloadAttachment'])->name('attachments.download');
+        Route::get('/{memorandumId}/attachments/{attachmentId}/preview', [App\Http\Controllers\MemorandumController::class, 'previewAttachment'])->name('attachments.preview');
+
+        // Notifications
+        Route::get('/notifications/get', [App\Http\Controllers\MemorandumController::class, 'getNotifications'])->name('notifications.get');
+        Route::post('/notifications/{id}/mark-read', [App\Http\Controllers\MemorandumController::class, 'markNotificationAsRead'])->name('notifications.mark-read');
+        Route::post('/notifications/mark-all-read', [App\Http\Controllers\MemorandumController::class, 'markAllNotificationsAsRead'])->name('notifications.mark-all-read');
+        Route::get('/notifications/all', [App\Http\Controllers\MemorandumController::class, 'allNotifications'])->name('notifications.all');
+    });
+
+    /*
+    |----------------------------------------------------------------------
+    | Admin: Recipient Presets
+    |----------------------------------------------------------------------
+    */
+    Route::prefix('admin')->name('admin.')->group(function () {
+        Route::resource('recipient-presets', App\Http\Controllers\Admin\RecipientPresetController::class);
+    });
 });

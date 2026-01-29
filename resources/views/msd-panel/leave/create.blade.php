@@ -76,6 +76,21 @@
                                                     </div>
                                                     <!-- /.input group -->
                                                 </div>
+
+                                                <div class="form-group row">
+                                                    <label class="col-sm-3">Half Day:</label>
+                                                    <div class="col-sm-9">
+                                                        <div class="custom-control custom-checkbox">
+                                                            <input type="checkbox" class="custom-control-input" id="is_half_day" name="is_half_day" value="1">
+                                                            <label class="custom-control-label" for="is_half_day">
+                                                                This is a half-day leave
+                                                            </label>
+                                                        </div>
+                                                        <small class="form-text text-muted">
+                                                            Check this if employee is only taking a half day off (AM or PM)
+                                                        </small>
+                                                    </div>
+                                                </div>
                                             </div>
 
                                             <!-- Dynamic 6.B Details (shown based on Leave Type) -->

@@ -78,6 +78,7 @@ class LeaveController extends Controller
       'daterange'             => $base['daterange'],
       'yearapplied'           => $date1,
       'userid'                => auth()->id(),
+      'is_half_day'           => $request->has('is_half_day') ? true : false,
       'location_within_ph'    => null,
       'location_abroad'       => null,
       'hospital_specify'      => null,
@@ -155,11 +156,11 @@ class LeaveController extends Controller
     // determine application year (stored yearapplied or derived from range start)
     $yearApplied = $Leave->yearapplied ?? Carbon::parse(explode(' - ', $Leave->daterange)[0])->year;
 
-    // count days
+    // count days (check if half-day)
     [$startDate, $endDate] = explode(' - ', $Leave->daterange);
     $date1  = new \Carbon\Carbon($startDate);
     $date2  = new \Carbon\Carbon($endDate);
-    $Count  = $date1->diffInDays($date2) + 1;
+    $Count  = $Leave->is_half_day ? 0.5 : ($date1->diffInDays($date2) + 1);
 
     $preview = $request->boolean('preview');
 
@@ -178,12 +179,51 @@ class LeaveController extends Controller
     return view('mails.leave.print', compact('Leave_types', 'Employee', 'Leave', 'Count', 'preview', 'signatory', 'leaveCredits'));
   }
 
+  public function download(\Illuminate\Http\Request $request, \App\Models\Leave $Leave)
+  {
+    return $this->downloadPDF($request, $Leave);
+  }
+
+  public function downloadPDF(\Illuminate\Http\Request $request, \App\Models\Leave $Leave)
+  {
+    ini_set('max_execution_time', '120');
+    ini_set('memory_limit', '256M');
+
+    $this->authorize('print', $Leave);
+
+    $Leave_types = \App\Models\Leave_Type::get();
+    $Employee = \App\Models\Employee::with('Office')->findOrFail($Leave->employeeid);
+
+    $yearApplied = $Leave->yearapplied ?? Carbon::parse(explode(' - ', $Leave->daterange)[0])->year;
+
+    [$startDate, $endDate] = explode(' - ', $Leave->daterange);
+    $date1 = new \Carbon\Carbon($startDate);
+    $date2 = new \Carbon\Carbon($endDate);
+    $Count = $Leave->is_half_day ? 0.5 : ($date1->diffInDays($date2) + 1);
+
+    $preview = $request->boolean('preview');
+    $Leave->load(['approvals', 'approvals.approver']);
+
+    $set = \App\Models\SetLeaveSignatory::where('sectionid', $Employee->sectionid)->first();
+    $signatory = $set ? \App\Models\LeaveSignatory::with('Employee1', 'Employee2', 'Employee3')->find($set->leavesignatoryid) : null;
+
+    $leaveCredits = $this->buildLeaveCredits($Employee->id, $yearApplied, $Leave_types, $Leave->leaveid, $Count);
+
+    $pdf = \PDF::loadView('mails.leave.print', compact('Leave_types', 'Employee', 'Leave', 'Count', 'preview', 'signatory', 'leaveCredits'))
+      ->setPaper('a4')->setWarnings(false);
+
+    return $pdf->download('Leave_' . $Employee->lastname . '_' . date('Ymd') . '.pdf');
+  }
+
 
 
   public function accept(Leave $Leave)
   {
     try {
       $this->authorize('accept', $Leave);
+
+      // Eager load relationships
+      $Leave->load(['Employee', 'Leave_Type']);
 
       $approver = Employee::where('email', auth()->user()->email)->firstOrFail();
 
@@ -197,10 +237,16 @@ class LeaveController extends Controller
       $step = null;
       if ($signatory->approver1 == $approver->id && !$Leave->is_approve1 && !$Leave->is_rejected1) {
         $step = 1;
-        $Leave->update(['is_approve1' => true]);
+        $Leave->update([
+            'is_approve1' => true,
+            'approve1_at' => now()
+        ]);
       } elseif ($signatory->approver2 == $approver->id && $Leave->is_approve1 && !$Leave->is_approve2 && !$Leave->is_rejected2) {
         $step = 2;
-        $updateFields = ['is_approve2' => true];
+        $updateFields = [
+            'is_approve2' => true,
+            'approve2_at' => now()
+        ];
         // If recommendation is not 'for_disapproval', set to 'for_approval'
         if ($Leave->recommendation !== 'for_disapproval') {
           $updateFields['recommendation'] = 'for_approval';
@@ -208,7 +254,68 @@ class LeaveController extends Controller
         $Leave->update($updateFields);
       } elseif ($signatory->approver3 == $approver->id && $Leave->is_approve1 && $Leave->is_approve2 && !$Leave->is_approve3 && !$Leave->is_rejected3) {
         $step = 3;
-        $Leave->update(['is_approve3' => true]);
+        $Leave->update([
+            'is_approve3' => true,
+            'approve3_at' => now()
+        ]);
+
+        // Update employee's leave balance based on the approved Leave record
+        $employee = $Leave->Employee;
+        $leaveTypeObj = $Leave->Leave_Type;
+        $leaveType = strtolower($leaveTypeObj->leave_type ?? '');
+
+        \Log::info("Approver 3 approval - Leave ID: {$Leave->id}, Leave Type: {$leaveType}");
+        \Log::info("Leave Type Object: " . json_encode($leaveTypeObj));
+        \Log::info("Vacation Balance in Leave record: {$Leave->vacation_balance}");
+        \Log::info("Sick Balance in Leave record: {$Leave->sick_balance}");
+
+        if ($employee) {
+          // Calculate days from daterange for fallback
+          [$startDate, $endDate] = explode(' - ', $Leave->daterange);
+          $start = Carbon::parse($startDate);
+          $end = Carbon::parse($endDate);
+          $daysToDeduct = $Leave->is_half_day ? 0.5 : ($start->diffInDays($end) + 1);
+
+          // Use the balance calculated by Approver 1 (saved in vacation_balance/sick_balance)
+          // If not set by Approver 1, auto-calculate
+          if (str_contains($leaveType, 'vacation')) {
+            $oldBalance = $employee->vacation_leave_balance ?? 0;
+            // Treat 0 as null (ignore if Approver 1 accidentally set 0)
+            $newBalance = ($Leave->vacation_balance !== null && $Leave->vacation_balance > 0)
+              ? $Leave->vacation_balance
+              : max(0, $oldBalance - $daysToDeduct);
+            $employee->update(['vacation_leave_balance' => $newBalance]);
+            \Log::info("Vacation leave balance updated: Employee {$employee->id}, Old: {$oldBalance}, New: {$newBalance}, Source: " . (($Leave->vacation_balance !== null && $Leave->vacation_balance > 0) ? 'Approver1-edited' : 'Auto-calculated'));
+          } elseif (str_contains($leaveType, 'sick')) {
+            $oldBalance = $employee->sick_leave_balance ?? 0;
+            // Treat 0 as null (ignore if Approver 1 accidentally set 0)
+            $newBalance = ($Leave->sick_balance !== null && $Leave->sick_balance > 0)
+              ? $Leave->sick_balance
+              : max(0, $oldBalance - $daysToDeduct);
+            $employee->update(['sick_leave_balance' => $newBalance]);
+            \Log::info("Sick leave balance updated: Employee {$employee->id}, Old: {$oldBalance}, New: {$newBalance}, Source: " . (($Leave->sick_balance !== null && $Leave->sick_balance > 0) ? 'Approver1-edited' : 'Auto-calculated'));
+          } elseif (str_contains($leaveType, 'forced') || str_contains($leaveType, 'mandatory')) {
+            $oldBalance = $employee->force_leave_balance ?? 0;
+            $newBalance = max(0, $oldBalance - $daysToDeduct);
+            $employee->update(['force_leave_balance' => $newBalance]);
+            \Log::info("Force leave balance updated: Employee {$employee->id}, Old: {$oldBalance}, New: {$newBalance}, Days: {$daysToDeduct}");
+          } elseif (str_contains($leaveType, 'special privilege')) {
+            $oldBalance = $employee->special_privilege_leave_balance ?? 0;
+            $newBalance = max(0, $oldBalance - $daysToDeduct);
+            $employee->update(['special_privilege_leave_balance' => $newBalance]);
+            \Log::info("Special privilege leave balance updated: Employee {$employee->id}, Old: {$oldBalance}, New: {$newBalance}, Days: {$daysToDeduct}");
+          } elseif (str_contains($leaveType, 'solo parent')) {
+            $oldBalance = $employee->solo_parent_leave_balance ?? 0;
+            $newBalance = max(0, $oldBalance - $daysToDeduct);
+            $employee->update(['solo_parent_leave_balance' => $newBalance]);
+            \Log::info("Solo parent leave balance updated: Employee {$employee->id}, Old: {$oldBalance}, New: {$newBalance}, Days: {$daysToDeduct}");
+          } elseif (str_contains($leaveType, 'wellness')) {
+            $oldBalance = $employee->wellness_leave_balance ?? 0;
+            $newBalance = max(0, $oldBalance - $daysToDeduct);
+            $employee->update(['wellness_leave_balance' => $newBalance]);
+            \Log::info("Wellness leave balance updated: Employee {$employee->id}, Old: {$oldBalance}, New: {$newBalance}, Days: {$daysToDeduct}");
+          }
+        }
       }
 
       if (!$step) return back()->with('message', 'You are not the active approver for this request.');
@@ -241,7 +348,11 @@ class LeaveController extends Controller
       return back()->with('message', 'Leave Successfully Approved!');
     } catch (\Throwable $e) {
       report($e);
-      return back()->with('message', 'Error approving leave.');
+      \Log::error('Leave approval error: ' . $e->getMessage(), [
+        'leave_id' => $Leave->id,
+        'trace' => $e->getTraceAsString()
+      ]);
+      return back()->with('error', 'Error approving leave: ' . $e->getMessage());
     }
   }
 
@@ -249,28 +360,95 @@ class LeaveController extends Controller
 
 
 
-  public function reject(Leave $Leave)
+  public function reject(Request $request, Leave $Leave)
   {
     $this->authorize('reject', $Leave);
+
+    $request->validate([
+        'rejection_reason' => 'required|string|max:1000',
+    ]);
+
     $LeaveSignatories = LeaveSignatory::get();
     $Employee = Employee::where('email', '=', auth()->user()->email)->get()->first();
+    $rejectionReason = $request->rejection_reason;
+
     foreach ($LeaveSignatories as $LeaveSignatory) {
       if ($LeaveSignatory->approver1 == $Employee->id && auth()->check()) {
         $formfields['is_rejected1'] = true;
+        $formfields['rejected1_reason'] = $rejectionReason;
         $Leave->update($formfields);
         return back()->with('message', 'Leave Successfully Rejected!');
       }
       if ($LeaveSignatory->approver2 == $Employee->id && auth()->check()) {
         $formfields['is_rejected2'] = true;
+        $formfields['rejected2_reason'] = $rejectionReason;
         $Leave->update($formfields);
         return back()->with('message', 'Leave Successfully Rejected!');
       }
       if ($LeaveSignatory->approver3 == $Employee->id && auth()->check()) {
         $formfields['is_rejected3'] = true;
+        $formfields['rejected3_reason'] = $rejectionReason;
         $Leave->update($formfields);
         return back()->with('message', 'Leave Successfully Rejected!');
       }
     }
+  }
+
+  /**
+   * Return Leave to user for revision
+   */
+  public function returnToUser(Request $request, Leave $Leave)
+  {
+    $this->authorize('reject', $Leave);
+
+    $request->validate([
+        'return_reason' => 'required|string|max:1000',
+    ]);
+
+    $applicant = Employee::findOrFail($Leave->employeeid);
+    $set = SetLeaveSignatory::where('sectionid', $applicant->sectionid)->first();
+    if (!$set) return back()->with('message', 'No signatory set found.');
+
+    $signatory = LeaveSignatory::find($set->leavesignatoryid);
+    if (!$signatory) return back()->with('message', 'Signatory record missing.');
+
+    $Employee = Employee::where('email', '=', auth()->user()->email)->first();
+    $returnReason = $request->return_reason;
+
+    // Reset all previous approvals and set as returned by current approver
+    if ($signatory->approver1 == $Employee->id && auth()->check()) {
+      $Leave->update([
+        'is_approve1' => false,
+        'is_returned1' => true,
+        'returned1_reason' => $returnReason,
+        'approve1_at' => null,
+      ]);
+      return back()->with('message', 'Leave returned to user for revision!');
+    }
+
+    if ($signatory->approver2 == $Employee->id && auth()->check()) {
+      $Leave->update([
+        'is_approve2' => false,
+        'is_returned2' => true,
+        'returned2_reason' => $returnReason,
+        'approve2_at' => null,
+        // Keep approver 1 approval - do NOT reset approve1_at
+      ]);
+      return back()->with('message', 'Leave returned to user for revision!');
+    }
+
+    if ($signatory->approver3 == $Employee->id && auth()->check()) {
+      $Leave->update([
+        'is_approve3' => false,
+        'is_returned3' => true,
+        'returned3_reason' => $returnReason,
+        'approve3_at' => null,
+        // Keep approver 1 and 2 approvals - do NOT reset their approve_at
+      ]);
+      return back()->with('message', 'Leave returned to user for revision!');
+    }
+
+    return back()->with('message', 'You are not the assigned approver for this Leave.');
   }
 
   /**
@@ -441,6 +619,7 @@ class LeaveController extends Controller
       'yearapplied'           => $date1,
       'userid'                => auth()->id(),
       'employeeid'            => $employee->id,
+      'is_half_day'           => $request->has('is_half_day') ? true : false,
       'location_within_ph'    => null,
       'location_abroad'       => null,
       'hospital_specify'      => null,
@@ -490,9 +669,169 @@ class LeaveController extends Controller
       $payload['commutation']          = 'requested';
     }
 
+    // Calculate number of days
+    [$startDate, $endDate] = array_pad(explode(' -', $base['daterange']), 2, null);
+    $start = Carbon::parse($startDate);
+    $end = Carbon::parse($endDate);
+    $daysRequested = $payload['is_half_day'] ? 0.5 : ($start->diffInDays($end) + 1);
+
+    // Check leave balance before creating
+    if (str_contains($typeText, 'vacation')) {
+      $currentBalance = $employee->vacation_leave_balance ?? 0;
+      if ($daysRequested > $currentBalance) {
+        return back()->with('error', "Insufficient vacation leave balance! You have {$currentBalance} days available but requesting {$daysRequested} days.");
+      }
+    } elseif (str_contains($typeText, 'sick')) {
+      $currentBalance = $employee->sick_leave_balance ?? 0;
+      if ($daysRequested > $currentBalance) {
+        return back()->with('error', "Insufficient sick leave balance! You have {$currentBalance} days available but requesting {$daysRequested} days.");
+      }
+    }
+
     Leave::create($payload);
 
     return back()->with('message', 'Leave Added Successfully');
+  }
+
+  public function updateUserLeave(Request $request, Leave $Leave)
+  {
+    $this->authorize('update', $Leave);
+
+    $base = $request->validate([
+      'leaveid'   => 'required|exists:leave_type,id',
+      'daterange' => 'required',
+    ]);
+
+    $leaveType = Leave_Type::findOrFail($base['leaveid']);
+    $typeText  = Str::lower(trim($leaveType->leave_type ?? ''));
+
+    // Parse date range (expects "start - end")
+    $data = $base['daterange'];
+    [$startDate, $endDate] = array_pad(explode(' -', $data), 2, null);
+    $date1 = Carbon::parse($startDate)->format('Y');
+    $date2 = Carbon::parse($endDate)->format('Y');
+
+    if ($date1 !== $date2) {
+      return back()->with('DateError1', 'Error');
+    }
+
+    // Defaults
+    $payload = [
+      'leaveid'               => $base['leaveid'],
+      'daterange'             => $base['daterange'],
+      'yearapplied'           => $date1,
+      'is_half_day'           => $request->has('is_half_day') ? true : false,
+      'location_within_ph'    => null,
+      'location_abroad'       => null,
+      'hospital_specify'      => null,
+      'outpatient_specify'    => null,
+      'study_masters_degree'  => 0,
+      'study_bar_board'       => 0,
+      'other_monetization'    => 0,
+      'other_terminal_leave'  => 0,
+      'commutation'           => 'not_requested',
+    ];
+
+    // Conditional validation + assignment per leave type
+    if (Str::contains($typeText, ['vacation', 'mandatory', 'forced', 'special privilege'])) {
+      $extra = $request->validate([
+        'location_choice'     => 'required|in:within_ph,abroad',
+        'location_within_ph'  => 'required_if:location_choice,within_ph|nullable|string',
+        'location_abroad'     => 'required_if:location_choice,abroad|nullable|string',
+      ]);
+      if ($extra['location_choice'] === 'within_ph') {
+        $payload['location_within_ph'] = $extra['location_within_ph'];
+      } else {
+        $payload['location_abroad'] = $extra['location_abroad'];
+      }
+    } elseif (Str::contains($typeText, 'sick')) {
+      $extra = $request->validate([
+        'sick_choice'        => 'required|in:hospital,outpatient',
+        'hospital_specify'   => 'required_if:sick_choice,hospital|nullable|string',
+        'outpatient_specify' => 'required_if:sick_choice,outpatient|nullable|string',
+      ]);
+      if ($extra['sick_choice'] === 'hospital') {
+        $payload['hospital_specify'] = $extra['hospital_specify'];
+      } else {
+        $payload['outpatient_specify'] = $extra['outpatient_specify'];
+      }
+    } elseif (Str::contains($typeText, 'study')) {
+      $extra = $request->validate([
+        'study_choice' => 'required|in:masters,bar_board',
+      ]);
+      $payload['study_masters_degree'] = $extra['study_choice'] === 'masters' ? 1 : 0;
+      $payload['study_bar_board']      = $extra['study_choice'] === 'bar_board' ? 1 : 0;
+    } elseif (Str::contains($typeText, ['others', 'other'])) {
+      $extra = $request->validate([
+        'others_choice' => 'required|in:monetization,terminal',
+      ]);
+      $payload['other_monetization']   = $extra['others_choice'] === 'monetization' ? 1 : 0;
+      $payload['other_terminal_leave'] = $extra['others_choice'] === 'terminal' ? 1 : 0;
+      $payload['commutation']          = 'requested';
+    }
+
+    // Calculate number of days for the updated leave
+    $employee = Employee::findOrFail($Leave->employeeid);
+    [$startDate, $endDate] = array_pad(explode(' -', $base['daterange']), 2, null);
+    $start = Carbon::parse($startDate);
+    $end = Carbon::parse($endDate);
+    $daysRequested = $payload['is_half_day'] ? 0.5 : ($start->diffInDays($end) + 1);
+
+    // Check leave balance before updating (only if not already approved)
+    if (!$Leave->is_approve3) {
+      if (str_contains($typeText, 'vacation')) {
+        $currentBalance = $employee->vacation_leave_balance ?? 0;
+        if ($daysRequested > $currentBalance) {
+          return back()->with('error', "Insufficient vacation leave balance! You have {$currentBalance} days available but requesting {$daysRequested} days.");
+        }
+      } elseif (str_contains($typeText, 'sick')) {
+        $currentBalance = $employee->sick_leave_balance ?? 0;
+        if ($daysRequested > $currentBalance) {
+          return back()->with('error', "Insufficient sick leave balance! You have {$currentBalance} days available but requesting {$daysRequested} days.");
+        }
+      }
+    }
+
+    // Check if this is a returned request (being resubmitted after revision)
+    $wasReturned1 = $Leave->is_returned1;
+    $wasReturned2 = $Leave->is_returned2;
+    $wasReturned3 = $Leave->is_returned3;
+
+    // Clear return flags when user resubmits
+    if ($wasReturned1 || $wasReturned2 || $wasReturned3) {
+      $payload['is_returned1'] = false;
+      $payload['returned1_reason'] = null;
+      $payload['is_returned2'] = false;
+      $payload['returned2_reason'] = null;
+      $payload['is_returned3'] = false;
+      $payload['returned3_reason'] = null;
+
+      // If returned by approver3, reset to approver3's turn (keep approver1 and approver2 approved)
+      if ($wasReturned3) {
+        // Keep approver1 and approver2 approvals
+        $payload['is_approve1'] = true;
+        $payload['is_approve2'] = true;
+        $payload['is_approve3'] = false;
+      }
+      // If returned by approver2, reset to approver2's turn (keep approver1 approved)
+      elseif ($wasReturned2) {
+        // Keep approver1 approval
+        $payload['is_approve1'] = true;
+        $payload['is_approve2'] = false;
+        $payload['is_approve3'] = false;
+      }
+      // If returned by approver1, reset to approver1's turn
+      elseif ($wasReturned1) {
+        // Reset all approvals
+        $payload['is_approve1'] = false;
+        $payload['is_approve2'] = false;
+        $payload['is_approve3'] = false;
+      }
+    }
+
+    $Leave->update($payload);
+
+    return back()->with('message', 'Leave Updated Successfully');
   }
 
   public function getLeaveYearApproved()
@@ -611,7 +950,8 @@ class LeaveController extends Controller
       [$start, $end] = explode(' - ', $leave->daterange);
       $d1 = new Carbon($start);
       $d2 = new Carbon($end);
-      $days = $d1->diffInDays($d2) + 1;
+      // Check if half-day leave
+      $days = $leave->is_half_day ? 0.5 : ($d1->diffInDays($d2) + 1);
       $usedPerType[$leave->leaveid] = ($usedPerType[$leave->leaveid] ?? 0) + $days;
     }
 

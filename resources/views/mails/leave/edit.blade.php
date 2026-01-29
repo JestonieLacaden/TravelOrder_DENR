@@ -46,7 +46,13 @@
                                 $startDate = \Carbon\Carbon::createFromFormat('m/d/Y', trim($dates[0]));
                                 $endDate = \Carbon\Carbon::createFromFormat('m/d/Y', trim($dates[1]));
                                 $dayCount = $endDate->diffInDays($startDate) + 1;
-                                echo trim($dates[0]) . ' - ' . trim($dates[1]) . ' (' . $dayCount . ' Day' . ($dayCount != 1 ? 's' : '') . ')';
+
+                                // Show 0.5 Day if half-day leave
+                                if ($Leave->is_half_day) {
+                                    echo trim($dates[0]) . ' - ' . trim($dates[1]) . ' (0.5 Day)';
+                                } else {
+                                    echo trim($dates[0]) . ' - ' . trim($dates[1]) . ' (' . $dayCount . ' Day' . ($dayCount != 1 ? 's' : '') . ')';
+                                }
                                 } catch (\Exception $e) {
                                 echo $daterange;
                                 }
@@ -90,37 +96,47 @@
                                 }
                                 }
 
+                                // If half-day leave, use 0.5 instead of full day count
+                                if ($Leave->is_half_day) {
+                                    $dayCount = 0.5;
+                                }
+
                                 // Check leave type
                                 $leaveTypeName = strtolower(optional($Leave->leave_type)->leave_type ?? '');
                                 $isVacationLeave = strpos($leaveTypeName, 'vacation') !== false;
                                 $isSickLeave = strpos($leaveTypeName, 'sick') !== false;
+
+                                // Get employee's leave balances from employee table
+                                $employee = $Leave->Employee;
+                                $employeeVacationBalance = $employee ? ($employee->vacation_leave_balance ?? 0) : 0;
+                                $employeeSickBalance = $employee ? ($employee->sick_leave_balance ?? 0) : 0;
                                 @endphp
 
                                 <tr>
                                     <td><strong>Total Earned</strong></td>
                                     <td class="text-center">
-                                        <input type="number" name="vacation_earned" min="0" step="0.01" class="form-control form-control-sm text-center vacation-earned" value="{{ $Leave->vacation_earned && $Leave->vacation_earned > 0 ? $Leave->vacation_earned : '' }}" placeholder="0" {{ !$isVacationLeave ? 'disabled' : '' }}>
+                                        <input type="text" name="vacation_earned" class="form-control form-control-sm text-center vacation-earned" value="{{ number_format($employeeVacationBalance, 3, '.', '') }}" placeholder="0.000" {{ !$isVacationLeave ? 'disabled' : '' }} pattern="[0-9]+(\.[0-9]{1,3})?">
                                     </td>
                                     <td class="text-center">
-                                        <input type="number" name="sick_earned" min="0" step="0.01" class="form-control form-control-sm text-center sick-earned" value="{{ $Leave->sick_earned && $Leave->sick_earned > 0 ? $Leave->sick_earned : '' }}" placeholder="0" {{ !$isSickLeave ? 'disabled' : '' }}>
+                                        <input type="text" name="sick_earned" class="form-control form-control-sm text-center sick-earned" value="{{ number_format($employeeSickBalance, 3, '.', '') }}" placeholder="0.000" {{ !$isSickLeave ? 'disabled' : '' }} pattern="[0-9]+(\.[0-9]{1,3})?">
                                     </td>
                                 </tr>
                                 <tr>
                                     <td><strong>Less this Application</strong></td>
                                     <td class="text-center">
-                                        <input type="number" name="vacation_this_app" min="0" step="0.5" class="form-control form-control-sm text-center vacation-this-app" value="{{ $isVacationLeave ? $dayCount : 0 }}" placeholder="0" readonly>
+                                        <input type="text" name="vacation_this_app" class="form-control form-control-sm text-center vacation-this-app" value="{{ number_format($isVacationLeave ? $dayCount : 0, 3, '.', '') }}" placeholder="0.000" readonly pattern="[0-9]+(\\.[ 0-9]{1,3})?">
                                     </td>
                                     <td class="text-center">
-                                        <input type="number" name="sick_this_app" min="0" step="0.5" class="form-control form-control-sm text-center sick-this-app" value="{{ $isSickLeave ? $dayCount : 0 }}" placeholder="0" readonly>
+                                        <input type="text" name="sick_this_app" class="form-control form-control-sm text-center sick-this-app" value="{{ number_format($isSickLeave ? $dayCount : 0, 3, '.', '') }}" placeholder="0.000" readonly pattern="[0-9]+(\\.[ 0-9]{1,3})?">
                                     </td>
                                 </tr>
                                 <tr class="bg-light">
                                     <td><strong>Balance</strong></td>
                                     <td class="text-center">
-                                        <input type="number" name="vacation_balance" min="0" step="0.5" class="form-control form-control-sm text-center vacation-balance" value="{{ $Leave->vacation_balance ?? 0 }}" placeholder="0" readonly>
+                                        <input type="text" name="vacation_balance" class="form-control form-control-sm text-center vacation-balance" value="{{ number_format($Leave->vacation_balance ?? 0, 3, '.', '') }}" placeholder="0.000" readonly pattern="[0-9]+(\\.[ 0-9]{1,3})?">
                                     </td>
                                     <td class="text-center">
-                                        <input type="number" name="sick_balance" min="0" step="0.5" class="form-control form-control-sm text-center sick-balance" value="{{ $Leave->sick_balance ?? 0 }}" placeholder="0" readonly>
+                                        <input type="text" name="sick_balance" class="form-control form-control-sm text-center sick-balance" value="{{ number_format($Leave->sick_balance ?? 0, 3, '.', '') }}" placeholder="0.000" readonly pattern="[0-9]+(\\.[ 0-9]{1,3})?">
                                     </td>
                                 </tr>
                             </tbody>
@@ -134,11 +150,11 @@
                     <div class="row">
                         <div class="col-md-4">
                             <label class="text-sm">Days with Pay:</label>
-                            <input type="number" name="days_with_pay" min="0" class="form-control form-control-sm" value="{{ $Leave->days_with_pay && $Leave->days_with_pay > 0 ? $Leave->days_with_pay : '' }}" placeholder="0">
+                            <input type="number" name="days_with_pay" min="0" step="0.5" class="form-control form-control-sm" value="{{ $Leave->days_with_pay && $Leave->days_with_pay > 0 ? $Leave->days_with_pay : '' }}" placeholder="0">
                         </div>
                         <div class="col-md-4">
                             <label class="text-sm">Days without Pay:</label>
-                            <input type="number" name="days_without_pay" min="0" class="form-control form-control-sm" value="{{ $Leave->days_without_pay && $Leave->days_without_pay > 0 ? $Leave->days_without_pay : '' }}" placeholder="0">
+                            <input type="number" name="days_without_pay" min="0" step="0.5" class="form-control form-control-sm" value="{{ $Leave->days_without_pay && $Leave->days_without_pay > 0 ? $Leave->days_without_pay : '' }}" placeholder="0">
                         </div>
                         <div class="col-md-4">
                             <label class="text-sm">Others (Specify):</label>
@@ -198,32 +214,46 @@
 
         // Auto-compute balance when Total Earned changes
         function computeBalance() {
-            // Vacation Leave Balance (2 decimals max, no trailing .0)
+            // Vacation Leave Balance (3 decimals)
             const vacationEarned = parseFloat(modal.find('.vacation-earned').val()) || 0;
             const vacationThisApp = parseFloat(modal.find('.vacation-this-app').val()) || 0;
             let vacationBalance = Math.max(0, vacationEarned - vacationThisApp);
-            // Round to 2 decimals and remove trailing zeros
-            vacationBalance = Math.round(vacationBalance * 100) / 100;
-            modal.find('.vacation-balance').val(vacationBalance);
+            // Round to 3 decimals
+            vacationBalance = Math.round(vacationBalance * 1000) / 1000;
+            modal.find('.vacation-balance').val(vacationBalance.toFixed(3));
 
-            // Sick Leave Balance (2 decimals max, no trailing .0)
+            // Sick Leave Balance (3 decimals)
             const sickEarned = parseFloat(modal.find('.sick-earned').val()) || 0;
             const sickThisApp = parseFloat(modal.find('.sick-this-app').val()) || 0;
             let sickBalance = Math.max(0, sickEarned - sickThisApp);
-            // Round to 2 decimals and remove trailing zeros
-            sickBalance = Math.round(sickBalance * 100) / 100;
-            modal.find('.sick-balance').val(sickBalance);
+            // Round to 3 decimals
+            sickBalance = Math.round(sickBalance * 1000) / 1000;
+            modal.find('.sick-balance').val(sickBalance.toFixed(3));
+
+            console.log('Balance computed - Vacation:', vacationBalance, 'Sick:', sickBalance);
+
+            // Validate: Don't allow saving if balance is 0 or negative (must fix the earned/this_app values)
+            if (vacationBalance < 0 || sickBalance < 0) {
+                console.warn('WARNING: Balance cannot be negative!');
+            }
         }
 
-        // Attach change event to Total Earned fields
-        modal.find('.vacation-earned, .sick-earned').on('input change', function() {
+        // Attach change event to Total Earned AND Less this Application fields
+        modal.find('.vacation-earned, .sick-earned, .vacation-this-app, .sick-this-app').on('input change', function() {
             computeBalance();
         });
 
-        // Compute balance on modal show
-        modal.on('show.bs.modal', function() {
+        // Initial computation when document is ready
+        setTimeout(function() {
             computeBalance();
-            resetToOriginal();
+        }, 100);
+
+        // Compute balance on modal show (after fields are populated)
+        modal.on('shown.bs.modal', function() {
+            setTimeout(function() {
+                computeBalance();
+                captureOriginalValues(); // Capture after balance is computed
+            }, 200);
             hasChanges = false;
             isSubmitting = false;
             pendingHide = false;
@@ -281,7 +311,19 @@
             warningModal.modal('hide');
         });
 
-        form.on('submit', function() {
+        form.on('submit', function(e) {
+            // Validate before submit: warn if balance becomes 0 (likely a mistake)
+            const vacationBalance = parseFloat(modal.find('.vacation-balance').val()) || 0;
+            const sickBalance = parseFloat(modal.find('.sick-balance').val()) || 0;
+
+            if (vacationBalance === 0 || sickBalance === 0) {
+                const confirmSubmit = confirm('WARNING: One of the balances is 0. This will cause the employee balance to become 0. Are you sure the values are correct?');
+                if (!confirmSubmit) {
+                    e.preventDefault();
+                    return false;
+                }
+            }
+
             isSubmitting = true;
         });
     });

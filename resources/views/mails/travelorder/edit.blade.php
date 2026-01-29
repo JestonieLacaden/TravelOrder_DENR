@@ -1,5 +1,5 @@
 <!-- Edit Travel Order Date Range (PENRO only) -->
-<div class="modal fade" id="edit-travelorder-modal-lg">
+<div class="modal fade" id="edit-travelorder-modal-lg" style="display: none;">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
@@ -75,7 +75,17 @@
 
 @push('scripts')
 <script>
-    (function() {
+    $(document).ready(function() {
+        const MODAL = '#edit-travelorder-modal-lg';
+        const DATE_INPUT = '#to-daterange';
+
+        // Remove any existing event handlers to prevent duplicates on refresh
+        $(MODAL).off('show.bs.modal hidden.bs.modal');
+
+        // Make sure modal is hidden on page load
+        $(MODAL).modal('hide');
+
+        (function() {
         const MODAL = '#edit-travelorder-modal-lg';
         const DATE_INPUT = '#to-daterange';
 
@@ -112,37 +122,57 @@
             // point form to /.../{id}
             $form.attr('action', `${base}/${id}`);
 
-            // fill read-only fields
+            // Fill read-only fields
             $('#to-employee').val(emp);
             $('#to-destination').val(dest);
             $('#to-purpose').val(purp);
 
-            // init daterangepicker with current value
+            // Clean up existing daterangepicker before creating new one
             const $dr = $(DATE_INPUT);
             if ($dr.data('daterangepicker')) {
-                $dr.data('daterangepicker').remove();
-                $dr.off('.daterangepicker');
+                try {
+                    $dr.data('daterangepicker').remove();
+                } catch(e) {}
             }
+            $dr.off('.daterangepicker');
 
-            let start = null
-                , end = null;
-            if (range.includes(' - ')) {
+            let start = moment();
+            let end = moment();
+
+            if (range && range.includes(' - ')) {
                 const [s, e] = range.split(' - ');
-                start = parseFlex(s);
-                end = parseFlex(e);
+                const startParsed = parseFlex(s);
+                const endParsed = parseFlex(e);
+
+                if (startParsed && startParsed.isValid()) {
+                    start = startParsed;
+                }
+                if (endParsed && endParsed.isValid()) {
+                    end = endParsed;
+                }
             }
 
-            $dr.val(range);
+            // Initialize daterangepicker with initial dates
             $dr.daterangepicker({
-                autoUpdateInput: true
+                autoUpdateInput: false
                 , parentEl: MODAL
-                , startDate: start || moment()
-                , endDate: end || moment()
+                , startDate: start
+                , endDate: end
                 , locale: {
                     format: 'MM/DD/YYYY'
                     , cancelLabel: 'Clear'
                 }
+            }, function(chosenStart, chosenEnd) {
+                // Callback when user selects a date
+                $dr.val(chosenStart.format('MM/DD/YYYY') + ' - ' + chosenEnd.format('MM/DD/YYYY'));
             });
+
+            // Set the initial value after a short delay to ensure picker is ready
+            if (range && start.isValid() && end.isValid()) {
+                setTimeout(function() {
+                    $dr.val(start.format('MM/DD/YYYY') + ' - ' + end.format('MM/DD/YYYY'));
+                }, 50);
+            }
 
             const baseline = normalizeRange(range);
 
@@ -151,6 +181,9 @@
                 const changed = current.length && current !== baseline;
                 $updateBtn.prop('disabled', !changed);
             }
+
+            // Remove old event handlers before adding new ones to prevent duplicates
+            $dr.off('apply.daterangepicker cancel.daterangepicker input change blur');
             $dr.on('apply.daterangepicker cancel.daterangepicker input change blur', toggleButtons);
             toggleButtons();
         });
@@ -158,7 +191,17 @@
         $(MODAL).on('hidden.bs.modal', function() {
             const $form = $(this).find('#editTOForm');
             const $dr = $(DATE_INPUT);
-            if ($dr.data('daterangepicker')) $dr.data('daterangepicker').remove();
+
+            // Clean up daterangepicker properly
+            if ($dr.data('daterangepicker')) {
+                try {
+                    $dr.data('daterangepicker').remove();
+                } catch(e) {
+                    console.log('Error removing daterangepicker on close:', e);
+                }
+            }
+            $dr.off('.daterangepicker');
+
             // Reset form safely
             if ($form[0]) $form[0].reset();
             $form.find('.js-update-penro').prop('disabled', true);

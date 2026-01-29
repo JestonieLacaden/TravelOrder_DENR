@@ -46,6 +46,9 @@
                             </button>
                             @endcan
                             @can('reject', $TravelOrder)
+                            <button type="button" title="Return to User" class="btn btn-warning return-to-btn" data-to-id="{{ $TravelOrder->id }}" data-employee-name="{{ $TravelOrder->employee->firstname }} {{ $TravelOrder->employee->lastname }}">
+                                <i class="fas fa-undo"></i>
+                            </button>
                             <button type="button" title="Reject Travel Order" class="btn btn-danger reject-to-btn" data-to-id="{{ $TravelOrder->id }}" data-employee-name="{{ $TravelOrder->employee->firstname }} {{ $TravelOrder->employee->lastname }}">
                                 <i class="fas fa-times"></i>
                             </button>
@@ -72,6 +75,9 @@
                             </button>
                             @endcan
                             @can('reject', $TravelOrder)
+                            <button type="button" title="Return to User" class="btn btn-warning return-to-btn" data-to-id="{{ $TravelOrder->id }}" data-employee-name="{{ $TravelOrder->employee->firstname }} {{ $TravelOrder->employee->lastname }}">
+                                <i class="fas fa-undo"></i>
+                            </button>
                             <button type="button" title="Reject Travel Order" class="btn btn-danger reject-to-btn" data-to-id="{{ $TravelOrder->id }}" data-employee-name="{{ $TravelOrder->employee->firstname }} {{ $TravelOrder->employee->lastname }}">
                                 <i class="fas fa-times"></i>
                             </button>
@@ -97,13 +103,13 @@
                             </button>
                             @endcan
                             @can('reject', $TravelOrder)
+                            <button type="button" title="Return to User" class="btn btn-warning return-to-btn" data-to-id="{{ $TravelOrder->id }}" data-employee-name="{{ $TravelOrder->employee->firstname }} {{ $TravelOrder->employee->lastname }}">
+                                <i class="fas fa-undo"></i>
+                            </button>
                             <button type="button" title="Reject Travel Order" class="btn btn-danger reject-to-btn" data-to-id="{{ $TravelOrder->id }}" data-employee-name="{{ $TravelOrder->employee->firstname }} {{ $TravelOrder->employee->lastname }}">
                                 <i class="fas fa-times"></i>
                             </button>
                             @endcan
-                            <button class="btn btn-warning" title="Edit Date Range" data-toggle="modal" data-target="#edit-travelorder-modal-lg" data-id="{{ $TravelOrder->id }}" data-daterange="{{ $TravelOrder->daterange }}" data-employee="{{ $TravelOrder->employee->lastname.', '.$TravelOrder->employee->firstname.' '.$TravelOrder->employee->middlename }}" data-destination="{{ $TravelOrder->destinationoffice }}" data-purpose="{{ $TravelOrder->purpose }}" data-is-penro="1">
-                                <i class="fas fa-calendar-alt"></i>
-                            </button>
                         </td>
                     </tr>
                     @endif
@@ -134,7 +140,11 @@
                 @csrf
                 @method('PUT')
                 <div class="modal-body">
-                    You sure you want to reject Travel Order of <strong id="rejectEmployeeName"></strong>?
+                    <p>You sure you want to reject Travel Order of <strong id="rejectEmployeeName"></strong>?</p>
+                    <div class="form-group">
+                        <label for="rejectionReason">Reason for Rejection: <span class="text-danger">*</span></label>
+                        <textarea name="rejection_reason" id="rejectionReason" class="form-control" rows="4" placeholder="Please specify the reason for rejecting this travel order..." required></textarea>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
@@ -164,6 +174,36 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-success">Accept</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Single Reusable Return Modal -->
+<div class="modal fade" id="return-travelorder-modal">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h4 class="modal-title">Return Travel Order to User</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="POST" id="returnTravelOrderForm" enctype="multipart/form-data">
+                @csrf
+                @method('PUT')
+                <div class="modal-body">
+                    <p>You are about to return the Travel Order of <strong id="returnEmployeeName"></strong> for revision.</p>
+                    <p class="text-info"><i class="fas fa-info-circle"></i> The request will go back to the employee for corrections.</p>
+                    <div class="form-group">
+                        <label for="returnReason">Reason for Return: <span class="text-danger">*</span></label>
+                        <textarea name="return_reason" id="returnReason" class="form-control" rows="4" placeholder="Please specify what needs to be corrected or changed..." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning">Return to User</button>
                 </div>
             </form>
         </div>
@@ -209,6 +249,9 @@
             // Update modal content
             $('#rejectEmployeeName').text(employeeName);
 
+            // Clear the rejection reason textarea
+            $('#rejectionReason').val('');
+
             // Update form action
             var actionUrl = '{{ route("travel-order.reject", ":id") }}';
             actionUrl = actionUrl.replace(':id', toId);
@@ -216,6 +259,11 @@
 
             // Show modal
             $('#reject-travelorder-modal').modal('show');
+        });
+
+        // Clear rejection reason when modal is closed
+        $('#reject-travelorder-modal').on('hidden.bs.modal', function() {
+            $('#rejectionReason').val('');
         });
 
         // Handle accept button click - single modal for all
@@ -234,6 +282,32 @@
 
             // Show modal
             $('#accept-travelorder-modal').modal('show');
+        });
+
+        // Handle return button click - single modal for all
+        // Use delegated event to work with DataTables dynamically generated rows
+        $(document).on('click', '.return-to-btn', function() {
+            var toId = $(this).data('to-id');
+            var employeeName = $(this).data('employee-name');
+
+            // Update modal content
+            $('#returnEmployeeName').text(employeeName);
+
+            // Clear the return reason textarea
+            $('#returnReason').val('');
+
+            // Update form action
+            var actionUrl = '{{ route("travel-order.return", ":id") }}';
+            actionUrl = actionUrl.replace(':id', toId);
+            $('#returnTravelOrderForm').attr('action', actionUrl);
+
+            // Show modal
+            $('#return-travelorder-modal').modal('show');
+        });
+
+        // Clear return reason when modal is closed
+        $('#return-travelorder-modal').on('hidden.bs.modal', function() {
+            $('#returnReason').val('');
         });
     });
 

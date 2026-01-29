@@ -12,7 +12,7 @@
         {{ csrf_field() }}
         @method('DELETE')
         <div class="modal-body">
-          You sure you want to delete travel order of <b>{{ $TravelOrder->employee->firstname . ' ' . $TravelOrder->employee->middlename . ' ' . $TravelOrder->employee->lastname }}<b>?</div>
+          You sure you want to delete travel order of <b>{{ optional($TravelOrder->employee)->firstname . ' ' . optional($TravelOrder->employee)->middlename . ' ' . optional($TravelOrder->employee)->lastname }}<b>?</div>
       <div class="modal-footer">
           <button type="button" class="btn gray btn-default" data-dismiss="modal"> Cancel </button>
           @can('delete', $TravelOrder)
@@ -23,5 +23,4 @@
     </div>
   </div>
 </div>
-  
-  
+

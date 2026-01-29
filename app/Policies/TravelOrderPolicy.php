@@ -93,12 +93,29 @@ class TravelOrderPolicy
 
     public function update(User $user, TravelOrder $travelOrder)
     {
-        // Block if already acted on
-        if ($travelOrder->is_approve1 || $travelOrder->is_rejected1) {
+        // Check if approver1 was skipped (auto-forwarded)
+        $approver1Skipped = $travelOrder->is_approve1 && !$travelOrder->approve1_by;
+
+        // Allow edit if returned by any approver (for revision)
+        if ($travelOrder->is_returned1 || $travelOrder->is_returned2 || $travelOrder->is_returned3) {
+            // Allow owner to edit returned requests
+            $Employee = \App\Models\Employee::where('email', $user->email)->first();
+            if (!empty($Employee)) {
+                if ($travelOrder->employeeid == $Employee->id && $travelOrder->userid == $user->id) {
+                    return true;
+                }
+            }
+        }
+
+        // Block if any ACTUAL approval has been given or any rejection exists
+        // Allow edit if approver1 was skipped (no actual approval)
+        if (($travelOrder->is_approve1 && !$approver1Skipped) ||
+            $travelOrder->is_approve2 || $travelOrder->is_approve3 ||
+            $travelOrder->is_rejected1 || $travelOrder->is_rejected2 || $travelOrder->is_rejected3) {
             return false;
         }
 
-        // Optional: Admin roles (1 or 5) can update before first approval
+        // Admin roles (1 or 5) can update before any approval
         $roles = \App\Models\UserRole::where('userid', $user->id)->get();
         foreach ($roles as $role) {
             if ($role->roleid == '1' || $role->roleid == '5') {
@@ -106,19 +123,12 @@ class TravelOrderPolicy
             }
         }
 
-        // Allow approver1 to update before first approval/rejection
-        $approverEmp = \App\Models\Employee::where('email', $user->email)->first();
-        if (!$approverEmp) return false;
-
-        $reqEmp = \App\Models\Employee::find($travelOrder->employeeid);
-        if (!$reqEmp) return false;
-
-        $set = \App\Models\SetTravelOrderSignatory::where('sectionid', $reqEmp->sectionid)->first();
-        if (!$set) return false;
-
-        $sig = \App\Models\TravelOrderSignatory::find($set->travelordersignatoryid);
-        if ($sig && $sig->approver1 == $approverEmp->id) {
-            return ($user);
+        // Allow owner to update only before any approval
+        $Employee = \App\Models\Employee::where('email', $user->email)->first();
+        if (!empty($Employee)) {
+            if ($travelOrder->employeeid == $Employee->id && $travelOrder->userid == $user->id) {
+                return ($user);
+            }
         }
 
         return false;
@@ -153,28 +163,49 @@ class TravelOrderPolicy
      */
     public function delete(User $user, TravelOrder $travelOrder)
     {
+        // Check if approver1 was skipped (auto-forwarded)
+        $approver1Skipped = $travelOrder->is_approve1 && !$travelOrder->approve1_by;
+
+        // Allow delete if returned by any approver (for revision)
+        if ($travelOrder->is_returned1 || $travelOrder->is_returned2 || $travelOrder->is_returned3) {
+            // Allow owner to delete returned requests
+            $Employee = Employee::where('email', $user->email)->first();
+            if (!empty($Employee)) {
+                if ($travelOrder->employeeid == $Employee->id && $travelOrder->userid == $user->id) {
+                    return true;
+                }
+            }
+        }
+
+        // Block if any ACTUAL approval has been given or any rejection exists
+        // Allow delete if approver1 was skipped (no actual approval)
+        if (($travelOrder->is_approve1 && !$approver1Skipped) ||
+            $travelOrder->is_approve2 || $travelOrder->is_approve3 ||
+            $travelOrder->is_rejected1 || $travelOrder->is_rejected2 || $travelOrder->is_rejected3) {
+            return false;
+        }
 
         $Roles = UserRole::where('userid', '=', $user->id)->get();
 
-
         if (!empty($Roles)) {
-            if ($travelOrder->is_approve1 == false && $travelOrder->is_rejected1 == false) {
-                foreach ($Roles as $Role) {
-                    if ($Role->roleid == '1' || $Role->roleid == '5') {
-                        return ($user);
-                    }
+            // Admin roles can delete before any approval
+            foreach ($Roles as $Role) {
+                if ($Role->roleid == '1' || $Role->roleid == '5') {
+                    return ($user);
                 }
             }
 
             $Employee = Employee::where('email', '=', auth()->user()->email)->get()->first();
 
-
             if (!empty($Employee)) {
-                if ($travelOrder->employeeid == $Employee->id && $travelOrder->userid == auth()->user()->id && $travelOrder->is_approve1 == false && $travelOrder->is_rejected1 == false) {
+                // Owner can delete their own travel order only before any approval
+                if ($travelOrder->employeeid == $Employee->id && $travelOrder->userid == auth()->user()->id) {
                     return ($user);
                 }
             }
         }
+
+        return false;
     }
 
 

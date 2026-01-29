@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ config('app.name', 'Information System') }}</title>
+    <title> </title>
 
     {{--
     <!-- Google Font: Source Sans Pro -->
@@ -18,18 +18,19 @@
     <style>
         @page {
             size: A4;
-            margin: 18mm;
+            margin: 0;
         }
 
         html,
         body {
-            height: 100%;
+            height: auto;
+            overflow: visible;
         }
 
         body {
-            margin: 0;
+            margin: 10mm 35mm 5mm -5mm;
             font-family: "Times New Roman", serif;
-            line-height: 1.35;
+            line-height: 1.1;
             color: #000;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
@@ -39,6 +40,7 @@
             max-width: 210mm;
             margin: 0 auto;
             padding: 0;
+            page-break-after: avoid;
         }
 
         /* Header */
@@ -47,7 +49,7 @@
             grid-template-columns: 90px 1fr 90px;
             align-items: center;
             border-bottom: 2px solid #000;
-            padding-bottom: 8px;
+            padding-bottom: 4px;
         }
 
         .header img {
@@ -72,7 +74,7 @@
         .hdr-text p {
             margin: 0px;
             line-height: 1;
-            font-size: 18px;
+            font-size: 16px;
         }
 
         .hdr-text .office {
@@ -80,30 +82,31 @@
         }
 
         .hdr-text h3,
-        .hdr-text h2, 
+        .hdr-text h2,
         .hdr-travel-order {
 
             margin: 0;
             line-height: 1.2;
             font-weight: 100;
-            font-size: 18px;
+            font-size: 16px;
         }
 
 
         .hdr-travel-order {
-            margin-top: 6px;
+            margin-top: 2px;
             font-weight: 600
         }
 
         .travel-no {
             text-align: center;
-            font-size: 14px;
-            margin-top: 6px;
+            font-size: 13px;
+            margin-top: 2px;
         }
 
         /* Info grid */
         .section {
-            padding: 12px 0;
+            padding: 3px 0;
+            page-break-inside: avoid;
         }
 
         .section .title {
@@ -113,19 +116,19 @@
         .grid {
             display: grid;
             grid-template-columns: 26% 34% 18% 22%;
-            column-gap: 10px;
-            row-gap: 10px;
+            column-gap: 8px;
+            row-gap: 3px;
         }
 
         .label {
-            font-size: 18px
+            font-size: 16px
         }
 
         .field {
             font-weight: bold;
             border-bottom: 1px solid #000;
-            min-height: 22px;
-            padding: 2px 4px;
+            min-height: 18px;
+            padding: 1px 4px;
             text-align: left;
             align-self: anchor-center
         }
@@ -147,7 +150,7 @@
         .title {
             font-weight: bold;
             text-transform: uppercase;
-            margin: 8px 0 4px;
+            margin: 4px 0 2px;
         }
 
         .justify {
@@ -157,7 +160,7 @@
         /* Indent first paragraph inside .justify */
         .justify p.indent {
             text-indent: 36px;
-            margin: 0 0 0.8em 0;
+            margin: 0 0 0.4em 0;
         }
 
         /* Signatures */
@@ -165,12 +168,12 @@
             display: grid;
             grid-template-columns: 1fr 1fr;
             column-gap: 18px;
-            margin-top: 24px;
+            margin-top: 12px;
         }
 
         .sign-box {
             text-align: center;
-            padding-top: 36px;
+            padding-top: 18px;
             margin-left: 110px
         }
 
@@ -184,8 +187,16 @@
             font-weight: bold;
         }
 
+        .sign-name u {
+            display: inline-block;
+            text-decoration: none;
+            border-bottom: 1.4px solid #000;
+            padding-bottom: 5px;
+        }
+
         .sign-role {
             font-size: 14px;
+            margin-top: 5px;
         }
 
         /* signature */
@@ -197,12 +208,12 @@
         }
 
         .sig-img {
-            max-height: 60px;
+            max-height: 45px;
         }
 
         .sig-meta {
-            font-size: 12px;
-            line-height: 1.15;
+            font-size: 10px;
+            line-height: 1.1;
             color: #333;
             text-align: left;
         }
@@ -216,8 +227,8 @@
 
         /* Footer */
         .footer {
-            margin-top: 22px;
-            font-size: 13px;
+            margin-top: 280px;
+            font-size: 12px;
             text-align: center;
         }
 
@@ -255,19 +266,19 @@
                 <h3 class="office">{{ $officeHeader }}</h3>
                 @endif
                 <h3>Mamburao, Occidental Mindoro</h3>
-                
+
             </div>
 
             <!-- Bagong Pilipinas Logo -->
             <img src="{{ asset('images/bagongPilipinasLogo.png') }}" class="logoRight" alt="Bagong Pilipinas Logo">
         </div>
-        <h2 class="hdr-travel-order">TRAVEL ORDER</h2>
+        <h2 class="hdr-travel-order" style="margin-top: 15px;">TRAVEL ORDER</h2>
         <div class="travel-no"><span class="label">No.: </span><u><span class="mono">{{ $TravelOrdernumber->travelorderid }}</span></u></div>
 
 
 
         <!-- Info grid -->
-        <div class="section grid">
+        <div class="section grid" style="margin-top: 12px;">
             <div class="label">Name:</div>
             <div class="field">{{$Employee->firstname .' '. $Employee->middlename .' '. $Employee->lastname }}</div>
             <div class="label">Date:</div>
@@ -315,10 +326,10 @@
         </div>
 
         <!-- Certification -->
-        <div class="section">
+        <div class="section" style="margin-top: 10px;">
             <div class="title">Certification</div>
-            <div class="justify">
-                <p class="indent">
+            <div class="justify" style="margin-top: 10px;">
+                <p class="indent" style="margin-bottom: 15px;">
                     This is to certify that the travel is necessary and is connected with the functions of the
                     official/employee of the Div/Sec/Unit.
                 </p>
@@ -329,11 +340,34 @@
             $tz = config('app.timezone', 'Asia/Manila');
 
             $makeSigUrl = function ($emp) {
-            if (!$emp || empty($emp->signature_path)) return null;
-            $p = ltrim(str_replace('\\','/',$emp->signature_path), '/');
-            if (Storage::disk('public')->exists($p)) return Storage::url($p);
-            if (file_exists(public_path($p))) return asset($p);
-            return null;
+                if (!$emp || empty($emp->signature_path)) return null;
+                $p = ltrim(str_replace('\\','/',$emp->signature_path), '/');
+
+                // Check if it's already a full URL
+                if (preg_match('/^https?:\/\//i', $p)) return $p;
+
+                // First try: Laravel storage link (if exists)
+                if (file_exists(public_path('storage/' . $p))) {
+                    return asset('storage/' . $p);
+                }
+
+                // Second try: Direct storage access using Storage facade
+                if (Storage::disk('public')->exists($p)) {
+                    // Get the full path and convert to base64 data URL for guaranteed display
+                    $fullPath = storage_path('app/public/' . $p);
+                    if (file_exists($fullPath)) {
+                        $imageData = base64_encode(file_get_contents($fullPath));
+                        $mimeType = mime_content_type($fullPath);
+                        return 'data:' . $mimeType . ';base64,' . $imageData;
+                    }
+                }
+
+                // Fallback: try Storage URL
+                if (Storage::disk('public')->exists($p)) {
+                    return Storage::url($p);
+                }
+
+                return null;
             };
 
             $sigUrl1 = $makeSigUrl($approver1Emp);
@@ -348,14 +382,28 @@
             $off1 = $ap1 ? str_replace(':', "'", $ap1->format('P')) : null;
             $off2 = $ap2 ? str_replace(':', "'", $ap2->format('P')) : null;
             $off3 = $ap3 ? str_replace(':', "'", $ap3->format('P')) : null;
+
+            // Employee signature for pre-payment
+            $employeeSigUrl = null;
+            if ($TravelOrder->is_prepayment && $TravelOrder->employee_signature) {
+                $employeeSigUrl = $makeSigUrl($Employee);
+            }
             @endphp
 
 
 
             <div class="sign-row">
                 <div class="sign-box">
+                    <div style="font-weight: normal; font-size: 16px; text-align: left; margin-bottom: 5px; margin-left: -110px;">Recommending Approval:</div>
                     <div class="sig-block">
-                        <img src="{{ $sigUrl2 ?? asset('images/dummySign.png') }}" class="sig-img" draggable="false" oncontextmenu="return false;" onmousedown="return false;" onselectstart="return false;">
+                        @if($sigUrl2)
+                        <img src="{{ $sigUrl2 }}" class="sig-img" draggable="false" oncontextmenu="return false;" onmousedown="return false;" onselectstart="return false;" onerror="this.style.display='none';">
+                        @endif
+                        @php
+                        // Only show digital signature if approver2 actually approved (not auto-skipped)
+                        $hasApprover2 = !empty($approver2Name) && $approver2Name !== '' && $TravelOrder->approve2_by !== null;
+                        @endphp
+                        @if($hasApprover2)
                         <div class="sig-meta">
                             <div><strong>Digitally signed</strong> by</div>
                             <div>{{ $approver2Name }}</div>
@@ -364,14 +412,18 @@
                             <div>{{ $ap2->format('H:i:s') }} {{ $off2 }}</div>
                             @endif
                         </div>
+                        @endif
                     </div>
 
                     <div class="sign-name"><u>{{ $approver2Name }}</u></div>
                     <div class="sign-role">{{ $approver2Pos }}</div>
                 </div>
                 <div class="sign-box">
+                    <div style="font-weight: normal; font-size: 16px; text-align: left; margin-bottom: 5px; margin-left: -110px;">Approved:</div>
                     <div class="sig-block">
-                        <img src="{{ $sigUrl3 ?? asset('images/dummySign.png') }}" class="sig-img" draggable="false" oncontextmenu="return false;" onmousedown="return false;" onselectstart="return false;">
+                        @if($sigUrl3)
+                        <img src="{{ $sigUrl3 }}" class="sig-img" draggable="false" oncontextmenu="return false;" onmousedown="return false;" onselectstart="return false;" onerror="this.style.display='none';">
+                        @endif
                         <div class="sig-meta">
                             <div><strong>Digitally signed</strong> by</div>
                             <div>{{ $approver3Name ?? '' }}</div>
@@ -387,9 +439,14 @@
             </div>
 
             <!-- Middle Signer (Section Chief) - between Certification and Authorization -->
+            <!-- Show if Section Chief exists -->
+            @if($approver1Emp)
             <div style="margin-top: 20px; text-align: center;">
                 <div class="sig-block" style="display: inline-flex; align-items: flex-start; gap: 8px; max-width: 300px; margin: 0 auto;">
-                    <img src="{{ $sigUrl1 ?? asset('images/dummySign.png') }}" style="max-width: 60px; height: auto;" draggable="false" oncontextmenu="return false;" onmousedown="return false;" onselectstart="return false;">
+                    @if($sigUrl1)
+                    <img src="{{ $sigUrl1 }}" style="max-width: 60px; height: auto;" draggable="false" oncontextmenu="return false;" onmousedown="return false;" onselectstart="return false;" onerror="this.style.display='none';">
+                    @endif
+                    @if($TravelOrder->approve1_by)
                     <div style="font-size: 9px; color: #555; text-align: left;">
                         <div><strong>Digitally signed</strong> by</div>
                         <div>{{ $approver1Name }}</div>
@@ -398,15 +455,17 @@
                         <div>{{ $ap1->format('H:i:s') }} {{ $off1 }}</div>
                         @endif
                     </div>
+                    @endif
                 </div>
             </div>
+            @endif
         </div>
 
         <!-- Authorization -->
-        <div class="section">
+        <div class="section" style="margin-top: 20px;">
             <div class="title">Authorization</div>
-            <div class="justify">
-                <p class="indent">I hereby authorize the Accountant to deduct the corresponding amount of the unliquidated
+            <div class="justify" style="margin-top: 10px;">
+                <p class="indent" style="margin-bottom: 15px;">I hereby authorize the Accountant to deduct the corresponding amount of the unliquidated
                     cash advance from my succeeding salary for my failure to liquidate this travel within the
                     prescribed thirty-day period upon return to my permanent official station pursuant to item
                     5.1.3 Circular 97-002 dated February 10, 1997 and sec. 16 EO No. 248 dated May 29, 1995.</p>
@@ -414,6 +473,11 @@
 
             <div class="sign-row" style="grid-template-columns: 1fr; justify-items: end;">
                 <div class="sign-box" style="max-width: 320px; margin: 0;">
+                    @if($TravelOrder->is_prepayment && $employeeSigUrl)
+                    <div style="text-align: right; margin-bottom: 5px;">
+                        <img src="{{ $employeeSigUrl }}" style="max-width: 120px; height: auto; display: inline-block;" draggable="false" oncontextmenu="return false;" onmousedown="return false;" onselectstart="return false;" onerror="this.style.display='none';">
+                    </div>
+                    @endif
                     <div class="sign-name" style="text-align: right;"><u>{{ $Employee->firstname .' '. $Employee->middlename .' '. $Employee->lastname }}</u></div>
                     <div class="sign-role" style="text-align: center;">Official/Employee</div>
                 </div>

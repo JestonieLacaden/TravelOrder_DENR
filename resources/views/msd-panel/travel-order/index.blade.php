@@ -145,11 +145,11 @@
                                     @foreach($TravelOrders as $TravelOrder)
 
                                     <tr>
-                                        <td>{{ $TravelOrder->employee->firstname .' '. $TravelOrder->employee->lastname}}</td>
+                                        <td>{{ optional($TravelOrder->employee)->firstname .' '. optional($TravelOrder->employee)->lastname}}</td>
                                         <td>{{ $TravelOrder->daterange }}</td>
                                         <td>{{ $TravelOrder->destinationoffice }}</td>
                                         <td>{{ $TravelOrder->purpose }}</td>
-                                        <td>{{ $TravelOrder->user->username }}</td>
+                                        <td>{{ optional($TravelOrder->user)->username }}</td>
 
                                         <td>
                                             @if($TravelOrder->is_approve1 == true)

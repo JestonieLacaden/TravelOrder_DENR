@@ -10,12 +10,12 @@ use Illuminate\Support\Facades\Storage;
 
 class LeaveSignatoryController extends Controller
 {
-    
-    public function index() 
+
+    public function index()
     {
 
         $this->authorize('viewany', \App\Models\LeaveSignatory::class);
-        
+
         $Employees = Employee::orderby('lastname','asc')->get();
         $Signatories = LeaveSignatory::with('Employee1','Employee2', 'Employee3')->get();
         return view('msd-panel.leave-signatory.index',compact('Employees', 'Signatories'));
@@ -64,13 +64,26 @@ class LeaveSignatoryController extends Controller
 
 
     public function destroy($LeaveSignatory) {
- 
+
         $Signatory = LeaveSignatory::where('id','=',$LeaveSignatory)->get()->first();
         $this->authorize('delete', $Signatory);
 
-     
+        // Delete signature files if they exist and are unique to this signatory
+        foreach ([1, 2, 3] as $i) {
+            $column = "signature{$i}_path";
+            $path = $Signatory->{$column};
+
+            if ($path && Storage::disk('public')->exists($path)) {
+                // Only delete if it starts with 'signatures/leave' (signatory-specific uploads)
+                // Don't delete if it's from 'signatures/' (employee's own signature)
+                if (str_starts_with($path, 'signatures/leave/')) {
+                    Storage::disk('public')->delete($path);
+                }
+            }
+        }
+
         $Signatory->delete();
-        
+
         return back()->with('message', "Signatory Deleted Successfully!");
 
     }

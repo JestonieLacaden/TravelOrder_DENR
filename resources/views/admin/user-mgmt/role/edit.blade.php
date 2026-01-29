@@ -53,8 +53,11 @@
                             <select name="roleid[]" id="roleid[]" multiple="multiple" class="form-control select2" data-placeholder="Choose Role" style="width: 100%;">
                          
                                 @foreach($Roles as $Role)            
-                            
-                                      <option value = "{{ $Role->id }} ">{{ $Role->rolename }}</option>
+                                      @php
+                                        // Check if this role is already assigned to the user
+                                        $isSelected = $UserRoles->contains('roleid', $Role->id);
+                                      @endphp
+                                      <option value="{{ $Role->id }}" {{ $isSelected ? 'selected' : '' }}>{{ $Role->rolename }}</option>
                               
                               @endforeach
                             </select>

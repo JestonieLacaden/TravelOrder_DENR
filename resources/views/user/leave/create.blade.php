@@ -29,6 +29,75 @@
 
                                         {{ csrf_field() }}
                                         <div class="card-body">
+
+                                            <!-- Leave Balance Display -->
+                                            <div class="row mb-3">
+                                                <div class="col-md-6 balance-card" id="vacation-balance-card" style="display:none;">
+                                                    <div class="info-box bg-success">
+                                                        <span class="info-box-icon"><i class="fas fa-umbrella-beach"></i></span>
+                                                        <div class="info-box-content">
+                                                            <span class="info-box-text">Vacation Leave Balance</span>
+                                                            <span class="info-box-number">{{ number_format($Employee->vacation_leave_balance ?? 0, 3) }} days</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6 balance-card" id="sick-balance-card" style="display:none;">
+                                                    <div class="info-box bg-info">
+                                                        <span class="info-box-icon"><i class="fas fa-notes-medical"></i></span>
+                                                        <div class="info-box-content">
+                                                            <span class="info-box-text">Sick Leave Balance</span>
+                                                            <span class="info-box-number">{{ number_format($Employee->sick_leave_balance ?? 0, 3) }} days</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="row mb-3">
+                                                <div class="col-md-6 balance-card" id="force-balance-card" style="display:none;">
+                                                    <div class="info-box bg-warning">
+                                                        <span class="info-box-icon"><i class="fas fa-calendar-times"></i></span>
+                                                        <div class="info-box-content">
+                                                            <span class="info-box-text">Force Leave</span>
+                                                            <span class="info-box-number">{{ number_format($Employee->force_leave_balance ?? 0, 3) }} days</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6 balance-card" id="special-balance-card" style="display:none;">
+                                                    <div class="info-box bg-primary">
+                                                        <span class="info-box-icon"><i class="fas fa-gift"></i></span>
+                                                        <div class="info-box-content">
+                                                            <span class="info-box-text">Special Privilege</span>
+                                                            <span class="info-box-number">{{ number_format($Employee->special_privilege_leave_balance ?? 0, 3) }} days</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="row mb-3">
+                                                <div class="col-md-6 balance-card" id="solo-balance-card" style="display:none;">
+                                                    <div class="info-box bg-secondary">
+                                                        <span class="info-box-icon"><i class="fas fa-user-friends"></i></span>
+                                                        <div class="info-box-content">
+                                                            <span class="info-box-text">Solo Parent Leave
+                                                                @if(!$Employee->solo_parent_eligible)
+                                                                    <span class="badge badge-danger">Not Eligible</span>
+                                                                @endif
+                                                            </span>
+                                                            <span class="info-box-number">{{ number_format($Employee->solo_parent_leave_balance ?? 0, 3) }} days</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6 balance-card" id="wellness-balance-card" style="display:none;">
+                                                    <div class="info-box bg-teal">
+                                                        <span class="info-box-icon"><i class="fas fa-heartbeat"></i></span>
+                                                        <div class="info-box-content">
+                                                            <span class="info-box-text">Wellness Leave</span>
+                                                            <span class="info-box-number">{{ number_format($Employee->wellness_leave_balance ?? 0, 3) }} days</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
                                             <div class="form-group row ">
                                                 <label class="col-sm-3" for="leaveid">Leave Type : <span class="text-danger">*</span></label>
                                                 <div class="col-sm-9">
@@ -54,6 +123,21 @@
                                                     <input type="text" name="daterange" id="daterange" class="form-control float-right">
                                                 </div>
                                                 <!-- /.input group -->
+                                            </div>
+
+                                            <div class="form-group row">
+                                                <label class="col-sm-3">Half Day:</label>
+                                                <div class="col-sm-9">
+                                                    <div class="custom-control custom-checkbox">
+                                                        <input type="checkbox" class="custom-control-input" id="is_half_day" name="is_half_day" value="1">
+                                                        <label class="custom-control-label" for="is_half_day">
+                                                            This is a half-day leave
+                                                        </label>
+                                                    </div>
+                                                    <small class="form-text text-muted">
+                                                        Check this if you're only taking a half day off (AM or PM)
+                                                    </small>
+                                                </div>
                                             </div>
 
 
@@ -476,6 +560,31 @@
                     resetAll();
                 });
             }
+
+            // Show/hide balance cards based on selected leave type
+            $('#leaveid').on('change', function() {
+                const selectedText = $(this).find('option:selected').data('text') || '';
+                const lowerText = selectedText.toLowerCase();
+
+                // Hide all balance cards first
+                $('.balance-card').hide();
+
+                // Show relevant balance card based on leave type
+                if (lowerText.includes('vacation')) {
+                    $('#vacation-balance-card').show();
+                } else if (lowerText.includes('sick')) {
+                    $('#sick-balance-card').show();
+                } else if (lowerText.includes('forced') || lowerText.includes('mandatory')) {
+                    $('#force-balance-card').show();
+                } else if (lowerText.includes('special privilege')) {
+                    $('#special-balance-card').show();
+                } else if (lowerText.includes('solo parent')) {
+                    $('#solo-balance-card').show();
+                } else if (lowerText.includes('wellness')) {
+                    $('#wellness-balance-card').show();
+                }
+            });
+
             // Prevent duplicate submission with loading state
             const leaveForm = document.getElementById('leave-form');
             const submitBtn = document.getElementById('submit-leave-btn');

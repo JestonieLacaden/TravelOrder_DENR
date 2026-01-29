@@ -9,7 +9,7 @@
             <div class="row mb-2">
             <div class="col-sm-6">
                 <h1 class="m-0">
-                Dasboard</h1>
+                Dashboard</h1>
             </div><!-- /.col -->
             <div class="col-sm-6">
                 <ol class="breadcrumb float-sm-right">
@@ -23,51 +23,86 @@
         <!-- /.content-header -->
         <section class="content">
             <div class="container-fluid">
+              <!-- Leave Balance Section -->
               <div class="row">
-                <div class="col-12">
-                  <div class="card  callout callout-info p-2">
-                   
-                    <div class="card-header">
-                     
-                      <h3 class="card-title"><i class="fas fa-calendar"></i> Upcoming Events
-                        @if(!empty($EventCount))
-                        <span class="badge badge-success right">{{ $EventCount }}</span>
-                        @endif
-                        </span></h3>
-                      <div class="card-tools">
-                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
-                          <i class="fas fa-minus"></i>
-                        </button>
-                      </div>
-                    
+                <div class="col-md-3">
+                  <div class="small-box bg-success">
+                    <div class="inner">
+                      <h3>{{ number_format(auth()->user()->Employee->vacation_leave_balance ?? 0, 3) }}</h3>
+                      <p>Vacation Leave</p>
                     </div>
-                    <div class="card-body p-0">
-                      <ul class="nav nav-pills flex-column">
-                        <li class="nav-item">
-                          @foreach ($Events as $Event)
-                    
-                        Posted : <i>[{{ $Event->created_at->diffForHumans() }}]</i>  <br>
-                        
-                        <span class="text-bold">Event Information : </span>{{ $Event->date }} - {{$Event->subject}} 
-                        @if(!empty($Event->attachment))
-                        <a href="{{ route('eventattachment.view', [$Event->id])}}" target="_blank"  class="text-primary"> <i class="fas fa-paperclip">Attachment</i></a>
-                        @endif
-                       <span class="text-xs">by : {{ $Event->user->username }}</span> <br>
-                        @if(!empty($Event->remarks))
-                        <span class="text-bold">Remarks : </span><i>{{$Event->remarks}}</i><br>
-                        @endif
-                        <div class="dropdown-divider"></div>
-                        @endforeach
-                          
-                        </li>
-          
-                        
-                      </ul>
+                    <div class="icon">
+                      <i class="fas fa-umbrella-beach"></i>
                     </div>
-                
-                    <!-- /.card-body -->
                   </div>
-                    
+                </div>
+                <div class="col-md-3">
+                  <div class="small-box bg-info">
+                    <div class="inner">
+                      <h3>{{ number_format(auth()->user()->Employee->sick_leave_balance ?? 0, 3) }}</h3>
+                      <p>Sick Leave</p>
+                    </div>
+                    <div class="icon">
+                      <i class="fas fa-notes-medical"></i>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="small-box bg-warning">
+                    <div class="inner">
+                      <h3>{{ number_format(auth()->user()->Employee->force_leave_balance ?? 0, 3) }}</h3>
+                      <p>Force Leave</p>
+                    </div>
+                    <div class="icon">
+                      <i class="fas fa-calendar-times"></i>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="small-box bg-primary">
+                    <div class="inner">
+                      <h3>{{ number_format(auth()->user()->Employee->special_privilege_leave_balance ?? 0, 3) }}</h3>
+                      <p>Special Privilege</p>
+                    </div>
+                    <div class="icon">
+                      <i class="fas fa-gift"></i>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="small-box bg-secondary">
+                    <div class="inner">
+                      <h3>{{ number_format(auth()->user()->Employee->solo_parent_leave_balance ?? 0, 3) }}</h3>
+                      <p>Solo Parent Leave
+                        @if(auth()->user()->Employee && !auth()->user()->Employee->solo_parent_eligible)
+                          <span class="badge badge-danger">Not Eligible</span>
+                        @endif
+                      </p>
+                    </div>
+                    <div class="icon">
+                      <i class="fas fa-user-friends"></i>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="small-box bg-teal">
+                    <div class="inner">
+                      <h3>{{ number_format(auth()->user()->Employee->wellness_leave_balance ?? 0, 3) }}</h3>
+                      <p>Wellness Leave</p>
+                    </div>
+                    <div class="icon">
+                      <i class="fas fa-heartbeat"></i>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- End Leave Balance Section -->
+
+              {{-- Upcoming Events section removed --}}
+
 
                     {{-- <div class="callout callout-success">
                         <h5><i class="fas fa-info"></i> Notice :</h5>
@@ -82,7 +117,7 @@
                             <div class="card-header d-flex p-0">
                                 <div class="card-header">
                                     <h3 class="card-title">Task(s)</h3>
-                                </div>     
+                                </div>
                             </div>
                             <div class="card-body p-0">
                                 <table class="table">
@@ -140,7 +175,7 @@
                               </div>
                         </div>
                     </div>
-                    
+
                     <!-- /.col -->
                   </div> --}}
               </div>
@@ -148,5 +183,5 @@
 
 
     </div>
-   
+
 @endsection

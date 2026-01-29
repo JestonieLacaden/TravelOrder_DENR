@@ -45,7 +45,14 @@
             <div class="alert alert-success alert-dismissible">
               <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
               <h5><i class="icon fas fa-check"></i>    {{ session()->get('message') }}</h5>
-           
+
+            </div>
+            @endif
+
+            @if(session()->has('error'))
+            <div class="alert alert-danger alert-dismissible">
+              <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+              <h5><i class="icon fas fa-ban"></i> {{ session()->get('error') }}</h5>
             </div>
             @endif
 
@@ -58,7 +65,7 @@
              </ul>
             </div>
             @endif
-          
+
 
           <div class="card">
             <div class="card-header">
@@ -77,27 +84,27 @@
                 </thead>
                 <tbody>
                   @foreach($Leaves as $leaveType)
-                   
+
                       <tr>
                         <td class="text-center">{{ $leaveType->id}}</td>
                         <td>{{ $leaveType->leave_type}}</td>
-                        <td class="text-center">{{ $leaveType->available}}</td> 
-                        <td class="text-center">{{ $leaveType->updated_at->diffForHumans()}}</td>         
-                             <td class="text-center">   
+                        <td class="text-center">{{ $leaveType->available}}</td>
+                        <td class="text-center">{{ $leaveType->updated_at->diffForHumans()}}</td>
+                             <td class="text-center">
                           @can('update' ,$leaveType)
                              <button type="button" class="btn btn-default" title="Delete" data-toggle="modal"  data-target="#edit-leave-modal-lg{{ $leaveType->id }} " data-backdrop="static" data-keyboard="false">
                               <i class="fas fa-edit"></i>
                              {{__('Edit')}}
-                            </button> 
+                            </button>
                            @endcan
-                      
-                
-                        </td> 
+
+
+                        </td>
                       </tr>
                        @include('msd-panel.leave-approver.edit')
-                    @endforeach   
+                    @endforeach
                 </tbody>
-                
+
               </table>
             </div>
             <!-- /.card-body -->
@@ -112,7 +119,7 @@
   </section>
   <!-- /.content -->
 </div>
-  
+
 
 {{-- @include('msd-panel.leave.create') --}}
 
@@ -141,32 +148,32 @@
         <script src="{{ asset('/plugins/datatables-buttons/js/buttons.colVis.min.js') }}"></script>
         <!-- bs-custom-file-input -->
         <script src="{{asset('plugins/bs-custom-file-input/bs-custom-file-input.min.js') }}"></script>
-     
+
             <script>
               $(function () {
                 bsCustomFileInput.init();
               });
               </script>
           <!-- Page specific script -->
-         
+
           <script>
             $(function () {
               $("#example1").DataTable({
                 "responsive": true, "lengthChange": false, "autoWidth": false,
-              
+
               }).buttons().container().appendTo('#example1_wrapper .col-md-6:eq(0)');
-           
+
             });
 
-          
+
           </script>
 
           <script>
             $(function () {
-              $('#daterange').daterangepicker()   
+              $('#daterange').daterangepicker()
             });
           </script>
-                    
+
 @include('partials.flashmessage')
 @endsection
 
@@ -176,11 +183,11 @@
  <!-- DataTables -->
  <link rel="stylesheet" href="{{asset('/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css') }}">
  <link rel="stylesheet" href="{{asset('/plugins/datatables-responsive/css/responsive.bootstrap4.min.css') }}">
- <link rel="stylesheet" href="{{asset('/plugins/datatables-buttons/css/buttons.bootstrap4.min.css') }}">  
+ <link rel="stylesheet" href="{{asset('/plugins/datatables-buttons/css/buttons.bootstrap4.min.css') }}">
 
 @endsection
 
 
-     
-  
+
+
 

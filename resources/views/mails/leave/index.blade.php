@@ -51,6 +51,9 @@
                             </button>
                             @endcan
                             @can('reject', $Leave)
+                            <button type="button" title="Return to User" class="btn btn-warning" data-toggle="modal" data-target="#return-leave-modal-lg{{ $Leave->id }} " data-backdrop="static" data-keyboard="false">
+                                <i class="fas fa-undo"></i> Return
+                            </button>
                             <button type="button" title="Reject Leave" class="btn btn-danger" data-toggle="modal" data-target="#reject-leave-modal-lg{{ $Leave->id }} " data-backdrop="static" data-keyboard="false">
                                 <i class="fas fa-times"></i> Reject
                             </button>
@@ -87,6 +90,9 @@
                             </button>
                             @endcan
                             @can('reject', $Leave)
+                            <button type="button" title="Return to User" class="btn btn-warning" data-toggle="modal" data-target="#return-leave-modal-lg{{ $Leave->id }} " data-backdrop="static" data-keyboard="false">
+                                <i class="fas fa-undo"></i> Return
+                            </button>
                             <button type="button" title="Reject Leave" class="btn btn-danger" data-toggle="modal" data-target="#reject-leave-modal-lg{{ $Leave->id }} " data-backdrop="static" data-keyboard="false">
                                 <i class="fas fa-times"></i> Reject
                             </button>
@@ -123,6 +129,9 @@
                             </button>
                             @endcan
                             @can('reject', $Leave)
+                            <button type="button" title="Return to User" class="btn btn-warning" data-toggle="modal" data-target="#return-leave-modal-lg{{ $Leave->id }} " data-backdrop="static" data-keyboard="false">
+                                <i class="fas fa-undo"></i> Return
+                            </button>
                             <button type="button" title="Reject Leave" class="btn btn-danger" data-toggle="modal" data-target="#reject-leave-modal-lg{{ $Leave->id }} " data-backdrop="static" data-keyboard="false">
                                 <i class="fas fa-times"></i> Reject
                             </button>
@@ -161,6 +170,7 @@
 @endcan
 @can('reject', $Leave)
 @include('mails.leave.reject')
+@include('mails.leave.return')
 @endcan
 @endforeach
 

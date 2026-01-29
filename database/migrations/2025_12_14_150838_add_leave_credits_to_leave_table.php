@@ -14,12 +14,12 @@ class AddLeaveCreditsToLeaveTable extends Migration
     public function up()
     {
         Schema::table('leave', function (Blueprint $table) {
-            $table->integer('vacation_earned')->nullable()->default(0)->comment('Vacation leave total earned - edited by Approver1');
-            $table->integer('vacation_this_app')->nullable()->default(0)->comment('Vacation leave for this application');
-            $table->integer('vacation_balance')->nullable()->default(0)->comment('Vacation leave balance');
-            $table->integer('sick_earned')->nullable()->default(0)->comment('Sick leave total earned - edited by Approver1');
-            $table->integer('sick_this_app')->nullable()->default(0)->comment('Sick leave for this application');
-            $table->integer('sick_balance')->nullable()->default(0)->comment('Sick leave balance');
+            $table->decimal('vacation_earned', 10, 3)->nullable()->default(0.000)->comment('Vacation leave total earned - edited by Approver1');
+            $table->decimal('vacation_this_app', 10, 3)->nullable()->default(0.000)->comment('Vacation leave for this application');
+            $table->decimal('vacation_balance', 10, 3)->nullable()->default(0.000)->comment('Vacation leave balance');
+            $table->decimal('sick_earned', 10, 3)->nullable()->default(0.000)->comment('Sick leave total earned - edited by Approver1');
+            $table->decimal('sick_this_app', 10, 3)->nullable()->default(0.000)->comment('Sick leave for this application');
+            $table->decimal('sick_balance', 10, 3)->nullable()->default(0.000)->comment('Sick leave balance');
         });
     }
 

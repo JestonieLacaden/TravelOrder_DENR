@@ -8,12 +8,17 @@
           </button>
         </div>
         <form  method="POST" action="{{ route('leave.reject',[ $Leave->id])}}" enctype="multipart/form-data">
-         
+
           {{ csrf_field() }}
           @method('PUT')
-         
+
           <div class="modal-body">
-             You sure you want to reject <i class="text-bold">{{ $Leave->leave_type->leave_type }} </i>of  <b>{{ $Leave->employee->firstname . ' ' . $Leave->employee->middlename . ' ' . $Leave->employee->lastname }}<b>?</div>
+             <p>You sure you want to reject <i class="text-bold">{{ $Leave->leave_type->leave_type }} </i>of  <b>{{ $Leave->employee->firstname . ' ' . $Leave->employee->middlename . ' ' . $Leave->employee->lastname }}</b>?</p>
+             <div class="form-group">
+                <label for="rejectionReason{{ $Leave->id }}">Reason for Rejection: <span class="text-danger">*</span></label>
+                <textarea name="rejection_reason" id="rejectionReason{{ $Leave->id }}" class="form-control" rows="4" placeholder="Please specify the reason for rejecting this leave request..." required></textarea>
+             </div>
+          </div>
           <div class="modal-footer">
               <button type="button" class="btn gray btn-default" data-dismiss="modal"> Cancel </button>
               @can('reject', $Leave)
@@ -23,5 +28,4 @@
       </form>
     </div>
   </div></div>
-  
-  
+

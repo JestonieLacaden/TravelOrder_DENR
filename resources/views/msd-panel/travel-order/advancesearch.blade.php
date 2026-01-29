@@ -64,15 +64,15 @@
                             <th class="text-center">Action</th>
                             </tr>
                         </thead>
-                        <tbody> 
+                        <tbody>
                              @foreach($TravelOrders as $TravelOrder)
-                   
+
                                 <tr>
-                                    <td>{{ $TravelOrder->employee->firstname .' '. $TravelOrder->employee->lastname}}</td>
+                                    <td>{{ optional($TravelOrder->employee)->firstname .' '. optional($TravelOrder->employee)->lastname}}</td>
                                     <td>{{ $TravelOrder->daterange }}</td>
                                     <td>{{ $TravelOrder->destinationoffice }}</td>
                                     <td>{{ $TravelOrder->purpose }}</td>
-                                    <td>{{ $TravelOrder->user->username }}</td>
+                                    <td>{{ optional($TravelOrder->user)->username }}</td>
 
                                 <td>
                                     @if($TravelOrder->is_approve1 == true)
@@ -81,7 +81,7 @@
                                                 @if($TravelOrder->is_rejected2 == false)
                                                     @foreach($ApprovedTravelOrders as $ApprovedTravelOrder)
                                                         @if($ApprovedTravelOrder->employeeid == $TravelOrder->id)
-                                                        <span class="bg-success p-2 rounded">Approved ( {{ $ApprovedTravelOrder->travelorderid}} )</span> 
+                                                        <span class="bg-success p-2 rounded">Approved ( {{ $ApprovedTravelOrder->travelorderid}} )</span>
                                                         @endif
                                                     @endforeach
                                                 @endif
@@ -90,22 +90,22 @@
                                                 @if ($TravelOrder->is_rejected2 == true)
                                                 <span class="bg-danger p-2 rounded">Rejected Final Approval</span>
                                                 @else
-                                                <span class="bg-warning p-2 rounded">Pending : 2nd Approval</span> 
-                                                @endif  
+                                                <span class="bg-warning p-2 rounded">Pending : 2nd Approval</span>
+                                                @endif
                                             @endif
-                                        @endif 
+                                        @endif
                                     @else
                                         @if ($TravelOrder->is_rejected1 == true)
                                          <span class="bg-danger p-2 rounded">Rejected First Approval</span>
                                         @else
                                          <span class="bg-warning p-2 rounded">Pending : 1st Approval</span>
-                                        @endif  
+                                        @endif
                                     @endif
                                 </td>
-                                
-                    
-                                <td class="text-center">   
-                                    
+
+
+                                <td class="text-center">
+
                                     @can('delete', $TravelOrder)
                                     <button type="button" class="btn btn-default" title="Delete" data-toggle="modal"  data-target="#delete-TravelOrder-modal-lg{{ $TravelOrder->id }} " data-backdrop="static" data-keyboard="false">
                                     <i class="fas fa-trash-alt"></i>
@@ -113,13 +113,13 @@
                                     </button>
                                     @endcan
                                     @can('print', $TravelOrder)
-                                    
+
                                     <a href="  {{ route('travelorder.print',[$TravelOrder->id]) }}" rel="noopener" target="_blank" class="btn btn-default"><i class="fas fa-print" ></i> Print</a>
                                     @endcan
-                                </td> 
+                                </td>
                             </tr>
-                    
-                        @endforeach  
+
+                        @endforeach
                     </tbody>
                  </table>
             </div>
@@ -151,26 +151,26 @@
         <script src="{{ asset('/plugins/datatables-buttons/js/buttons.colVis.min.js') }}"></script>
         <!-- bs-custom-file-input -->
         <script src="{{asset('plugins/bs-custom-file-input/bs-custom-file-input.min.js') }}"></script>
-     
+
             <script>
               $(function () {
                 bsCustomFileInput.init();
               });
               </script>
           <!-- Page specific script -->
-         
+
           <script>
             $(function () {
               $("#example1").DataTable({
                 "responsive": true, "lengthChange": false, "autoWidth": false,
-              
+
               }).buttons().container().appendTo('#example1_wrapper .col-md-6:eq(0)');
-           
+
             });
 
-          
+
           </script>
-                    
+
 @include('partials.flashmessage')
 @endsection
 
@@ -180,6 +180,6 @@
  <!-- DataTables -->
  <link rel="stylesheet" href="{{asset('/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css') }}">
  <link rel="stylesheet" href="{{asset('/plugins/datatables-responsive/css/responsive.bootstrap4.min.css') }}">
- <link rel="stylesheet" href="{{asset('/plugins/datatables-buttons/css/buttons.bootstrap4.min.css') }}">  
+ <link rel="stylesheet" href="{{asset('/plugins/datatables-buttons/css/buttons.bootstrap4.min.css') }}">
 
 @endsection

@@ -15,7 +15,7 @@
     <style>
         .sig {
             width: auto;
-            max-width: 70px;
+            max-width: 130px;
         }
 
         /* Use Arial as the document font for screen and print */
@@ -182,15 +182,58 @@ $a3 = optional($Leave->approvals->firstWhere('step', 3));
 $resolve = function ($p) {
 if (!$p) return null;
 $p = ltrim(str_replace('\\', '/', $p), '/');
-if (preg_match('/^https?:\/:\//i', $p)) return $p;
-if (str_starts_with($p, 'storage/')) return asset($p);
-return asset('storage/'.$p);
+if (preg_match('/^https?:\/\//i', $p)) return $p;
+
+// Try multiple path variations
+$pathsToTry = [
+    $p,                           // Original path
+    'signatures/' . basename($p), // Just filename in signatures folder
+    basename($p),                 // Just the filename
+];
+
+foreach ($pathsToTry as $tryPath) {
+    // Try Laravel storage link
+    if (file_exists(public_path('storage/' . $tryPath))) {
+        return asset('storage/' . $tryPath);
+    }
+
+    // Try direct storage access with base64
+    if (Storage::disk('public')->exists($tryPath)) {
+        $fullPath = storage_path('app/public/' . $tryPath);
+        if (file_exists($fullPath)) {
+            $imageData = base64_encode(file_get_contents($fullPath));
+            $mimeType = mime_content_type($fullPath);
+            return 'data:' . $mimeType . ';base64,' . $imageData;
+        }
+    }
+}
+
+return null;
+};
+
+// Get signatures from leave_approvals first, fallback to employee records
+$getSignature = function ($approval) use ($resolve) {
+    // Try approval's signature_path first
+    if (!empty($approval->signature_path)) {
+        $sig = $resolve($approval->signature_path);
+        if ($sig) return $sig;
+    }
+
+    // Fallback: get from employee record using approver_employee_id
+    if (!empty($approval->approver_employee_id)) {
+        $emp = \App\Models\Employee::find($approval->approver_employee_id);
+        if ($emp && !empty($emp->signature_path)) {
+            return $resolve($emp->signature_path);
+        }
+    }
+
+    return null;
 };
 
 $src = [
-1 => $resolve($a1->signature_path ?? null),
-2 => $resolve($a2->signature_path ?? null),
-3 => $resolve($a3->signature_path ?? null),
+1 => $getSignature($a1),
+2 => $getSignature($a2),
+3 => $getSignature($a3),
 ];
 
 $names = [
@@ -205,17 +248,42 @@ $positions = [
 3 => trim($a3->approver_position ?? ''),
 ];
 
-// Use stored edited values if available, otherwise use computed leaveCredits
+// Build display credits with proper half-day handling
+// Priority: Use manually edited values, but recalculate balance for half-day leaves
+
+// Check leave type to determine which column gets the 0.5 deduction
+$leaveTypeName = strtolower(optional($Leave->leave_type)->leave_type ?? '');
+$isVacationLeave = strpos($leaveTypeName, 'vacation') !== false;
+$isSickLeave = strpos($leaveTypeName, 'sick') !== false;
+
+// Get the "Less this Application" value
+// Only apply 0.5 to the matching leave type column
+if ($Leave->is_half_day) {
+    $vacationThisApp = $isVacationLeave ? 0.5 : 0;
+    $sickThisApp = $isSickLeave ? 0.5 : 0;
+} else {
+    $vacationThisApp = $Leave->vacation_this_app ?? ($leaveCredits['vacation']['this_app'] ?? 0);
+    $sickThisApp = $Leave->sick_this_app ?? ($leaveCredits['sick']['this_app'] ?? 0);
+}
+
+// Get Total Earned (use edited value if exists, otherwise computed)
+$vacationEarned = $Leave->vacation_earned ?? ($leaveCredits['vacation']['earned'] ?? 0);
+$sickEarned = $Leave->sick_earned ?? ($leaveCredits['sick']['earned'] ?? 0);
+
+// Calculate balance (always recalculate to ensure accuracy)
+$vacationBalance = max(0, $vacationEarned - $vacationThisApp);
+$sickBalance = max(0, $sickEarned - $sickThisApp);
+
 $displayCredits = [
 'vacation' => [
-'earned' => $Leave->vacation_earned ?? ($leaveCredits['vacation']['earned'] ?? 0),
-'this_app' => $Leave->vacation_this_app ?? ($leaveCredits['vacation']['this_app'] ?? 0),
-'balance' => $Leave->vacation_balance ?? ($leaveCredits['vacation']['balance'] ?? 0),
+'earned' => $vacationEarned,
+'this_app' => $vacationThisApp,
+'balance' => $vacationBalance,
 ],
 'sick' => [
-'earned' => $Leave->sick_earned ?? ($leaveCredits['sick']['earned'] ?? 0),
-'this_app' => $Leave->sick_this_app ?? ($leaveCredits['sick']['this_app'] ?? 0),
-'balance' => $Leave->sick_balance ?? ($leaveCredits['sick']['balance'] ?? 0),
+'earned' => $sickEarned,
+'this_app' => $sickThisApp,
+'balance' => $sickBalance,
 ],
 ];
 @endphp
@@ -292,7 +360,7 @@ $displayCredits = [
                                 <div class="col-sm-fill px-2 text-bold text-left">
                                     <div class="underline-block">
                                         @if(!empty($Leave->created_at))
-                                        <span class="underline-text">{{ $Leave->created_at }}</span>
+                                        <span class="underline-text">{{ \Carbon\Carbon::parse($Leave->created_at)->format('Y-m-d') }}</span>
                                         @else
                                         <span class="underline-text">&nbsp;</span>
                                         @endif
@@ -476,16 +544,23 @@ $displayCredits = [
                                 @php
                                 $applicantSig = '';
                                 if (!empty($Employee->signature_path)) {
-                                // Try different path formats
-                                if (filter_var($Employee->signature_path, FILTER_VALIDATE_URL)) {
-                                $applicantSig = $Employee->signature_path;
-                                } elseif (strpos($Employee->signature_path, 'storage/') === 0) {
-                                $applicantSig = asset($Employee->signature_path);
-                                } elseif (strpos($Employee->signature_path, '/storage/') === 0) {
-                                $applicantSig = asset($Employee->signature_path);
-                                } else {
-                                $applicantSig = asset('storage/' . $Employee->signature_path);
-                                }
+                                    $p = ltrim(str_replace('\\', '/', $Employee->signature_path), '/');
+
+                                    // Check if it's already a full URL
+                                    if (filter_var($p, FILTER_VALIDATE_URL)) {
+                                        $applicantSig = $p;
+                                    } elseif (file_exists(public_path('storage/' . $p))) {
+                                        // Laravel storage link exists
+                                        $applicantSig = asset('storage/' . $p);
+                                    } elseif (Storage::disk('public')->exists($p)) {
+                                        // Direct storage access with base64
+                                        $fullPath = storage_path('app/public/' . $p);
+                                        if (file_exists($fullPath)) {
+                                            $imageData = base64_encode(file_get_contents($fullPath));
+                                            $mimeType = mime_content_type($fullPath);
+                                            $applicantSig = 'data:' . $mimeType . ';base64,' . $imageData;
+                                        }
+                                    }
                                 }
                                 @endphp
                                 @if (!empty($applicantSig))
@@ -515,7 +590,7 @@ $displayCredits = [
                 7.A. CERTIFICATION OF LEAVE CREDITS
             </div>
             <div class="">
-                as of <u class="text-bold">{{ now() }}</u>
+                as of <u class="text-bold">{{ now()->format('Y-m-d') }}</u>
             </div>
             <div>
                 <table class="table table-bordered1 border-3 border-black ">
@@ -538,21 +613,33 @@ $displayCredits = [
                         </tr>
                         <tr>
                             <td class="p-0 m-0">Balance</td>
-                            <td class="p-0 m-0 text-center">{{ $displayCredits['vacation']['balance'] ?? 0 }}</td>
-                            <td class="p-0 m-0 text-center">{{ $displayCredits['sick']['balance'] ?? 0 }}</td>
+                            <td class="p-0 m-0 text-center">{{ number_format($displayCredits['vacation']['balance'] ?? 0, 3) }}</td>
+                            <td class="p-0 m-0 text-center">{{ number_format($displayCredits['sick']['balance'] ?? 0, 3) }}</td>
                         </tr>
                     </tbody>
 
                 </table>
             </div>
             <div class="text-center pt-2">
-                @if (!empty($src[1]))
-                <img src="{{ $src[1] }}" class="sig" onerror="this.style.display='none'">
-                @endif
-                <u>
-                    <div class="text-bold">{{ ($names[1] ?? '') !== '' ? $names[1] : '—' }}</div>
-                </u>
-                <div>{{ ($positions[1] ?? '') !== '' ? $positions[1] : '—' }}</div>
+                <div style="display: flex; justify-content: center; align-items: flex-start; gap: 10px;">
+                    <div style="text-align: center;">
+                        @if (!empty($src[1]))
+                        <img src="{{ $src[1] }}" class="sig" onerror="this.style.display='none'">
+                        @endif
+                        <u>
+                            <div class="text-bold">{{ ($names[1] ?? '') !== '' ? $names[1] : '—' }}</div>
+                        </u>
+                        <div>{{ ($positions[1] ?? '') !== '' ? $positions[1] : '—' }}</div>
+                    </div>
+                    @if($Leave->approve1_at)
+                    <div style="font-size: 9px; color: #666; text-align: left; padding-top: 5px;">
+                        <strong>Digitally signed by:</strong><br>
+                        <strong>{{ strtoupper($names[1] ?? '') }}</strong><br>
+                        <strong>Date: {{ \Carbon\Carbon::parse($Leave->approve1_at)->format('Y.m.d') }}</strong><br>
+                        <strong>{{ \Carbon\Carbon::parse($Leave->approve1_at)->format('H:i:s O') }}</strong>
+                    </div>
+                    @endif
+                </div>
             </div>
         </td>
         <td>
@@ -578,14 +665,29 @@ $displayCredits = [
             </div>
 
             <div class="text-center pt-4">
-                @if (!empty($src[2]))
-                <img src="{{ $src[2] }}" class="sig" onerror="this.style.display='none'">
-                @endif
-                <u>
-                    <div class="text-bold">{{ ($names[2] ?? '') !== '' ? $names[2] : '—' }}</div>
-                </u>
-
-                <div>{{ ($positions[2] ?? '') !== '' ? $positions[2] : '—' }}</div>
+                <div style="display: flex; justify-content: center; align-items: flex-start; gap: 10px;">
+                    <div style="text-align: center;">
+                        @if (!empty($src[2]))
+                        <img src="{{ $src[2] }}" class="sig" onerror="this.style.display='none'">
+                        @endif
+                        <u>
+                            <div class="text-bold">{{ ($names[2] ?? '') !== '' ? $names[2] : '—' }}</div>
+                        </u>
+                        <div>{{ ($positions[2] ?? '') !== '' ? $positions[2] : '—' }}</div>
+                    </div>
+                    @php
+                    // Check if approver2 actually approved (not auto-forwarded)
+                    $hasApprover2Signature = $Leave->approve2_at && !empty($names[2]) && $names[2] !== '—';
+                    @endphp
+                    @if($hasApprover2Signature)
+                    <div style="font-size: 9px; color: #666; text-align: left; padding-top: 5px;">
+                        <strong>Digitally signed by:</strong><br>
+                        <strong>{{ strtoupper($names[2] ?? '') }}</strong><br>
+                        <strong>Date: {{ \Carbon\Carbon::parse($Leave->approve2_at)->format('Y.m.d') }}</strong><br>
+                        <strong>{{ \Carbon\Carbon::parse($Leave->approve2_at)->format('H:i:s O') }}</strong>
+                    </div>
+                    @endif
+                </div>
             </div>
         </td>
     </tr>
@@ -600,7 +702,7 @@ $displayCredits = [
                         <div class="col-sm-2">
                             <div class="fixed-underline--short">
                                 @if(!empty($Leave->days_with_pay))
-                                <strong>{{ $Leave->days_with_pay }}</strong>
+                                <strong>{{ $Leave->is_half_day ? 0.5 : $Leave->days_with_pay }}</strong>
                                 @else
                                 &nbsp;
                                 @endif
@@ -664,13 +766,25 @@ $displayCredits = [
             </div>
 
             <div class="approver3-sign">
-                @if (!empty($src[3]))
-                <img src="{{ $src[3] }}" class="sig" onerror="this.style.display='none'">
-                @endif
-                <u>
-                    <div class="text-bold">{{ ($names[3] ?? '') !== '' ? $names[3] : '—' }}</div>
-                </u>
-                <div>{{ ($positions[3] ?? '') !== '' ? $positions[3] : '—' }}</div>
+                <div style="display: flex; justify-content: center; align-items: flex-start; gap: 10px;">
+                    <div style="text-align: center;">
+                        @if (!empty($src[3]))
+                        <img src="{{ $src[3] }}" class="sig" onerror="this.style.display='none'">
+                        @endif
+                        <u>
+                            <div class="text-bold">{{ ($names[3] ?? '') !== '' ? $names[3] : '—' }}</div>
+                        </u>
+                        <div>{{ ($positions[3] ?? '') !== '' ? $positions[3] : '—' }}</div>
+                    </div>
+                    @if($Leave->approve3_at)
+                    <div style="font-size: 9px; color: #666; text-align: left; padding-top: 5px;">
+                        <strong>Digitally signed by:</strong><br>
+                        <strong>{{ strtoupper($names[3] ?? '') }}</strong><br>
+                        <strong>Date: {{ \Carbon\Carbon::parse($Leave->approve3_at)->format('Y.m.d') }}</strong><br>
+                        <strong>{{ \Carbon\Carbon::parse($Leave->approve3_at)->format('H:i:s O') }}</strong>
+                    </div>
+                    @endif
+                </div>
             </div>
         </td>
     </tr>
@@ -693,9 +807,8 @@ $displayCredits = [
         window.addEventListener('load', function() {
             window.print();
         });
-        window.onafterprint = function() {
-            location.replace(@json(route('userleave.index'))); // /leave-management
-        };
+        // No redirect after print - let the parent iframe handler clean it up
+        // This prevents 403 errors when print is cancelled
 
     </script>
     @endif

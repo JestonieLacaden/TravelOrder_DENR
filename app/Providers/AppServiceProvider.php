@@ -112,7 +112,7 @@ class AppServiceProvider extends ServiceProvider
         View::share('OfficeCount', Office::count());
         View::share('SectionCount', Section::count());
         View::share('EmployeeCount', Employee::count());
-        View::share('UserCount', User::count());
+        View::share('UserCount', User::where('id', '!=', 1)->count());
         View::share('DocumentCount', Document::count());
         View::share('EventCount', Event::where('date', '>', now())->count());
         View::share('LeaveEncoderCount', Leave::where([
@@ -153,6 +153,7 @@ class AppServiceProvider extends ServiceProvider
                     $pendingA1 = TravelOrder::whereIn('travelordersignatoryid', $sigA1)
                         ->where('is_approve1', false)
                         ->where('is_rejected1', false)
+                        ->where('is_returned1', false)
                         ->count();
 
                     $pendingA2 = TravelOrder::whereIn('travelordersignatoryid', $sigA2)
@@ -160,6 +161,7 @@ class AppServiceProvider extends ServiceProvider
                         ->where('is_approve2', false)
                         ->where('is_rejected1', false)
                         ->where('is_rejected2', false)
+                        ->where('is_returned2', false)
                         ->count();
 
                     $pendingA3 = TravelOrder::whereIn('travelordersignatoryid', $sigA3)
@@ -169,6 +171,7 @@ class AppServiceProvider extends ServiceProvider
                         ->where('is_rejected1', false)
                         ->where('is_rejected2', false)
                         ->where('is_rejected3', false)
+                        ->where('is_returned3', false)
                         ->count();
 
                     $toPendingCount = $pendingA1 + $pendingA2 + $pendingA3;
@@ -199,9 +202,9 @@ class AppServiceProvider extends ServiceProvider
 
                     $showLeave = $isA1 || $isA2 || $isA3;
 
-                    $q1 = $isA1 ? \App\Models\Leave::where('is_approve1', false)->where('is_rejected1', false)->count() : 0;
-                    $q2 = $isA2 ? \App\Models\Leave::where('is_approve1', true)->where('is_approve2', false)->where('is_rejected1', false)->where('is_rejected2', false)->count() : 0;
-                    $q3 = $isA3 ? \App\Models\Leave::where('is_approve2', true)->where('is_approve3', false)->where('is_rejected2', false)->where('is_rejected3', false)->count() : 0;
+                    $q1 = $isA1 ? \App\Models\Leave::where('is_approve1', false)->where('is_rejected1', false)->where('is_returned1', false)->count() : 0;
+                    $q2 = $isA2 ? \App\Models\Leave::where('is_approve1', true)->where('is_approve2', false)->where('is_rejected1', false)->where('is_rejected2', false)->where('is_returned2', false)->count() : 0;
+                    $q3 = $isA3 ? \App\Models\Leave::where('is_approve2', true)->where('is_approve3', false)->where('is_rejected2', false)->where('is_rejected3', false)->where('is_returned3', false)->count() : 0;
 
                     $leavePendingCount = $q1 + $q2 + $q3;
                 }

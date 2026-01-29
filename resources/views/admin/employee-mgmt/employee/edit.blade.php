@@ -229,6 +229,91 @@
                                     </div>
                                 </div>
 
+                                <!-- Leave Balance Section -->
+                                <hr>
+                                <h5 class="mb-3"><i class="fas fa-calendar-check"></i> Leave Balance</h5>
+
+                                <div class="form-group row mb-4">
+                                    <label class="col-sm-2 col-form-label" for="vacation_leave_balance">Vacation Leave Balance:</label>
+                                    <div class="col-sm-10">
+                                        <input name="vacation_leave_balance" class="form-control" type="number" step="0.001" min="0" max="999" placeholder="0.000" value="{{ $Employee->vacation_leave_balance ?? 0 }}">
+                                        <small class="text-muted">Enter vacation leave balance (e.g., 15.000)</small>
+                                        @error('vacation_leave_balance')
+                                        <p class="text-danger text-xs mt-1">{{$message}}</p>
+                                        @enderror
+                                    </div>
+                                </div>
+
+                                <div class="form-group row mb-4">
+                                    <label class="col-sm-2 col-form-label" for="sick_leave_balance">Sick Leave Balance:</label>
+                                    <div class="col-sm-10">
+                                        <input name="sick_leave_balance" class="form-control" type="number" step="0.001" min="0" max="999" placeholder="0.000" value="{{ $Employee->sick_leave_balance ?? 0 }}">
+                                        <small class="text-muted">Enter sick leave balance (e.g., 15.000)</small>
+                                        @error('sick_leave_balance')
+                                        <p class="text-danger text-xs mt-1">{{$message}}</p>
+                                        @enderror
+                                    </div>
+                                </div>
+
+                                <div class="form-group row mb-4">
+                                    <label class="col-sm-2 col-form-label" for="force_leave_balance">Force Leave Balance:</label>
+                                    <div class="col-sm-10">
+                                        <input name="force_leave_balance" class="form-control" type="number" step="0.001" min="0" max="999" placeholder="0.000" value="{{ $Employee->force_leave_balance ?? 0 }}">
+                                        <small class="text-muted">Enter force leave balance (e.g., 5.000)</small>
+                                        @error('force_leave_balance')
+                                        <p class="text-danger text-xs mt-1">{{$message}}</p>
+                                        @enderror
+                                    </div>
+                                </div>
+
+                                <div class="form-group row mb-4">
+                                    <label class="col-sm-2 col-form-label" for="special_privilege_leave_balance">Special Privilege Leave:</label>
+                                    <div class="col-sm-10">
+                                        <input name="special_privilege_leave_balance" class="form-control" type="number" step="0.001" min="0" max="999" placeholder="0.000" value="{{ $Employee->special_privilege_leave_balance ?? 0 }}">
+                                        <small class="text-muted">Enter special privilege leave balance (e.g., 3.000)</small>
+                                        @error('special_privilege_leave_balance')
+                                        <p class="text-danger text-xs mt-1">{{$message}}</p>
+                                        @enderror
+                                    </div>
+                                </div>
+
+                                <div class="form-group row mb-4">
+                                    <label class="col-sm-2 col-form-label" for="solo_parent_leave_balance">Solo Parent Leave:</label>
+                                    <div class="col-sm-10">
+                        <input name="solo_parent_leave_balance" id="solo_parent_leave_balance" class="form-control" type="number" step="0.001" min="0" max="999" placeholder="0.000" value="{{ $Employee->solo_parent_leave_balance ?? 0 }}">
+                                        @enderror
+                                    </div>
+                                </div>
+
+                                <div class="form-group row mb-4">
+                                    <label class="col-sm-2 col-form-label" for="solo_parent_eligible">Solo Parent Eligible:</label>
+                                    <div class="col-sm-10">
+                                        <div class="custom-control custom-checkbox">
+                                            <input type="checkbox" name="solo_parent_eligible" id="solo_parent_eligible" class="custom-control-input" value="1" {{ $Employee->solo_parent_eligible ? 'checked' : '' }}>
+                                            <label class="custom-control-label" for="solo_parent_eligible">
+                                                Allow this employee to apply for Solo Parent Leave
+                                            </label>
+                                        </div>
+                                        <small class="text-muted">Check this if employee is eligible for solo parent leave benefits</small>
+                                        @error('solo_parent_eligible')
+                                        <p class="text-danger text-xs mt-1">{{$message}}</p>
+                                        @enderror
+                                    </div>
+                                </div>
+
+                                <div class="form-group row mb-4">
+                                    <label class="col-sm-2 col-form-label" for="wellness_leave_balance">Wellness Leave:</label>
+                                    <div class="col-sm-10">
+                                        <input name="wellness_leave_balance" class="form-control" type="number" step="0.001" min="0" max="999" placeholder="0.000" value="{{ $Employee->wellness_leave_balance ?? 0 }}">
+                                        <small class="text-muted">Enter wellness leave balance (e.g., 5.000)</small>
+                                        @error('wellness_leave_balance')
+                                        <p class="text-danger text-xs mt-1">{{$message}}</p>
+                                        @enderror
+                                    </div>
+                                </div>
+                                <hr>
+                                <!-- End Leave Balance Section -->
+
                                 <div class="form-group row">
                                     <label class="col-sm-2 col-form-label" for="signature"> Signature Upload : </label>
                                     <div class="col-sm-10">
@@ -395,6 +480,29 @@
             $('#employeeUpdateForm').append('<input type="hidden" name="confirm_remove_chief" value="1">');
             // Submit the form
             $('#employeeUpdateForm').submit();
+        });
+
+        // Solo Parent Leave validation: disable input if checkbox is unchecked
+        function toggleSoloParentLeaveInput() {
+            const checkbox = $('#solo_parent_eligible');
+            const input = $('#solo_parent_leave_balance');
+            
+            if (checkbox.is(':checked')) {
+                input.prop('disabled', false);
+                input.prop('readonly', false);
+            } else {
+                input.prop('disabled', true);
+                input.prop('readonly', true);
+                input.val('0.000'); // Reset to 0 when disabled
+            }
+        }
+
+        // Run on page load
+        toggleSoloParentLeaveInput();
+
+        // Run when checkbox changes
+        $('#solo_parent_eligible').on('change', function() {
+            toggleSoloParentLeaveInput();
         });
     });
 

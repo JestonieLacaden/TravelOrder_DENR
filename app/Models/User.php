@@ -22,7 +22,7 @@ class User extends Authenticatable
         'email',
         'password',
         'roleid',
-        
+
     ];
 
     /**
@@ -46,7 +46,7 @@ class User extends Authenticatable
 
     public function Role() {
         return $this->hasOne(Role::class,'id','roleid');
-    
+
     }
 
     public function UserRole() {
@@ -55,7 +55,7 @@ class User extends Authenticatable
 
     public function Employee() {
 
-        return $this->belongsTo(Employee::class,'email');
+        return $this->belongsTo(Employee::class, 'email', 'email');
     }
 
     public function Route() {

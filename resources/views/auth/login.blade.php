@@ -9,7 +9,7 @@
         <div class="col-12 text-center">
             <div class="icheck-primary p-2">
                 <div class="mb-2">
-                    <img src="{{ asset('images/logo.png') }}" alt="AdminLTE Logo" class="brand-image img-circle elevation-3" style="height: 100px">
+                    <img src="{{ asset('images/logo2.png') }}" alt="AdminLTE Logo" class="brand-image img-circle elevation-3" style="height: 100px">
                 </div>
                 <div>
                     PENRO OCCIDENTAL MINDORO

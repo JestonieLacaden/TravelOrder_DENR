@@ -22,27 +22,27 @@ class LeavePolicy
      * @return \Illuminate\Auth\Access\Response|bool
      */
     public function viewAny(User $user)
-    
+
     {
 
         {
         $LeaveSignatories = LeaveSignatory::get();
         $Employee = Employee::where('email','=',auth()->user()->email)->get()->first();
- 
-    
-          
+
+
+
             if(!empty($LeaveSignatories))
             {
               foreach ($LeaveSignatories as $LeaveSignatory)
                 {
                     if ($LeaveSignatory->approver1 == $Employee->id || $LeaveSignatory->approver2 == $Employee->id || $LeaveSignatory->approver3 == $Employee->id)
                     {
-                        return ($user); 
+                        return ($user);
                     }
-    
+
                 }
-            }     
-        
+            }
+
         }
     }
 
@@ -57,19 +57,19 @@ class LeavePolicy
     {
         $Roles = UserRole::where('userid','=',$user->id)->get();
 
-      
+
         if(!empty($Roles))
         {
           foreach ($Roles as $Role)
             {
                 if ($Role->roleid == '1' || $Role->roleid =='5' || $Role->roleid =='8')
                 {
-                    return ($user); 
+                    return ($user);
                 }
 
             }
-        }     
-    
+        }
+
     }
 
     /**
@@ -82,18 +82,18 @@ class LeavePolicy
     {
         $Roles = UserRole::where('userid','=',$user->id)->get();
 
-      
+
         if(!empty($Roles))
         {
           foreach ($Roles as $Role)
             {
                 if  ($Role->roleid == '1' || $Role->roleid =='5')
                 {
-                    return ($user); 
+                    return ($user);
                 }
 
             }
-        }     
+        }
     }
 
     /**
@@ -105,40 +105,51 @@ class LeavePolicy
      */
     public function update(User $user, Leave $Leave)
     {
+        // Allow edit if returned by any approver (for revision)
+        if ($Leave->is_returned1 || $Leave->is_returned2 || $Leave->is_returned3) {
+            // Allow owner to edit returned requests
+            $Employee = Employee::where('email', $user->email)->first();
+            if ($Employee && $Employee->empstatus == 'PERMANENT' && $Leave->employeeid == $Employee->id && $Leave->userid == $user->id) {
+                return true;
+            }
+        }
+
+        // Block if any approval has been given or any rejection exists
+        if ($Leave->is_approve1 || $Leave->is_approve2 || $Leave->is_approve3 ||
+            $Leave->is_rejected1 || $Leave->is_rejected2 || $Leave->is_rejected3) {
+            return false;
+        }
+
         $Roles = UserRole::where('userid','=',$user->id)->get();
 
         if(!empty($Roles))
         {
-         if($Leave->is_approve1 == false && $Leave->is_rejected1 == false) 
-         {
+          // Admin roles can update before any approval
           foreach ($Roles as $Role)
             {
                 if ($Role->roleid == '1' || $Role->roleid =='5')
                 {
-                    return ($user); 
+                    return ($user);
                 }
-
             }
-         }
         }
-
-        // $Employee = Employee::where('email','=',auth()->user()->email)->get()->first();
 
         $Employee = Employee::where('email', auth()->user()->email)->first();
         if (!$Employee) {
             // User has no employee record; deny gracefully instead of crashing
             return false;
         }
-     
-           
+
         if(!empty($Employee))
         {
-            if ($Employee->empstatus == 'PERMANENT' && $Leave->employeeid == $Employee->id && $Leave->userid == auth()->user()->id && $Leave->is_approve1 == false && $Leave->is_rejected1 == false)
+            // Owner can update their own leave only before any approval
+            if ($Employee->empstatus == 'PERMANENT' && $Leave->employeeid == $Employee->id && $Leave->userid == auth()->user()->id)
             {
-                return ($user); 
+                return ($user);
             }
-        }     
-        
+        }
+
+        return false;
     }
 
     /**
@@ -152,32 +163,59 @@ class LeavePolicy
     {
         $Roles = UserRole::where('userid','=',$user->id)->get();
 
-      
+        // Admin/MSD roles can delete anytime (even approved leaves)
         if(!empty($Roles))
         {
-         if($Leave->is_approve1 == false && $Leave->is_rejected1 == false) 
-         {
           foreach ($Roles as $Role)
             {
                 if ($Role->roleid == '1' || $Role->roleid =='5')
                 {
-                    return ($user); 
+                    return true;
                 }
-
             }
-         }
+        }
+
+        // Allow delete if returned by any approver (for revision)
+        if ($Leave->is_returned1 || $Leave->is_returned2 || $Leave->is_returned3) {
+            // Allow owner to delete returned requests
+            $Employee = Employee::where('email', $user->email)->first();
+            if ($Employee && $Employee->empstatus == 'PERMANENT' && $Leave->employeeid == $Employee->id && $Leave->userid == $user->id) {
+                return true;
+            }
+        }
+
+        // Block if any approval has been given or any rejection exists
+        if ($Leave->is_approve1 || $Leave->is_approve2 || $Leave->is_approve3 ||
+            $Leave->is_rejected1 || $Leave->is_rejected2 || $Leave->is_rejected3) {
+            return false;
+        }
+
+        $Roles = UserRole::where('userid','=',$user->id)->get();
+
+        if(!empty($Roles))
+        {
+          // Admin roles can delete before any approval
+          foreach ($Roles as $Role)
+            {
+                if ($Role->roleid == '1' || $Role->roleid =='5')
+                {
+                    return ($user);
+                }
+            }
 
          $Employee = Employee::where('email','=',auth()->user()->email)->get()->first();
-     
-           
+
          if(!empty($Employee))
          {
-             if ($Employee->empstatus == 'PERMANENT' && $Leave->employeeid == $Employee->id && $Leave->userid == auth()->user()->id && $Leave->is_approve1 == false && $Leave->is_rejected1 == false)
+             // Owner can delete their own leave only before any approval
+             if ($Employee->empstatus == 'PERMANENT' && $Leave->employeeid == $Employee->id && $Leave->userid == auth()->user()->id)
              {
-                 return ($user); 
+                 return ($user);
              }
-         }     
+         }
         }
+
+        return false;
     }
 
     /**
@@ -205,10 +243,10 @@ class LeavePolicy
     }
 
 
-    
+
 //
      public function acceptrequest(User $user)
-    
+
     {
         $LeaveSignatories = LeaveSignatory::get();
         $Employee = Employee::where('email','=',auth()->user()->email)->get()->first();
@@ -216,25 +254,25 @@ class LeavePolicy
 
         if(!empty($LeaveSignatories))
         {
-      
+
           foreach ($LeaveSignatories as $LeaveSignatory)
             {
                 if ($LeaveSignatory->approver1 == $Employee->id && auth()->check())
-                {          
-                    { 
-                        return ($user); 
+                {
+                    {
+                        return ($user);
                     }
                 }
                 if ($LeaveSignatory->approver2 == $Employee->id && auth()->check())
                 {
-                    { 
-                        return ($user); 
+                    {
+                        return ($user);
                     }
                 }
                 if ($LeaveSignatory->approver3 == $Employee->id && auth()->check())
                 {
-                         { 
-                        return ($user); 
+                         {
+                        return ($user);
                     }
                 }
             }
@@ -281,17 +319,17 @@ class LeavePolicy
     public function accept(User $user, Leave $Leave)
     {
         $ApproverEmployee = Employee::where('email','=',auth()->user()->email)->get()->first();
-      
+
         $LeaveofEmployee = Employee::where('id','=', $Leave->employeeid)->get()->first();
         $SetLeaveSignatory = SetLeaveSignatory::where('sectionid','=',$LeaveofEmployee->sectionid)->get()->first();
-    
-        
+
+
         if(!empty($SetLeaveSignatory))
         {
             $LeaveSignatory = LeaveSignatory::where('id','=',$SetLeaveSignatory->leavesignatoryid)->get()->first();
             if(!empty($LeaveSignatory))
             {
-                
+
                 if( $LeaveSignatory->id == $SetLeaveSignatory->leavesignatoryid)
                 {
                     if($LeaveSignatory->approver1 == $ApproverEmployee->id)
@@ -299,23 +337,23 @@ class LeavePolicy
                         if($Leave->is_rejected1 == false && $Leave->is_approve1 == false)
                         {
                             return($user);
-                        }   
+                        }
                     }
                     if($LeaveSignatory->approver2 == $ApproverEmployee->id)
                     {
                         if($Leave->is_rejected2 == false && $Leave->is_rejected1 == false  && $Leave->is_approve2 == false && $Leave->is_approve1 == true)
                         {
                             return($user);
-                        }   
+                        }
                     }
                     if ($LeaveSignatory->approver3 == $ApproverEmployee->id && auth()->check())
                         {
                             if($Leave->is_rejected2 == false  && $Leave->is_rejected1  == false && $Leave->is_approve3 == false  && $Leave->is_approve2 == true && $Leave->is_approve1 == true)
-                            { 
-                                return ($user); 
+                            {
+                                return ($user);
                             }
                         }
-    
+
                 }
             }
         }
@@ -327,10 +365,10 @@ class LeavePolicy
         // $SetLeaveSignatories = SetLeaveSignatory::get();
         // $LeaveofEmployee = Employee::where('id','=', $Leave->employeeid)->get()->first();
 
-      
+
         // if(!empty($LeaveSignatories))
         // {
-      
+
         //   foreach ($LeaveSignatories as $LeaveSignatory)
         //     {
         //         if(!empty($SetLeaveSignatories))
@@ -341,47 +379,47 @@ class LeavePolicy
         //                 {
         //                     if ($LeaveSignatory->approver1 == $Employee->id && auth()->check())
         //                     {
-        //                         if($Leave->is_rejected1 == false && $Leave->is_approve1 == false && $LeaveofEmployee->sectionid == $SetLeaveSignatory->sectionid) 
-        //                         { 
-        //                             return ($user); 
+        //                         if($Leave->is_rejected1 == false && $Leave->is_approve1 == false && $LeaveofEmployee->sectionid == $SetLeaveSignatory->sectionid)
+        //                         {
+        //                             return ($user);
         //                         }
         //                     }
         //                     if ($LeaveSignatory->approver2 == $Employee->id && auth()->check())
         //                     {
         //                         if($Leave->is_rejected2 == false && $Leave->is_rejected1 == false  && $Leave->is_approve2 == false && $Leave->is_approve1 == true && $LeaveofEmployee->sectionid == $SetLeaveSignatory->sectionid)
-        //                         { 
-        //                             return ($user); 
+        //                         {
+        //                             return ($user);
         //                         }
         //                     }
         //                     if ($LeaveSignatory->approver3 == $Employee->id && auth()->check())
         //                     {
         //                         if($Leave->is_rejected2 == false  && $Leave->is_rejected1  == false && $Leave->is_approve3 == false  && $Leave->is_approve2 == true && $Leave->is_approve1 == true && $LeaveofEmployee->sectionid == $SetLeaveSignatory->sectionid)
-        //                         { 
-        //                             return ($user); 
+        //                         {
+        //                             return ($user);
         //                         }
         //                     }
         //                 }
         //             }
-        //         }    
+        //         }
         //     }
         // }
     }
-    
+
 
     public function reject(User $user, Leave $Leave)
     {
         $ApproverEmployee = Employee::where('email','=',auth()->user()->email)->get()->first();
-      
+
         $LeaveofEmployee = Employee::where('id','=', $Leave->employeeid)->get()->first();
         $SetLeaveSignatory = SetLeaveSignatory::where('sectionid','=',$LeaveofEmployee->sectionid)->get()->first();
-    
-        
+
+
         if(!empty($SetLeaveSignatory))
         {
             $LeaveSignatory = LeaveSignatory::where('id','=',$SetLeaveSignatory->leavesignatoryid)->get()->first();
             if(!empty($LeaveSignatory))
             {
-                
+
                 if( $LeaveSignatory->id == $SetLeaveSignatory->leavesignatoryid)
                 {
                     if($LeaveSignatory->approver1 == $ApproverEmployee->id)
@@ -389,43 +427,43 @@ class LeavePolicy
                         if($Leave->is_rejected1 == false && $Leave->is_approve1 == false)
                         {
                             return($user);
-                        }   
+                        }
                     }
                     if($LeaveSignatory->approver2 == $ApproverEmployee->id)
                     {
                         if($Leave->is_rejected2 == false && $Leave->is_rejected1 == false  && $Leave->is_approve2 == false && $Leave->is_approve1 == true)
                         {
                             return($user);
-                        }   
+                        }
                     }
                     if ($LeaveSignatory->approver3 == $ApproverEmployee->id && auth()->check())
                         {
                             if($Leave->is_rejected2 == false  && $Leave->is_rejected1  == false && $Leave->is_approve3 == false  && $Leave->is_approve2 == true && $Leave->is_approve1 == true)
-                            { 
-                                return ($user); 
+                            {
+                                return ($user);
                             }
                         }
-    
+
                 }
             }
         }
     }
-    
+
 
      public function viewLeave(User $user, Leave $Leave)
      {
         $ApproverEmployee = Employee::where('email','=',auth()->user()->email)->get()->first();
-      
+
         $LeaveofEmployee = Employee::where('id','=', $Leave->employeeid)->get()->first();
         $SetLeaveSignatory = SetLeaveSignatory::where('sectionid','=',$LeaveofEmployee->sectionid)->get()->first();
-    
-        
+
+
         if(!empty($SetLeaveSignatory))
         {
             $LeaveSignatory = LeaveSignatory::where('id','=',$SetLeaveSignatory->leavesignatoryid)->get()->first();
             if(!empty($LeaveSignatory))
             {
-                
+
                 if( $LeaveSignatory->id == $SetLeaveSignatory->leavesignatoryid)
                 {
                     if($LeaveSignatory->approver1 == $ApproverEmployee->id)
@@ -433,74 +471,74 @@ class LeavePolicy
                         if($Leave->is_rejected1 == false && $Leave->is_approve1 == false)
                         {
                             return($user);
-                        }   
+                        }
                     }
                     if($LeaveSignatory->approver2 == $ApproverEmployee->id)
                     {
                         if($Leave->is_rejected2 == false && $Leave->is_rejected1 == false  && $Leave->is_approve2 == false && $Leave->is_approve1 == true)
                         {
                             return($user);
-                        }   
+                        }
                     }
                     if ($LeaveSignatory->approver3 == $ApproverEmployee->id && auth()->check())
                         {
                             if($Leave->is_rejected2 == false  && $Leave->is_rejected1  == false && $Leave->is_approve3 == false  && $Leave->is_approve2 == true && $Leave->is_approve1 == true)
-                            { 
-                                return ($user); 
+                            {
+                                return ($user);
                             }
                         }
-    
+
                 }
             }
         }
     }
-    
+
      public function viewLeaveindex(User $user)
-    
+
      {
         $Roles = UserRole::where('userid','=',$user->id)->get();
-    
-          
+
+
             if(!empty($Roles))
             {
               foreach ($Roles as $Role)
                 {
                     if ($Role->roleid != '1' && auth()->check())
                     {
-                        
+
                         $Employee = Employee::where('email','=',auth()->user()->email)->get()->first();
-     
-           
+
+
                         if(!empty($Employee))
                         {
                             if ($Employee->empstatus == 'PERMANENT')
                             {
-                                return ($user); 
+                                return ($user);
                             }
-                        }     
-                    
+                        }
+
                     }
-    
+
                 }
-            }     
+            }
      }
 
      public function AddUserLeave(User $user)
-    
+
      {
- 
+
          {
            $Employee = Employee::where('email','=',auth()->user()->email)->get()->first();
-     
-           
+
+
              if(!empty($Employee))
              {
                  if ($Employee->empstatus == 'PERMANENT')
                  {
-                     return ($user); 
+                     return ($user);
                  }
-             }     
-         
+             }
+
          }
      }
 
@@ -536,7 +574,7 @@ class LeavePolicy
     //             {
     //                 if($Leave->is_rejected1 != true && $Leave->is_rejected2 != true  && $Leave->is_rejected3 != true  && $Leave->is_approve1 == true)
     //                 {
-    //                     return ($user); 
+    //                     return ($user);
     //                 }
     //             }
 
@@ -554,55 +592,55 @@ class LeavePolicy
     //         {
     //             if($Leave->is_rejected1 != true && $Leave->is_rejected2 != true  && $Leave->is_rejected3 != true  )
     //             {
-    //             return ($user); 
+    //             return ($user);
     //             }
 
     //         }
-    //     }     
+    //     }
 
     // }
 
     public function summary(User $user)
     {
-      
+
 
         $Employee = Employee::where('email','=',auth()->user()->email)->get()->first();
-     
-           
+
+
         if(!empty($Employee))
         {
             if ($Employee->empstatus == 'PERMANENT')
             {
-      
-                return ($user); 
 
-                    
+                return ($user);
+
+
             }
-        }     
-        
+        }
+
     }
-   
+
     public function MSDaddLeave(User $user)
-    
+
     {
 
         {
             $Roles = UserRole::where('userid','=',$user->id)->get();
-    
-          
+
+
             if(!empty($Roles))
             {
               foreach ($Roles as $Role)
                 {
                     if ($Role->roleid == '1' || $Role->roleid =='5' )
                     {
-                        return ($user); 
+                        return ($user);
                     }
-    
+
                 }
-            }     
-        
+            }
+
         }
     }
-   
+
 }

@@ -1,5 +1,10 @@
 <!-- /.modal -->
 
+@php
+    $currentEmployee = \App\Models\Employee::where('email', auth()->user()->email)->first();
+    $hasSignature = $currentEmployee && !empty($currentEmployee->signature_path);
+@endphp
+
 <div class="modal fade" id="new-travelorder-modal-lg">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -48,6 +53,65 @@
                                                         <input type="text" name="daterange" id="daterange" class="form-control float-right" oninput="this.value = this.value.toUpperCase()">
                                                     </div>
                                                     <!-- /.input group -->
+                                                </div>
+
+                                                <div class="form-group row">
+                                                    <label class="col-sm-3" for="approver1">
+                                                        Unit/Section Chief:<small class="text-muted d-block">(Initial)</small>
+                                                    </label>
+                                                    <div class="col-sm-9">
+                                                        <select id="approver1" name="approver1" class="form-control select2" style="width:100%;">
+                                                            <option value="">-- Choose Unit/Section Chief --</option>
+                                                            @foreach($SectionChiefs as $emp)
+                                                            <option value="{{ $emp->id }}">
+                                                                {{ $emp->lastname }}, {{ $emp->firstname }} {{ $emp->middlename }} - {{ $emp->Unit->unit ?? 'N/A' }}
+                                                            </option>
+                                                            @endforeach
+                                                        </select>
+                                                        <small class="text-muted"><i>Optional</i></small>
+                                                    </div>
+                                                </div>
+
+                                                <div class="form-group row">
+                                                    <label class="col-sm-3" for="approver2">
+                                                        Division Chief or In-Charge: <span class="text-danger">*</span><small class="text-muted d-block">(Recommending Approval)</small>
+                                                    </label>
+                                                    <div class="col-sm-9">
+                                                        <select id="approver2" name="approver2" class="form-control select2" style="width:100%;">
+                                                            <option value="" disabled selected>-- Choose Division Chief --</option>
+                                                            @foreach($DivisionChiefs as $emp)
+                                                            <option value="{{ $emp->id }}">
+                                                                {{ $emp->lastname }}, {{ $emp->firstname }} {{ $emp->middlename }} - {{ $emp->section->section ?? 'N/A' }}
+                                                            </option>
+                                                            @endforeach
+                                                        </select>
+                                                        {{-- <small class="text-muted">Note: Please select the Division Chief currently in-charge of your division</small> --}}
+                                                        {{-- <small class="text-muted d-block">(Recommending Approval)</small> --}}
+                                                        @error('approver2')
+                                                        <p class="text-danger text-xs mt-1">{{$message}}</p>
+                                                        @enderror
+                                                    </div>
+                                                </div>
+
+                                                <div class="form-group row">
+                                                    <label class="col-sm-3" for="approver3">
+                                                        PENRO or In-Charge: <span class="text-danger">*</span><small class="text-muted d-block">(Final Approval)</small>
+                                                    </label>
+                                                    <div class="col-sm-9">
+                                                        <select id="approver3" name="approver3" class="form-control select2" style="width:100%;" required>
+                                                            <option value="" disabled selected>-- Choose PENRO --</option>
+                                                            @foreach($PENROs as $emp)
+                                                            <option value="{{ $emp->id }}">
+                                                                {{ $emp->lastname }}, {{ $emp->firstname }} {{ $emp->middlename }} - {{ $emp->section->section ?? 'N/A' }}
+                                                            </option>
+                                                            @endforeach
+                                                        </select>
+                                                        {{-- <small class="text-muted">Note: Please select the PENRO currently in-charge of your office</small> --}}
+                                                        {{-- <small class="text-muted d-block">(Final Approval)</small> --}}
+                                                        @error('approver3')
+                                                        <p class="text-danger text-xs mt-1">{{$message}}</p>
+                                                        @enderror
+                                                    </div>
                                                 </div>
 
                                                 {{-- <div class="form-group row">
@@ -99,10 +163,23 @@
                                         <div class="form-group row">
                                             <label class="col-sm-3" for="appropriation">Appropriation : <span class="text-danger">*</span></label>
                                             <div class=" col-sm-9">
-                                                <input name="appropriation" id="appropriation" class="form-control" type="text" placeholder="Enter Appropriation" oninput="this.value = this.value.toUpperCase()">
+                                                <select name="appropriation" id="appropriation" class="form-control select2" style="width:100%;" required>
+                                                    <option value="" disabled selected>-- Choose Appropriation --</option>
+                                                    <option value="GAA">GAA</option>
+                                                    <option value="SAA">SAA</option>
+                                                    <option value="Continuing">Continuing</option>
+                                                    <option value="IPAF RIA">IPAF RIA</option>
+                                                    <option value="other">Other Appropriation</option>
+                                                </select>
                                                 @error('appropriation')
                                                 <p class="text-danger text-xs mt-1">{{$message}}</p>
                                                 @enderror
+                                            </div>
+                                        </div>
+                                        <div class="form-group row" id="other-appropriation-group" style="display:none;">
+                                            <label class="col-sm-3" for="other_appropriation">Specify Other : <span class="text-danger">*</span></label>
+                                            <div class=" col-sm-9">
+                                                <input name="other_appropriation" id="other_appropriation" class="form-control" type="text" placeholder="Enter Other Appropriation" oninput="this.value = this.value.toUpperCase()">
                                             </div>
                                         </div>
                                         <div class="form-group row">
@@ -114,6 +191,34 @@
                                                 @enderror
                                             </div>
                                         </div>
+
+                                        <!-- Pre-payment Option -->
+                                        <div class="form-group row">
+                                            <label class="col-sm-3">Pre-Payment:</label>
+                                            <div class="col-sm-9">
+                                                <div class="custom-control custom-checkbox">
+                                                    <input type="checkbox" class="custom-control-input" id="is_prepayment" name="is_prepayment" value="1" {{ !$hasSignature ? 'disabled' : '' }}>
+                                                    <label class="custom-control-label" for="is_prepayment">
+                                                        This is a pre-payment travel order
+                                                    </label>
+                                                </div>
+                                                <small class="form-text text-muted">
+                                                    Check this if payment will be made before travel. Your signature from your profile will be used.
+                                                </small>
+                                                @if(!$hasSignature)
+                                                <div class="alert alert-warning mt-2 mb-0">
+                                                    <i class="fas fa-exclamation-triangle"></i>
+                                                    You haven't uploaded your signature yet. Please <a href="{{ route('user.profile') }}" target="_blank">update your profile</a> first.
+                                                </div>
+                                                @else
+                                                <div class="alert alert-success mt-2 mb-0">
+                                                    <i class="fas fa-check-circle"></i>
+                                                    Signature found in your profile. It will be used when you check pre-payment.
+                                                </div>
+                                                @endif
+                                            </div>
+                                        </div>
+
                                 </div>
                             </div>
                             <!-- /.card-body -->
@@ -148,9 +253,20 @@
 
 <script>
     $(document).ready(function() {
+        var hasSignature = {{ $hasSignature ? 'true' : 'false' }};
+
         // Prevent double submission with loading animation
         $('#travel-order-form').on('submit', function(e) {
             var submitBtn = $('#to-submit-btn');
+
+            // Check if pre-payment is checked and user has no signature
+            if ($('#is_prepayment').is(':checked')) {
+                if (!hasSignature) {
+                    e.preventDefault();
+                    alert('Please upload your signature in your profile first before creating a pre-payment travel order.');
+                    return false;
+                }
+            }
 
             // Check if already submitting
             if (submitBtn.prop('disabled')) {
@@ -182,6 +298,17 @@
             submitBtn.find('.btn-text').removeClass('d-none');
             submitBtn.find('.spinner-border').addClass('d-none');
             submitBtn.find('.loading-text').addClass('d-none');
+        });
+
+        // Handle Appropriation dropdown change
+        $('#appropriation').on('change', function() {
+            if ($(this).val() === 'other') {
+                $('#other-appropriation-group').show();
+                $('#other_appropriation').prop('required', true);
+            } else {
+                $('#other-appropriation-group').hide();
+                $('#other_appropriation').prop('required', false).val('');
+            }
         });
     });
 

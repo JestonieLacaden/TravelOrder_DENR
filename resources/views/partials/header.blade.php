@@ -22,6 +22,24 @@
              </a>
          </li>
 
+         <!-- Notifications -->
+         <li class="nav-item dropdown" id="notificationDropdown">
+             <a class="nav-link" data-toggle="dropdown" href="#" role="button">
+                 <i class="far fa-bell"></i>
+                 <span class="badge badge-danger navbar-badge" id="notificationCount" style="display: none;">0</span>
+             </a>
+             <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right" style="max-height: 400px; overflow-y: auto;">
+                 <span class="dropdown-item dropdown-header" id="notificationHeader">0 Notifications</span>
+                 <div class="dropdown-divider"></div>
+                 <div id="notificationList">
+                     <a href="#" class="dropdown-item text-center text-muted">
+                         <small>No new notifications</small>
+                     </a>
+                 </div>
+                 <div class="dropdown-divider"></div>
+                 <a href="{{ route('memorandums.notifications.all') }}" class="dropdown-item dropdown-footer">See All Notifications</a>
+             </div>
+         </li>
 
          <li class="nav-item dropdown">
              <a class="nav-link" data-toggle="dropdown" href="#">
@@ -45,6 +63,12 @@
 
                  </div> --}}
                  <div class="card-footer">
+                     <div class="col-sm-12">
+                         <div class="dropdown-divider"></div>
+                         <a href="{{ route('user.profile') }}" class="dropdown-item dropdown-footer text-info">
+                             <i class="fas fa-user-circle mr-2"></i> My Profile
+                         </a>
+                     </div>
                      <div class="col-sm-12">
                          <div class="dropdown-divider"></div>
                          <a href="{{ route('changepassword.index') }}" class="dropdown-item dropdown-footer text-primary">

@@ -46,6 +46,13 @@
                     </div>
                     @endif
 
+                    @if(session()->has('error'))
+                    <div class="alert alert-danger alert-dismissible">
+                        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                        <h5><i class="icon fas fa-ban"></i> {{ session()->get('error') }}</h5>
+                    </div>
+                    @endif
+
                     @if(session()->has('EventError'))
                     <div class="alert alert-danger alert-dismissible">
                         <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
@@ -95,7 +102,7 @@
                                         <th class="text-center">Date Range</th>
                                         <th class="text-center">Status</th>
                                         <th class="text-center">Created By</th>
-                                        <th style="width: 80px" class="text-center">Action</th>
+                                        <th style="width: 200px" class="text-center">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -107,7 +114,28 @@
                                         <td>{{ $Leave->leave_type->leave_type }}</td>
                                         <td>{{ $Leave->daterange}}</td>
                                         <td>
-                                            @if($Leave->is_approve1 == true)
+                                            @if($Leave->is_returned1 == true)
+                                            <span class="bg-info p-2 rounded">Returned by AO</span>
+                                            @if(!empty($Leave->returned1_reason))
+                                            <div style="font-size:0.85em;color:#17a2b8;margin-top:8px;padding:8px;background:#d1ecf1;border-left:3px solid #17a2b8;">
+                                                <strong>Reason:</strong> {{ $Leave->returned1_reason }}
+                                            </div>
+                                            @endif
+                                            @elseif($Leave->is_returned2 == true)
+                                            <span class="bg-info p-2 rounded">Returned by Division Chief</span>
+                                            @if(!empty($Leave->returned2_reason))
+                                            <div style="font-size:0.85em;color:#17a2b8;margin-top:8px;padding:8px;background:#d1ecf1;border-left:3px solid #17a2b8;">
+                                                <strong>Reason:</strong> {{ $Leave->returned2_reason }}
+                                            </div>
+                                            @endif
+                                            @elseif($Leave->is_returned3 == true)
+                                            <span class="bg-info p-2 rounded">Returned by PENRO</span>
+                                            @if(!empty($Leave->returned3_reason))
+                                            <div style="font-size:0.85em;color:#17a2b8;margin-top:8px;padding:8px;background:#d1ecf1;border-left:3px solid #17a2b8;">
+                                                <strong>Reason:</strong> {{ $Leave->returned3_reason }}
+                                            </div>
+                                            @endif
+                                            @elseif($Leave->is_approve1 == true)
                                             @if($Leave->is_rejected1 == false)
                                             @if($Leave->is_approve2 == true)
                                             @if($Leave->is_rejected2 == false)
@@ -118,6 +146,11 @@
                                             @else
                                             @if ($Leave->is_rejected3 == true)
                                             <span class="bg-danger p-2 rounded">Rejected by PENRO</span>
+                                            @if(!empty($Leave->rejected3_reason))
+                                            <div style="font-size:0.85em;color:#dc3545;margin-top:8px;padding:8px;background:#fee;border-left:3px solid #dc3545;">
+                                                <strong>Remarks:</strong> {{ $Leave->rejected3_reason }}
+                                            </div>
+                                            @endif
                                             @else
                                             <span class="bg-warning p-2 rounded">Pending : Final Approval</span>
                                             @endif
@@ -127,6 +160,11 @@
                                             @else
                                             @if ($Leave->is_rejected2 == true)
                                             <span class="bg-danger p-2 rounded">Rejected by MSD - CHIEF</span>
+                                            @if(!empty($Leave->rejected2_reason))
+                                            <div style="font-size:0.85em;color:#dc3545;margin-top:8px;padding:8px;background:#fee;border-left:3px solid #dc3545;">
+                                                <strong>Remarks:</strong> {{ $Leave->rejected2_reason }}
+                                            </div>
+                                            @endif
                                             @else
                                             <span class="bg-warning p-2 rounded">Pending : 2nd Approval</span>
                                             @endif
@@ -135,6 +173,11 @@
                                             @else
                                             @if ($Leave->is_rejected1 == true)
                                             <span class="bg-danger p-2 rounded">Rejected by AO</span>
+                                            @if(!empty($Leave->rejected1_reason))
+                                            <div style="font-size:0.85em;color:#dc3545;margin-top:8px;padding:8px;background:#fee;border-left:3px solid #dc3545;">
+                                                <strong>Remarks:</strong> {{ $Leave->rejected1_reason }}
+                                            </div>
+                                            @endif
                                             @else
                                             <span class="bg-warning p-2 rounded">Pending : 1st Approval</span>
                                             @endif
@@ -152,13 +195,12 @@
                                             @endcan --}}
 
                                             @can('print', $Leave)
-                                            <button type="button" class="btn btn-default btn-print-leave" onclick="printLeaveInline({{ $Leave->id }})">
-
-                                                <i class="fas fa-print"></i> Print
+                                            <button type="button" class="btn btn-sm btn-default btn-print-leave" style="padding: 4px 8px; font-size: 0.85rem; width: 80px;" onclick="printLeaveInline({{ $Leave->id }})" title="Print">
+                                                <i class="fas fa-print"></i><br><small>Print</small>
                                             </button>
-                                            {{-- <a href="{{ route('leave.print', ['Leave' => $Leave->id, 'preview' => 1]) }}" target="_blank">
-                                            Open print view
-                                            </a> --}}
+                                            <button type="button" class="btn btn-sm btn-info" style="padding: 4px 8px; font-size: 0.85rem; width: 80px;" onclick="downloadLeavePDF({{ $Leave->id }})" title="Download PDF - Select 'Save as PDF' as printer destination">
+                                                <i class="fas fa-download"></i><br><small>Download</small>
+                                            </button>
                                             @endcan
 
 
@@ -167,8 +209,14 @@
 
                                             @endif
 
-                                            {{-- DELETE: only while still pending (no final approval & no rejection) --}}
-                                            @if(!$Leave->is_approve3 && !$Leave->is_rejected1 && !$Leave->is_rejected2 && !$Leave->is_rejected3)
+                                            {{-- EDIT & DELETE: show when pending OR returned (not when fully approved or rejected) --}}
+                                            @if((!$Leave->is_approve3 && !$Leave->is_rejected1 && !$Leave->is_rejected2 && !$Leave->is_rejected3) || $Leave->is_returned1 || $Leave->is_returned2 || $Leave->is_returned3)
+                                            @can('update', $Leave)
+                                            <button type="button" class="btn btn-default" title="Edit" data-toggle="modal" data-target="#edit-leave-modal-{{ $Leave->id }}" data-backdrop="static" data-keyboard="false">
+                                                <i class="fas fa-edit"></i> {{ __('Edit') }}
+                                            </button>
+                                            @endcan
+
                                             @can('delete', $Leave)
                                             <button type="button" class="btn btn-default" title="Delete" data-toggle="modal" data-target="#delete-leave-modal-lg{{ $Leave->id }}" data-backdrop="static" data-keyboard="false">
                                                 <i class="fas fa-trash-alt"></i> {{ __('Delete') }}
@@ -199,6 +247,7 @@
 </div>
 @if(!empty($Leaves))
 @foreach($Leaves as $Leave)
+@include('user.leave.edit')
 @include('user.leave.delete')
 @endforeach
 @endif
@@ -276,8 +325,16 @@
         iframe.onload = function() {
             // kapag loaded na ang print page, saka lang mag-print
             const w = this.contentWindow;
+
             // linisin pagkatapos magsara ang print dialog
-            w.onafterprint = () => document.body.removeChild(iframe);
+            w.onafterprint = function() {
+                setTimeout(() => {
+                    if (iframe && iframe.parentNode) {
+                        document.body.removeChild(iframe);
+                    }
+                }, 100);
+            };
+
             w.focus();
             w.print();
         };
@@ -286,6 +343,10 @@
         document.body.appendChild(iframe);
     }
 
+    function downloadLeavePDF(id) {
+        const url = "{{ route('leave.print', ':id') }}".replace(':id', id);
+        window.open(url, '_blank');
+    }
 </script>
 
 <script>
@@ -317,7 +378,7 @@
         // Show non-intrusive notification
         if ($('#update-banner').length === 0) {
             const banner = `
-                <div id="update-banner" class="alert alert-info alert-dismissible" 
+                <div id="update-banner" class="alert alert-info alert-dismissible"
                      style="position: fixed; top: 80px; right: 20px; z-index: 9999; width: 350px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                     <button type="button" class="close" data-dismiss="alert">&times;</button>
                     <h5><i class="icon fas fa-info-circle"></i> Updates Available</h5>

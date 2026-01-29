@@ -1,22 +1,19 @@
 <!-- Main Sidebar Container -->
 <aside class="main-sidebar sidebar-dark-primary elevation-4">
 
-
     <!-- Brand Logo -->
-    <a href="/" class="brand-link">
-        <span class="brand-text font-weight-light text-center">DENR Information System</span>
+    <a href="/" class="brand-link" style="display: block; padding: 0.8125rem 0.5rem; font-size: 1.1rem; line-height: 1.3; text-align: center; border-bottom: 1px solid #4b545c;">
+        <span class="brand-text font-weight-light">DENR Information System</span>
     </a>
 
     <!-- Sidebar -->
-    <div class="sidebar">
+    <div class="sidebar" style="padding-top: 0;">
         <!-- Sidebar user panel (optional) -->
-        <div class="user-panel mt-3 pb-3 mb-3 d-flex">
-            <div class="image">
-                <img src="{{ asset('images/logo.png') }}" class="brand-image img-circle elevation-3" style="opacity: .8">
+        <div class="user-panel mt-3 pb-3 mb-3 d-flex" style="border-bottom: 1px solid #4f5962; align-items: center; padding-top: 45px; padding-bottom: 45px;">
+            <div class="image" style="display: flex; align-items: center;">
+                <img src="{{ asset('images/logo.png') }}" class="brand-image img-circle elevation-3" style="opacity: .8; margin-right: 10px;">
             </div>
-            <div class="info">
-
-
+            <div class="info" style="display: flex; align-items: center;">
                 <a href="#" class="d-block"> {{ auth()->user()->username }} </a>
             </div>
         </div>
@@ -39,6 +36,15 @@
                             @if(!empty($EventCount))
                             <span class="badge badge-success right">{{ $EventCount }}</span>
                             @endif
+                        </p>
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a href="{{ route('user.profile') }}" class="nav-link {{ Request::is('profile') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-user-circle"></i>
+                        <p>
+                            My Profile
                         </p>
                     </a>
                 </li>
@@ -77,6 +83,48 @@
                     </a>
                 </li>
                 @endcan
+
+                {{-- Memorandum Menu Item --}}
+                <li class="nav-item has-treeview {{ Request::is('memorandums*') ? 'menu-open' : '' }}">
+                    <a href="#" class="nav-link {{ Request::is('memorandums*') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-file-alt"></i>
+                        <p>
+                            Memorandum
+                            <i class="right fas fa-angle-left"></i>
+                        </p>
+                    </a>
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="{{ route('memorandums.index') }}" class="nav-link {{ Request::is('memorandums') && !Request::is('memorandums/inbox') ? 'active' : '' }}">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>My Memoranda</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ route('memorandums.inbox') }}" class="nav-link {{ Request::is('memorandums/inbox') ? 'active' : '' }}">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>
+                                    Inbox
+                                    @php
+                                    $pendingCount = \App\Models\MemorandumWorkflowHistory::where('to_user_id', Auth::id())
+                                    ->where('action', 'forwarded')
+                                    ->whereHas('memorandum', function($q) {
+                                    $q->where('status', 'For Review');
+                                    })
+                                    ->whereDoesntHave('memorandum.workflowHistory', function($q) {
+                                    $q->where('from_user_id', Auth::id())
+                                    ->whereIn('action', ['approved', 'returned', 'revised']);
+                                    })
+                                    ->count();
+                                    @endphp
+                                    @if($pendingCount > 0)
+                                    <span class="badge badge-warning right">{{ $pendingCount }}</span>
+                                    @endif
+                                </p>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
 
                 {{-- @can ('viewDTRIndex', \App\Models\Dtr_History::class)
                 <li class="nav-item  ">
@@ -271,7 +319,6 @@
                         <p>
                             MSD - Encoder
                             <i class="right fas fa-angle-left"></i>
-                            <span class="badge badge-info right">86</span>
                         </p>
                     </a>
                     <ul class="nav nav-treeview">
@@ -412,6 +459,14 @@
                                 </p>
                             </a>
                         </li>
+                        <li class="nav-item">
+
+                            <a href="{{ route('eligible-signatories.index') }}" class="nav-link  {{ Request::is('msd-management/settings/eligible-signatories') ? 'active' : '' }}">
+
+                                <p class="ml-4 p-2"><i class="fas fa-user-check"></i> Eligible Signatories<span class="badge badge-info right">NEW</span>
+                                </p>
+                            </a>
+                        </li>
                     </ul>
                 </li>
             </ul>
@@ -487,6 +542,25 @@
                                 <a href="{{ route('unit.index') }}" class="nav-link {{ Request::is('data-management/employee/unit') ? 'active' : '' }}">
                                     <p class="ml-4 p-2">Unit <span class="badge badge-info right">{{ $UnitCount
                                                 }}</span></p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <ul class="nav nav-treeview">
+                    <li class="nav-item">
+                        <a href="#" class="nav-link {{ Request::is('admin/recipient-presets*') ? 'active' : '' }}">
+                            <i class="far fas fa-cog nav-icon"></i>
+                            <p>
+                                Memorandum Settings
+                                <i class="right fas fa-angle-left"></i>
+                            </p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="{{ route('admin.recipient-presets.index') }}" class="nav-link {{ Request::is('admin/recipient-presets*') ? 'active' : '' }}">
+                                    <p class="ml-4 p-2">Recipient Presets</p>
                                 </a>
                             </li>
                         </ul>

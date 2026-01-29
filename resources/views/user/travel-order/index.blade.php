@@ -110,32 +110,64 @@
                                             $statusClass = '';
                                             $statusText = '';
 
-                                            if ($TravelOrder->is_rejected1) {
+                                            // Check for returned status first
+                                            if ($TravelOrder->is_returned1) {
+                                            $statusClass = 'bg-info';
+                                            $statusText = 'Returned by Immediate Supervisor';
+                                            $rejectionReason = $TravelOrder->returned1_reason;
+                                            } elseif ($TravelOrder->is_returned2) {
+                                            $statusClass = 'bg-info';
+                                            $statusText = 'Returned by Recommending Approval';
+                                            $rejectionReason = $TravelOrder->returned2_reason;
+                                            } elseif ($TravelOrder->is_returned3) {
+                                            $statusClass = 'bg-info';
+                                            $statusText = 'Returned by PENRO';
+                                            $rejectionReason = $TravelOrder->returned3_reason;
+                                            } elseif ($TravelOrder->is_rejected1) {
                                             $statusClass = 'bg-danger';
                                             $statusText = 'Rejected by Immediate Supervisor';
+                                            $rejectionReason = $TravelOrder->rejected1_reason;
                                             } elseif (!$TravelOrder->is_approve1) {
                                             $statusClass = 'bg-warning';
                                             $statusText = 'For Immediate Supervisor Approval';
+                                            $rejectionReason = null;
                                             } elseif ($TravelOrder->is_rejected2) {
                                             $statusClass = 'bg-danger';
                                             $statusText = 'Rejected by Recommending Approval';
+                                            $rejectionReason = $TravelOrder->rejected2_reason;
                                             } elseif (!$TravelOrder->is_approve2) {
                                             $statusClass = 'bg-warning';
                                             $statusText = 'For Recommending Approval';
+                                            $rejectionReason = null;
                                             } elseif ($TravelOrder->is_rejected3) {
                                             $statusClass = 'bg-danger';
                                             $statusText = 'Rejected by PENRO';
+                                            $rejectionReason = $TravelOrder->rejected3_reason;
                                             } elseif (!$TravelOrder->is_approve3) {
                                             $statusClass = 'bg-warning';
                                             $statusText = 'For PENRO Approval';
-
+                                            $rejectionReason = null;
                                             } else {
                                             $statusClass = 'bg-success';
                                             $statusText = $approvedCode ? "Approved ($approvedCode)" : 'Approved';
+                                            $rejectionReason = null;
                                             }
                                             @endphp
 
-                                            <span class="js-status p-2 rounded {{ $statusClass }}">{{ $statusText }}</span>
+                                            <div style="max-width:220px;margin:0 auto;">
+                                                <span class="js-status p-1 rounded {{ $statusClass }}" style="display:block;white-space:normal;word-wrap:break-word;font-size:0.8rem;">{{ $statusText }}</span>
+
+                                                @if(!empty($rejectionReason))
+                                                <div style="font-size:0.75em;color:#17a2b8;margin-top:6px;padding:6px;background:#e7f7f9;border-left:2px solid #17a2b8;text-align:left;">
+                                                    <strong>Remarks:</strong> {{ $rejectionReason }}
+                                                </div>
+                                                @elseif($TravelOrder->is_rejected1 || $TravelOrder->is_rejected2 || $TravelOrder->is_rejected3)
+                                                {{-- Debug: Show if rejection exists but no reason --}}
+                                                <div style="font-size:0.7em;color:#999;margin-top:4px;font-style:italic;">
+                                                    (No rejection reason provided - Old rejection before feature was added)
+                                                </div>
+                                                @endif
+                                            </div>
 
                                             @php
                                             // compute display datetime and label for current stage
@@ -152,13 +184,37 @@
                                             ?? optional($TravelOrder->employee)->firstname
                                             ?? null;
                                             } elseif (! $TravelOrder->is_approve2) {
-                                            $displayDt = $TravelOrder->approve1_at ?? $TravelOrder->created_at;
-                                            $displayLabel = 'APPROVED BY IMMEDIATE SUPERVISOR';
-                                            $displayName = $TravelOrder->approve1_by_name ?? null;
+                                            // Check if approver1 was skipped (auto-forwarded)
+                                            if ($TravelOrder->approve1_by) {
+                                                // Actual approval by section chief
+                                                $displayDt = $TravelOrder->approve1_at ?? $TravelOrder->created_at;
+                                                $displayLabel = 'APPROVED BY IMMEDIATE SUPERVISOR';
+                                                $displayName = $TravelOrder->approve1_by_name ?? null;
+                                            } else {
+                                                // Skipped approver1, still created stage
+                                                $displayDt = $TravelOrder->created_at;
+                                                $displayLabel = 'CREATED BY';
+                                                $displayName = $TravelOrder->created_by_name
+                                                ?? optional($TravelOrder->employeeid)->firstname
+                                                ?? optional($TravelOrder->employee)->firstname
+                                                ?? null;
+                                            }
                                             } elseif (! $TravelOrder->is_approve3) {
-                                            $displayDt = $TravelOrder->approve2_at ?? $TravelOrder->approve1_at ?? $TravelOrder->created_at;
-                                            $displayLabel = 'APPROVED BY RECOMMENDING APPROVER';
-                                            $displayName = $TravelOrder->approve2_by_name ?? $TravelOrder->approve1_by_name ?? null;
+                                            // Check if approver2 was skipped (auto-forwarded to PENRO)
+                                            if ($TravelOrder->approve2_by) {
+                                                // Actual approval by division chief
+                                                $displayDt = $TravelOrder->approve2_at ?? $TravelOrder->approve1_at ?? $TravelOrder->created_at;
+                                                $displayLabel = 'APPROVED BY RECOMMENDING APPROVER';
+                                                $displayName = $TravelOrder->approve2_by_name ?? $TravelOrder->approve1_by_name ?? null;
+                                            } else {
+                                                // Skipped approver2 (and possibly approver1), still created stage
+                                                $displayDt = $TravelOrder->created_at;
+                                                $displayLabel = 'CREATED BY';
+                                                $displayName = $TravelOrder->created_by_name
+                                                ?? optional($TravelOrder->employeeid)->firstname
+                                                ?? optional($TravelOrder->employee)->firstname
+                                                ?? null;
+                                            }
                                             } else {
                                             $displayDt = $TravelOrder->approve3_at ?? $TravelOrder->approve2_at ?? $TravelOrder->approve1_at ?? $TravelOrder->created_at;
                                             $displayLabel = 'APPROVED BY PENRO';
@@ -167,10 +223,10 @@
                                             @endphp
 
                                             @if($displayDt)
-                                            <div style="font-size:0.9em;font-style:italic;opacity:0.8;text-align:center;margin-top:4px;">
+                                            <div style="font-size:0.75em;font-style:italic;opacity:0.8;text-align:center;margin-top:4px;">
                                                 {{ $displayLabel }}
                                                 @if(!empty($displayName))
-                                                {{ $displayName }} 
+                                                {{ $displayName }}
                                                 @endif
                                                 <br>
                                                 {{ \Carbon\Carbon::parse($displayDt)->format('m/d/Y') }} -
@@ -185,14 +241,13 @@
 
 
                                         <td class="text-center">
-                                            {{-- @can('update', $Leave)
-                      <button type="button" class="btn btn-default" title="Delete" data-toggle="modal"
-                        data-target="#edit-leave-modal-lg{{ $Leave->id }} " data-backdrop="static"
-                                            data-keyboard="false">
-                                            <i class="fas fa-edit"></i>
-                                            {{__('Edit')}}
-                                            </button> --}}
-                                            {{-- @endcan --}}
+                                            @can('update', $TravelOrder)
+                                            <button type="button" class="btn btn-default" title="Edit" data-toggle="modal" data-target="#edit-travelorder-modal-{{ $TravelOrder->id }}" data-backdrop="static" data-keyboard="false">
+                                                <i class="fas fa-edit"></i>
+                                                {{__('Edit')}}
+                                            </button>
+                                            @endcan
+
                                             @can('delete', $TravelOrder)
                                             <button type="button" class="btn btn-default" title="Delete" data-toggle="modal" data-target="#delete-travelorder-modal-lg{{ $TravelOrder->id }} " data-backdrop="static" data-keyboard="false">
                                                 <i class="fas fa-trash-alt"></i>
@@ -208,12 +263,12 @@
 
                                             @can('print', $TravelOrder)
                                             <div style="display:inline-block">
-                                                <button type="button" class="btn btn-default" onclick="printTO('{{ route('travelorder.print', [$TravelOrder->id]) }}')">
-                                                    <i class="fas fa-print"></i> Print
+                                                <button type="button" class="btn btn-sm btn-default" style="padding: 4px 8px; font-size: 0.85rem; width: 80px;" onclick="printTO('{{ route('travelorder.print', [$TravelOrder->id]) }}')" title="Print">
+                                                    <i class="fas fa-print"></i><br><small>Print</small>
                                                 </button>
-                                                {{-- <a href="{{ route('travelorder.print', [$TravelOrder->id]) }}?preview=1" target="_blank" class="btn btn-default" title="View Print">
-                                                    <i class="fas fa-eye"></i> View
-                                                </a> --}}
+                                                <button type="button" class="btn btn-sm btn-info" style="padding: 4px 8px; font-size: 0.85rem; width: 80px;" onclick="downloadTOPDF('{{ route('travelorder.print', [$TravelOrder->id]) }}', '{{ $TravelOrder->id }}')" title="Download PDF - Select 'Save as PDF' as printer destination">
+                                                    <i class="fas fa-download"></i><br><small>Download</small>
+                                                </button>
                                             </div>
                                             @endcan
 
@@ -241,6 +296,7 @@
 </div>
 @if(!empty($TravelOrders))
 @foreach($TravelOrders as $TravelOrder)
+@include('user.travel-order.edit')
 @include('user.travel-order.delete')
 @endforeach
 @endif
@@ -329,6 +385,9 @@
         };
     }
 
+    function downloadTOPDF(url, id) {
+        window.open(url, '_blank');
+    }
 </script>
 
 @include('partials.flashmessage')

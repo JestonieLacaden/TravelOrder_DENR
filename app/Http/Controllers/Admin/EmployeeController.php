@@ -10,6 +10,9 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
+
 
 class EmployeeController extends Controller
 {
@@ -164,7 +167,7 @@ class EmployeeController extends Controller
 
     //  } catch (QueryException $e) {
 
-    //   $errorCode = $e->errorInfo[1];          
+    //   $errorCode = $e->errorInfo[1];
     //       if($errorCode == 1062){
     //           throw ('Duplicate Entry');
 
@@ -179,6 +182,17 @@ class EmployeeController extends Controller
   public function destroy(Employee $Employee)
   {
     $this->authorize('delete', $Employee);
+
+    // Delete signature file if exists
+    if ($Employee->signature_path && Storage::disk('public')->exists($Employee->signature_path)) {
+      Storage::disk('public')->delete($Employee->signature_path);
+    }
+
+    // Delete picture file if exists
+    if ($Employee->picture && Storage::disk('public')->exists($Employee->picture)) {
+      Storage::disk('public')->delete($Employee->picture);
+    }
+
     $Employee->delete();
 
     return redirect()->route('employee.index')->with('success', 'Employee Deleted Succesfully!');
@@ -198,14 +212,28 @@ class EmployeeController extends Controller
       'middlename' => 'required',
       'lastname' => 'required',
       'birthdate' => 'required',
+      'email' => 'required|email',
       'contactnumber' => 'required',
       'officesectionunit' => 'required',
       'address' => 'required',
       'position' => 'required',
       'datehired' => 'required',
       'empstatus' => 'required',
+      'vacation_leave_balance' => 'nullable|numeric|min:0|max:999',
+      'sick_leave_balance' => 'nullable|numeric|min:0|max:999',
+      'force_leave_balance' => 'nullable|numeric|min:0|max:999',
+      'special_privilege_leave_balance' => 'nullable|numeric|min:0|max:999',
+      'solo_parent_leave_balance' => 'nullable|numeric|min:0|max:999',
+      'solo_parent_eligible' => 'nullable|boolean',
+      'wellness_leave_balance' => 'nullable|numeric|min:0|max:999',
 
     ]);
+
+    // Validate: If solo_parent_eligible is not checked, solo_parent_leave_balance must be 0
+    if (!$request->has('solo_parent_eligible') || !$request->solo_parent_eligible) {
+      $formfields['solo_parent_leave_balance'] = 0;
+      $formfields['solo_parent_eligible'] = false;
+    }
 
     // if ($request->hasFile('logo')) {
     //     $formfields['logo'] = $request->file('logo')->store('attachment', 'public');
@@ -235,16 +263,33 @@ class EmployeeController extends Controller
 
       // User confirmed, remove chief assignment
       $sectionChiefAssignment->delete();
-      \Log::info("Section Chief removed: Employee {$Employee->id} removed from unit {$sectionChiefAssignment->unitid}");
+      Log::info("Section Chief removed: Employee {$Employee->id} removed from unit {$sectionChiefAssignment->unitid}");
     }
 
     if ($request->hasFile('signature')) {
+      // Delete old signature if exists
+      if ($Employee->signature_path && Storage::disk('public')->exists($Employee->signature_path)) {
+        Storage::disk('public')->delete($Employee->signature_path);
+      }
       $formfields['signature_path'] = $request->file('signature')->store('signatures', 'public');
     }
 
     $formfields['officeid'] = $Office;
     $formfields['sectionid'] = $Section;
     $formfields['unitid'] = $Unit;
+
+    // Check if email changed and update associated User account
+    if (isset($formfields['email']) && $Employee->email !== $formfields['email']) {
+      $oldEmail = $Employee->email;
+      $newEmail = $formfields['email'];
+
+      // Find user with old email and update
+      $user = \App\Models\User::where('email', $oldEmail)->first();
+      if ($user) {
+        $user->email = $newEmail;
+        $user->save();
+      }
+    }
 
     $Employee->update($formfields);
 

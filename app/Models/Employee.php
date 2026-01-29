@@ -13,7 +13,7 @@ class Employee extends Model
 
     use HasFactory;
 
-    // protected $guarded = []; 
+    // protected $guarded = [];
 
     protected $fillable = [
         'employeeid',
@@ -34,10 +34,29 @@ class Employee extends Model
         'picture',
         'signature_path',
         'has_account',
+        'vacation_leave_balance',
+        'sick_leave_balance',
+        'force_leave_balance',
+        'special_privilege_leave_balance',
+        'solo_parent_leave_balance',
+        'solo_parent_eligible',
+        'wellness_leave_balance',
     ];
 
+    protected $casts = [
+        'vacation_leave_balance' => 'string',
+        'sick_leave_balance' => 'string',
+        'force_leave_balance' => 'string',
+        'special_privilege_leave_balance' => 'string',
+        'solo_parent_leave_balance' => 'string',
+        'solo_parent_eligible' => 'boolean',
+        'wellness_leave_balance' => 'string',
+    ];
 
-
+    public function getFullnameAttribute()
+    {
+        return trim("{$this->firstname} {$this->middlename} {$this->lastname}");
+    }
 
     // public function Section() {
     //     return $this->hasOne(Section::class,'id','sectionid');
@@ -116,10 +135,25 @@ class Employee extends Model
         return $this->hasMany(TravelOrderSignatory::class, 'approver2', 'id');
     }
 
+    public function TravelOrderSignatory3()
+    {
+        return $this->hasMany(TravelOrderSignatory::class, 'approver3', 'id');
+    }
+
+    public function sectionChiefUnit()
+    {
+        return $this->hasOne(\App\Models\SectionChief::class, 'employeeid', 'id');
+    }
+
     // Mga Travel Orders na ako ang requester
     public function TravelOrder()
     {
         return $this->hasMany(TravelOrder::class, 'employeeid', 'id');
+    }
+
+    public function eligibleSignatory()
+    {
+        return $this->hasOne(EligibleSignatory::class);
     }
 
     public function getSignatureUrlAttribute(): ?string

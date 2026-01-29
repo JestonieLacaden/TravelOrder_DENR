@@ -16,8 +16,11 @@ class TravelOrderSignatoryController extends Controller
 
         $this->authorize('viewAny', \App\Models\TravelOrderSignatory::class);
 
+        // Get employees who are eligible signatories for travel orders
+        $Employees = Employee::whereHas('eligibleSignatory', function($query) {
+            $query->whereIn('role', ['travel_order', 'both']);
+        })->orderby('lastname', 'asc')->get();
 
-        $Employees = Employee::orderby('lastname', 'asc')->get();
         $Signatories = TravelOrderSignatory::with('Employee1', 'Employee2', 'Employee3')->get();
         // Kunin lahat ng units na may active Section Chief
         $UnitsWithChief = \App\Models\Unit::whereHas('sectionChief', function ($q) {

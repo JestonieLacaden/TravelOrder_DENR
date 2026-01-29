@@ -195,7 +195,8 @@ class MailController extends Controller
     if ($isA1) {
       $LeavesQ->orWhere(function ($q) {
         $q->where('is_approve1', false)
-          ->where('is_rejected1', false);
+          ->where('is_rejected1', false)
+          ->where('is_returned1', false);
       });
     }
     if ($isA2) {
@@ -203,7 +204,8 @@ class MailController extends Controller
         $q->where('is_approve1', true)
           ->where('is_approve2', false)
           ->where('is_rejected1', false)
-          ->where('is_rejected2', false);
+          ->where('is_rejected2', false)
+          ->where('is_returned2', false);
       });
     }
     if ($isA3) {
@@ -211,7 +213,8 @@ class MailController extends Controller
         $q->where('is_approve2', true)
           ->where('is_approve3', false)
           ->where('is_rejected2', false)
-          ->where('is_rejected3', false);
+          ->where('is_rejected3', false)
+          ->where('is_returned3', false);
       });
     }
 
@@ -270,7 +273,16 @@ class MailController extends Controller
       ->pluck('id');
 
     // ipakita lang ang requests na naka-assign sa signatories ko
+    // EXCLUDE rejected and returned travel orders
     $TravelOrders = \App\Models\TravelOrder::whereIn('travelordersignatoryid', $mySigIds)
+      ->where(function($query) {
+          $query->where('is_rejected1', false)
+                ->where('is_rejected2', false)
+                ->where('is_rejected3', false)
+                ->where('is_returned1', false)
+                ->where('is_returned2', false)
+                ->where('is_returned3', false);
+      })
       ->with('Employee')
       ->latest()
       ->get();
@@ -502,18 +514,18 @@ class MailController extends Controller
     $Count = 0;
     foreach ($Leaves as $Leave) {
       foreach ($LeaveSignatories as $LeaveSignatory) {
-        if ($Leave->is_approve1 != true && $Leave->is_rejected1 != true) {
+        if ($Leave->is_approve1 != true && $Leave->is_rejected1 != true && $Leave->is_returned1 != true) {
           if ($LeaveSignatory->approver1 == $Employee->id && auth()->check()) {
             $Count = $Count + 1;
           }
         }
-        if ($Leave->is_approve1 == true && $Leave->is_rejected2 != true && $Leave->is_approve2 != true && $Leave->is_rejected1 == false) {
+        if ($Leave->is_approve1 == true && $Leave->is_rejected2 != true && $Leave->is_approve2 != true && $Leave->is_rejected1 == false && $Leave->is_returned2 != true) {
           if ($LeaveSignatory->approver2 == $Employee->id && auth()->check()) {
             $Count = $Count + 1;
           }
         }
 
-        if ($Leave->is_approve2 == true && $Leave->is_rejected3 != true && $Leave->is_approve3 != true && $Leave->is_rejected2 == false) {
+        if ($Leave->is_approve2 == true && $Leave->is_rejected3 != true && $Leave->is_approve3 != true && $Leave->is_rejected2 == false && $Leave->is_returned3 != true) {
           if ($LeaveSignatory->approver3 == $Employee->id && auth()->check()) {
             $Count = $Count + 1;
           }
@@ -534,20 +546,29 @@ class MailController extends Controller
     $sigAsA2 = \App\Models\TravelOrderSignatory::where('approver2', $me->id)->pluck('id');
     $sigAsA3 = \App\Models\TravelOrderSignatory::where('approver3', $me->id)->pluck('id');
 
-    // pending na ikaw ang pwedeng umaksyon
+    // pending na ikaw ang pwedeng umaksyon (exclude rejected and returned)
     $pendingAsA1 = \App\Models\TravelOrder::whereIn('travelordersignatoryid', $sigAsA1)
       ->where('is_approve1', 0)                 // hinihintay ang approve1 (ikaw ito)
+      ->where('is_rejected1', 0)                // hindi pa ni-reject
+      ->where('is_returned1', 0)                // hindi pa ni-return
       ->count();
 
     $pendingAsA2 = \App\Models\TravelOrder::whereIn('travelordersignatoryid', $sigAsA2)
       ->where('is_approve1', 1)                 // tapos na si approver1
       ->where('is_approve2', 0)                 // hinihintay ka (approve2)
+      ->where('is_rejected1', 0)                // hindi na-reject ng approver1
+      ->where('is_rejected2', 0)                // hindi mo pa na-reject
+      ->where('is_returned2', 0)                // hindi mo pa ni-return
       ->count();
 
     $pendingAsA3 = \App\Models\TravelOrder::whereIn('travelordersignatoryid', $sigAsA3)
       ->where('is_approve1', 1)                 // tapos na si approver1
       ->where('is_approve2', 1)                 // tapos na si approver2
       ->where('is_approve3', 0)                 // hinihintay ka (approve3)
+      ->where('is_rejected1', 0)                // hindi na-reject ng approver1
+      ->where('is_rejected2', 0)                // hindi na-reject ng approver2
+      ->where('is_rejected3', 0)                // hindi mo pa na-reject
+      ->where('is_returned3', 0)                // hindi mo pa ni-return
       ->count();
 
     return $pendingAsA1 + $pendingAsA2 + $pendingAsA3;

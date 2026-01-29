@@ -87,9 +87,9 @@
 
                                     <tr>
                                         <td>{{ $LeaveSignatory->name}}</td>
-                                        <td>{{ $LeaveSignatory->Employee1->firstname . ' ' . $LeaveSignatory->Employee1->lastname }}</td>
-                                        <td>{{ $LeaveSignatory->Employee2->firstname . ' ' . $LeaveSignatory->Employee2->lastname }}</td>
-                                        <td>{{ $LeaveSignatory->Employee3->firstname . ' ' . $LeaveSignatory->Employee3->lastname }}</td>
+                                        <td>{{ $LeaveSignatory->Employee1 ? $LeaveSignatory->Employee1->firstname . ' ' . $LeaveSignatory->Employee1->lastname : 'N/A' }}</td>
+                                        <td>{{ $LeaveSignatory->Employee2 ? $LeaveSignatory->Employee2->firstname . ' ' . $LeaveSignatory->Employee2->lastname : 'N/A' }}</td>
+                                        <td>{{ $LeaveSignatory->Employee3 ? $LeaveSignatory->Employee3->firstname . ' ' . $LeaveSignatory->Employee3->lastname : 'N/A' }}</td>
                                         <td class="text-center">
                                             @can('update', $LeaveSignatory)
                                             <button type="button" class="btn btn-default" title="Delete" data-toggle="modal" data-target="#edit-signatory-modal-lg{{ $LeaveSignatory->id }} " data-backdrop="static" data-keyboard="false">
